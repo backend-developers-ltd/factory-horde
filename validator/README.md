@@ -46,7 +46,8 @@ obey their absolute deadlines. Re-enable the same root to resume its round.
 
 A successful score of zero is eligible; failed, forced, nonzero, malformed or
 unconfirmed outcomes carry no accepted score. Missing final reports become retained
-failures. Accepted decisions survive loss of their raw report without redrawing a
+failures. Unsafe or unreadable artifacts are rejected; genuine host I/O failures
+remain unresolved. Accepted decisions survive loss of their raw report without redrawing a
 score. Nexus routing targets are observation metadata; miner attribution comes from
 the frozen business request. Weighing reads accepted hotkeys, not the router-based
 count helpers. Queries use the latest completed round with scores,

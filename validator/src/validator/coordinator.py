@@ -13,6 +13,7 @@ from prometheus_client import Counter, Histogram
 from pydantic import UUID4, Field, model_validator
 
 from validator.discovery import DiscoverySnapshot
+from validator.record_files import RecordFormatError
 from validator.records import (
     Deadlines,
     ImageReference,
@@ -91,7 +92,7 @@ class Schedule(Record):
 class SkippedEvaluation(JobIdentity):
     """An intended judge was never authorized; this is not an executor termination claim."""
 
-    reason: Literal["factory_failed", "missing_output", "evaluation_expired"]
+    reason: Literal["factory_failed", "missing_output", "invalid_output", "evaluation_expired"]
     observed_at: UtcTime
 
 
@@ -203,7 +204,7 @@ class RoundCoordinator:
                 raise ValueError("Skipped evaluation attribution differs")
             return False
         result = self.repository.read(factory)
-        reason: Literal["factory_failed", "missing_output", "evaluation_expired"] | None = None
+        reason: Literal["factory_failed", "missing_output", "invalid_output", "evaluation_expired"] | None = None
         if now >= judge.deadline:
             reason = "evaluation_expired"
         elif result is None:
@@ -215,9 +216,11 @@ class RoundCoordinator:
         else:
             try:
                 for name in ("main.py", "README.md"):
-                    self.repository.files.read_bytes(f"{factory.output_dir}/{name}")
+                    self.repository.files.read_artifact(f"{factory.output_dir}/{name}")
             except FileNotFoundError:
                 reason = "missing_output"
+            except RecordFormatError:
+                reason = "invalid_output"
         if reason is None:
             return True
         self.repository.files.publish(

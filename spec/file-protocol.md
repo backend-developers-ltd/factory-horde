@@ -154,6 +154,12 @@ becomes an immutable failed evaluation. A report arriving later does not turn th
 failure into a new run or score. Once accepted, a decision is reused even if raw
 reports/statuses are later lost. Publication conflicts fail and preserve the original.
 
+Unsafe or unreadable workload artifacts (including symlinks, nonregular/oversized
+files and denied file permissions) are rejected. Ineligible factory output records
+an `invalid_output` skipped evaluation; a bad final report records a failed judge
+decision. Ordinary host I/O failures remain unresolved and cannot invent a terminal
+execution or a score.
+
 `FileTaskResultStore` implements the public Nexus store/provider contracts with fixed
 task names `factory-horde-factory` and `factory-horde-evaluation`. Projections contain
 only routing metadata and the canonical result path. They are written after the

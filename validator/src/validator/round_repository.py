@@ -3,7 +3,7 @@
 from hashlib import sha256
 from pathlib import Path
 
-from validator.record_files import RecordConflictError, RecordFiles, RecordFormatError
+from validator.record_files import RecordConflictError, RecordFiles, RecordFormatError, decode_record
 from validator.records import (
     InputManifest,
     JobIdentity,
@@ -187,7 +187,7 @@ class RoundRepository:
         """
         if request.report_dir is None:
             raise ValueError("only judges have a report directory")
-        report = self.files.read(f"{request.report_dir}/report.json", JudgeReport)
+        report = decode_record(self.files.read_artifact(f"{request.report_dir}/report.json"), JudgeReport)
         self._check_job(request, report)
         return report
 

@@ -230,6 +230,49 @@ and recreate the validator. It is independent of `VALIDATOR_DISPATCH_ENABLED`.
 `WEIGHT_TEMPERATURE` defaults to `0.1`; `SUBNET_TEMPO` and `WEIGHT_EPOCH_OFFSET`
 configure Nexus weight opportunities. No usable registered scores means no write.
 
+## Adversarial application acceptance
+
+Keep ordinary round admission disabled while this suite temporarily changes the
+five local miner commitments. It uses the common validator image and production
+entrypoint, a separate data root, a separately installed systemd executor, and the
+existing local Pylon/Subtensor services. It restores the original commitments and
+stops its executor afterward. No weights are submitted by this suite; it verifies
+failure exclusion in calculated weights. Task 12 supplies independent chain-write
+evidence.
+
+Download the sixteen immutable profile artifacts from the published fixture build
+once, then run the suite from the repository root:
+
+```sh
+gh run download 36934317769 --pattern 'fixture-*' --dir localnet/state/task13-profile-images
+localnet/build-validator.sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_adversarial \
+  localnet/state/task13-profile-images
+```
+
+The checker anonymously pulls every digest. Scenarios cover mixed successful,
+missing-output, nonzero, hanging and symlink factories; rejected commitments and
+failed image pulls; delayed pull cancellation with blocked admission; denied Nexus
+projection writes and validator kills after publication/acceptance; every judge
+report profile; and executor kills around Docker create/start. Docker unavailability
+and deletion of an expected execution deliberately leave unresolved evidence.
+The suite checks actual Docker identities, exit states and job-local startup counts.
+
+Raw records, outputs, reports, logs and incremental `evidence.json` remain under
+`state/factory-horde-adversarial-<uuid>/`; `state/task13-latest.txt` identifies the
+latest retained run. The isolated executor is stopped and disabled on completion.
+Do not point ordinary admission at the deliberately unresolved fixture root or
+delete its evidence to force a new round.
+
+The selected Pylon 2.3.3 writer has a 128-byte commitment bound. A direct 129-byte
+request during development timed out instead of returning a rejection. The suite
+tests the production submitter's rejection before network access, the validator's
+independent length check and unchanged chain commitment. Malformed and tag-only
+values within the bound are actually published and excluded by discovery.
+The completed run and its real Docker observations are summarized in
+[task13-adversarial.json](../spec/evidence/task13-adversarial.json). All ten judge
+profiles passed, alongside the mixed-cohort, cancellation, storage and crash checks.
+
 ## Monitoring
 
 Pylon listens on loopback port 8000, Subtensor on 9944 and Prometheus on 9090.

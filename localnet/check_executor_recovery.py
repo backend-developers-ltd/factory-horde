@@ -45,11 +45,6 @@ def docker(*args: str) -> str:
     return subprocess.run(["/usr/bin/docker", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
-def systemctl(*args: str) -> None:
-    """Control only the isolated acceptance service."""
-    subprocess.run(["sudo", "systemctl", *args, SERVICE], check=True)
-
-
 def until(check: Callable[[], bool], reason: str, seconds: float = 90) -> None:
     """Wait for a concrete observable boundary, with an explicit failure deadline.
 
@@ -67,18 +62,19 @@ def until(check: Callable[[], bool], reason: str, seconds: float = 90) -> None:
 class Check:
     """Separate data root retains deliberate unresolved evidence without blocking normal rounds."""
 
-    def __init__(self, image: str):
+    def __init__(self, image: str, *, service: str = SERVICE, base: Path | None = None):
         config = dotenv_values(ROOT / ".env")
         if config.get("ENVIRONMENT") != "localnet" or config.get("NETUID") != "2":
             raise RuntimeError("Requires isolated localnet")
-        self.base = ROOT / "state/executor-acceptance"
+        self.service = service
+        self.base = base or ROOT / "state/executor-acceptance"
         self.root = self.base / "data"
         self.root.mkdir(parents=True, exist_ok=True)
         self.repository = RoundRepository(self.root)
         self.image = image
         self.fault_root = self.root / "control/executor-faults"
         self.fault_root.mkdir(parents=True, exist_ok=True)
-        self.dropin = Path("/etc/systemd/system") / (SERVICE + ".service.d") / "faults.conf"
+        self.dropin = Path("/etc/systemd/system") / (self.service + ".service.d") / "faults.conf"
         self.evidence: dict[str, object] = {"checked_at": datetime.now(UTC).isoformat(), "fixture_image": image}
         self.registrations = Registrations.model_validate_json((ROOT / "state/registrations.json").read_bytes())
         self.plan_by_job: dict[str, RoundPlan] = {}
@@ -101,7 +97,7 @@ class Check:
         env_path = self.base / "executor.env"
         env_path.write_text("".join(f"{key}={value}\n" for key, value in selected.items()))
         env_path.chmod(0o600)
-        subprocess.run([str(ROOT.parent / "installer/install-executor.sh"), str(env_path), SERVICE], check=True)
+        subprocess.run([str(ROOT.parent / "installer/install-executor.sh"), str(env_path), self.service], check=True)
         binary = self.base / "fault-bin/docker"
         binary.parent.mkdir(exist_ok=True)
         staged_binary = binary.with_name(f".docker-{uuid4()}.tmp")
@@ -117,7 +113,11 @@ class Check:
         subprocess.run(["sudo", "install", "-m", "0644", str(staged), str(self.dropin)], check=True)
         subprocess.run(["sudo", "systemctl", "daemon-reload"], check=True)
         self.clear_fault()
-        systemctl("restart")
+        self.systemctl("restart")
+
+    def systemctl(self, *args: str) -> None:
+        """Control only this check's isolated acceptance service."""
+        subprocess.run(["sudo", "systemctl", *args, self.service], check=True)
 
     def clear_fault(self) -> None:
         """Release any delayed response and remove this test's interception."""
@@ -143,9 +143,9 @@ class Check:
         Raises:
             RuntimeError: Systemd could not kill the selected service.
         """
-        systemctl("stop", "--no-block")
+        self.systemctl("stop", "--no-block")
         result = subprocess.run(
-            ["sudo", "systemctl", "kill", "--signal=SIGKILL", "--kill-whom=all", SERVICE],
+            ["sudo", "systemctl", "kill", "--signal=SIGKILL", "--kill-whom=all", self.service],
             capture_output=True,
             text=True,
             check=False,
@@ -153,7 +153,7 @@ class Check:
         if result.returncode and "not running" not in result.stderr:
             raise RuntimeError(result.stderr)
         until(
-            lambda: subprocess.run(["systemctl", "is-active", "--quiet", SERVICE], check=False).returncode != 0,
+            lambda: subprocess.run(["systemctl", "is-active", "--quiet", self.service], check=False).returncode != 0,
             "Executor did not stop",
             10,
         )
@@ -241,7 +241,7 @@ class Check:
 
         until(term_sent, "Graceful signals were not sent", 15)
         before = [(self.root / f"control/executor/{j.job_id}.json").read_bytes() for j in jobs]
-        systemctl("restart")
+        self.systemctl("restart")
         statuses = [self.terminal(job) for job in jobs]
         elapsed = time.monotonic() - stop_start
         for job, previous in zip(jobs, before, strict=True):
@@ -271,7 +271,7 @@ class Check:
         self.crash()
         if operation == "create" and before.State.Status != "created":
             raise RuntimeError("Crash did not occur after create/before start")
-        systemctl("start")
+        self.systemctl("start")
         if mode == "ignore-term":
             until(lambda: self.running(job), "Running container was not recovered")
             self.stop(job)
@@ -279,12 +279,12 @@ class Check:
         if observed.container_id != before.Id:
             raise RuntimeError("Restart replaced the original container")
         self.publish(job)
-        systemctl("restart")
+        self.systemctl("restart")
         time.sleep(3)
         if self.repository.status(job) != observed:
             raise RuntimeError("Finalized status changed on replay")
         docker("rm", job.container_name)
-        systemctl("restart")
+        self.systemctl("restart")
         time.sleep(3)
         if self.repository.status(job) != observed:
             raise RuntimeError("Deleted finalized container lost retained outcome")
@@ -315,7 +315,7 @@ class Check:
         cancelled = wait_status(self.repository, slow, 15)
         if cancelled.execution != "never_started":
             raise RuntimeError("Cancelled pull created a workload")
-        systemctl("restart")
+        self.systemctl("restart")
         time.sleep(3)
         missing = subprocess.run(["/usr/bin/docker", "inspect", slow.container_name], capture_output=True, check=False)
         if missing.returncode == 0 or self.repository.status(slow) != cancelled:
@@ -347,7 +347,7 @@ class Check:
             raise RuntimeError("Docker failure was mistaken for stop")
         self.crash()
         docker("rm", "--force", job.container_name)
-        systemctl("start")
+        self.systemctl("start")
         time.sleep(4)
         missing = self.repository.status(job)
         if missing is None or missing.confirmed_stopped or "missing" not in (missing.reason or ""):
@@ -367,12 +367,12 @@ class Check:
         for job in self.jobs:
             if (self.root / f"control/requests/{job.job_id}.json").exists():
                 self.stop(job)
-        systemctl("start")
+        self.systemctl("start")
         time.sleep(10)
-        systemctl("stop")
+        self.systemctl("stop")
         subprocess.run(["sudo", "rm", "-f", str(self.dropin)], check=True)
         subprocess.run(["sudo", "systemctl", "daemon-reload"], check=True)
-        subprocess.run(["sudo", "systemctl", "disable", SERVICE], check=True)
+        subprocess.run(["sudo", "systemctl", "disable", self.service], check=True)
 
 
 def main() -> None:

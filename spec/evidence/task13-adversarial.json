@@ -1,0 +1,3367 @@
+{
+  "checked_at": "2026-10-01T22:33:55.640994+00:00",
+  "validator_image": "sha256:624254dd5e0715567d4f8dcf90a9862fea3f18763d81c67936d47d0a8fc92db7",
+  "executor_sha256": "58d171e65e473d535c7b4eae9c39e16fc76d495ed55ab4bbb87da288f7d2fe86",
+  "anonymous_pulls": 16,
+  "profiles": {
+    "factory-hang": {
+      "kind": "factory-hang",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4db29af62f3d1682505d2ed6a40cfe154da9f0c6adc1c89a9098b1fed74f7157",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "factory-missing": {
+      "kind": "factory-missing",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:983ab449d445cd8a7b01a7058f91ea7204f21a68194389ac10763f0e8a1d594d",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "factory-nonzero": {
+      "kind": "factory-nonzero",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:5b69b497991e11ecd2b05019270449bf5e66e40d73cb7911a6bced77134ad258",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "factory-symlink": {
+      "kind": "factory-symlink",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb12e8ad1a686cb76fc753a86ed400cb337cf1042b2933356f8e44245d74b6dc",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "factory-valid": {
+      "kind": "factory-valid",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-hang": {
+      "kind": "judge-hang",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0655b6fa9956b23c86324e14a3d710e175f4c909189a5202b9d1001d238de501",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-infinite": {
+      "kind": "judge-infinite",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:824fa0f4745f9e8e6cf0733e2cd78be2d6f0a6ec990b6dbcfe429fc06c46fe44",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-malformed": {
+      "kind": "judge-malformed",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:e000c6823ae041e9d2c62e22a336450c6f4f81876f29ea4a091cfc2633f3c6cf",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-mismatch": {
+      "kind": "judge-mismatch",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2d56aadc6419cd01c104155c0d012cc9fdc998f9c46d3e1c5e4c91423d7dd39c",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-missing": {
+      "kind": "judge-missing",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:c87378e7e87127b6dd30a54c51a23b68fe0e9569ffd5f2dd365656c02962b19d",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-nan": {
+      "kind": "judge-nan",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:7e4d407bb2f23eca698355de2f13fa1a55aabc044d94a177b83fcabcdd2da247",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-nonzero": {
+      "kind": "judge-nonzero",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:db74c9fd4263c5fefd7844fdec6bd97b5d733cfaa786285edf4a55ba824b60d4",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-range": {
+      "kind": "judge-range",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2bee274ba20fc1c29a6ccf1b4c7d8aeecfd683544b17cfe013e8799b083f15d2",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-symlink": {
+      "kind": "judge-symlink",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4534ae3325c46ce6e86fc4a44abf2421c85e81ec2ad43233e5feb204077f42a6",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "judge-valid": {
+      "kind": "judge-valid",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    },
+    "lifecycle": {
+      "kind": "lifecycle",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:9531c9d6b6b0f9f330b704f5bfc577a057866cf1e25917bfc9559ea9adf0f321",
+      "commit": "77bb790e48bdb26ce0679ee140f8de48a3f3fb8f",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36934317769"
+    }
+  },
+  "missing_initial_chain": true,
+  "completed_at": "2026-10-01T22:50:28.821777+00:00",
+  "passed": true,
+  "netuid": 2,
+  "raw_evidence": "localnet/state/factory-horde-adversarial-61df2560-081a-4e59-9e3d-4bfd77de1fef/evidence.json",
+  "scenarios": {
+    "commitment_and_pull_failures": {
+      "round_id": "7d918622-3d27-42df-9367-55a07043d945",
+      "sequence": 3,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:36:13.691569Z",
+        "generation_end": "2026-10-01T22:36:33.691569Z",
+        "evaluation_start": "2026-10-01T22:36:38.691569Z",
+        "judge_end": "2026-10-01T22:37:03.691569Z",
+        "round_end": "2026-10-01T22:37:08.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "0d027f0b-082a-46d1-89d5-587f1662a3fd",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.3787711682970736,
+          "docker": {
+            "Id": "50b837e25f83dbabc924f94ad8717ee5d8b392a936ec6e2d73fdaf501d68606e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:36:42.581267429Z",
+              "FinishedAt": "2026-10-01T22:36:42.75928872Z"
+            }
+          }
+        },
+        {
+          "job_id": "150a5149-7665-4dde-bbcc-68d97cda03c0",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "execution": "never_started",
+          "exit_code": null,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Image pull failed: Error response from daemon: failed to resolve reference \"ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0000000000000000000000000000000000000000000000000000000000000000\": ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0000000000000000000000000000000000000000000000000000000000000000: not found",
+          "accepted_score": null,
+          "docker": null
+        },
+        {
+          "job_id": "1fe055af-ae87-4a51-b307-71fa893bc56f",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "9deb5939eda0ec0de889e5b0672321fcb4563c040b33de0c43557d4e9b11de98",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:36:19.188991561Z",
+              "FinishedAt": "2026-10-01T22:36:19.348847456Z"
+            }
+          }
+        },
+        {
+          "job_id": "70a8d974-109c-4b50-93eb-6543e0574a06",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.47279384585943895,
+          "docker": {
+            "Id": "164f281e0f0fba1fc4c2a5d4f5ba92aa0eef60245fad65aafb7682f00623a174",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:36:42.60737213Z",
+              "FinishedAt": "2026-10-01T22:36:42.768744013Z"
+            }
+          }
+        },
+        {
+          "job_id": "cd367266-542a-4b8c-95b2-854d26d9f9de",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "3bf8829e36e110633bb490c0a48ca2b66b93e02286d581e427112a5f158ea651",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:36:19.205998981Z",
+              "FinishedAt": "2026-10-01T22:36:19.355288149Z"
+            }
+          }
+        }
+      ],
+      "overlong_rejected": {
+        "bytes": 142,
+        "submitter_error": "Error: The selected Pylon writer accepts at most 128 UTF-8 bytes",
+        "discovery_rejected": true,
+        "chain_commitment_unchanged": true
+      },
+      "discovery": {
+        "allowed_hotkeys": null,
+        "block": 30050,
+        "block_hash": "0xac10da816aa6b52e386ac0e609fccf1aac3366dbb319f5348de0feb9537b3a4d",
+        "cohort": [
+          {
+            "factory_job_id": "150a5149-7665-4dde-bbcc-68d97cda03c0",
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "judge_job_id": "507bad0c-2d4c-4f6e-946c-184db88c0cb8",
+            "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+            "protocol_version": 1,
+            "uid": 2
+          },
+          {
+            "factory_job_id": "cd367266-542a-4b8c-95b2-854d26d9f9de",
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+            "judge_job_id": "70a8d974-109c-4b50-93eb-6543e0574a06",
+            "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+            "protocol_version": 1,
+            "uid": 5
+          },
+          {
+            "factory_job_id": "1fe055af-ae87-4a51-b307-71fa893bc56f",
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+            "judge_job_id": "0d027f0b-082a-46d1-89d5-587f1662a3fd",
+            "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+            "protocol_version": 1,
+            "uid": 6
+          }
+        ],
+        "netuid": 2,
+        "observed_at": "2026-10-01T22:36:15.600862Z",
+        "protocol_version": 1,
+        "rejected": [
+          {
+            "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+            "protocol_version": 1,
+            "reason": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+          },
+          {
+            "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+            "protocol_version": 1,
+            "reason": "1 validation error for constrained-str\n  String should match pattern '^ghcr\\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[0-9a-f]{64}\\z' [type=string_pattern_mismatch, input_value='ghcr.io/backend-develope...ry-horde-fixture:latest', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+          }
+        ],
+        "validator_hotkey": "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu"
+      }
+    },
+    "delayed_results_and_cancellation": {
+      "round_id": "e623d3e2-5d3f-4ea4-8d45-cd9c6067d6ec",
+      "sequence": 4,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:37:08.691569Z",
+        "generation_end": "2026-10-01T22:37:28.691569Z",
+        "evaluation_start": "2026-10-01T22:37:33.691569Z",
+        "judge_end": "2026-10-01T22:37:58.691569Z",
+        "round_end": "2026-10-01T22:38:03.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "008d02d8-d3d3-4ac8-8fa5-b97064c20908",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.9119948593314812,
+          "docker": {
+            "Id": "188899fedaef24f6fdeacc34cf70bed72142edf5b62dc9ca56416602cdee49a2",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:38.417532379Z",
+              "FinishedAt": "2026-10-01T22:37:38.616538933Z"
+            }
+          }
+        },
+        {
+          "job_id": "1e73febc-b11f-4908-995d-023aae7edc15",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "278bcfada715eb4073ece5d2b6941591c24ed2603829a1fe770760dacce39159",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:13.41750793Z",
+              "FinishedAt": "2026-10-01T22:37:13.606073855Z"
+            }
+          }
+        },
+        {
+          "job_id": "2fc1b6e8-428b-4a84-bf98-728715b11324",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.7554893265717372,
+          "docker": {
+            "Id": "75c7dabe3c77696415518da5c9c15015f09d09b071581eec9b980cb5197aae91",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:38.438326629Z",
+              "FinishedAt": "2026-10-01T22:37:38.616471003Z"
+            }
+          }
+        },
+        {
+          "job_id": "5665309f-b494-48a5-b2b8-a703f887637c",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.18117784775283152,
+          "docker": {
+            "Id": "c4512b654035d5937c6bd5f6aa3a51dea06f15305d58acd3f88a7d168add619d",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:38.440464132Z",
+              "FinishedAt": "2026-10-01T22:37:38.623080588Z"
+            }
+          }
+        },
+        {
+          "job_id": "6513723f-b0e2-4a36-86cf-a2d6868f2889",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "execution": "never_started",
+          "exit_code": null,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Startup closed after pull",
+          "accepted_score": null,
+          "docker": null
+        },
+        {
+          "job_id": "c97220a6-47e2-4059-912e-4924a39497a2",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "9556e7fb8c1053c51bd6c1c532b1bb6298293010654440ffac5abc68c9b7ea9f",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:13.435238457Z",
+              "FinishedAt": "2026-10-01T22:37:13.620316389Z"
+            }
+          }
+        },
+        {
+          "job_id": "cc62763c-3152-466d-a5f9-da95f1d9de2d",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "ce5e3a6cf6cef02c8a72b05dca7390936224d49cfd79dec5e537565b617e5000",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:13.4373846Z",
+              "FinishedAt": "2026-10-01T22:37:13.607519765Z"
+            }
+          }
+        },
+        {
+          "job_id": "d53629b4-97d2-49db-806d-8a9eb372ccb9",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "8c234187669378fefb607465fd461fdb6a67f597a999c4dd07bf09aa9567bd08",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:15.544283397Z",
+              "FinishedAt": "2026-10-01T22:37:15.706320404Z"
+            }
+          }
+        },
+        {
+          "job_id": "eeed5545-07de-427b-8abe-c2da37634eda",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.2682461502812994,
+          "docker": {
+            "Id": "c5623583cedb5518f76a18c8dd04f7f03e857ef441529e35c8ad672d8a55b655",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:37:38.487813613Z",
+              "FinishedAt": "2026-10-01T22:37:38.657520925Z"
+            }
+          }
+        }
+      ],
+      "unresolved_during_pull": {
+        "protocol_version": 1,
+        "round_id": "e623d3e2-5d3f-4ea4-8d45-cd9c6067d6ec",
+        "job_id": "6513723f-b0e2-4a36-86cf-a2d6868f2889",
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "kind": "factory",
+        "factory_job_id": "6513723f-b0e2-4a36-86cf-a2d6868f2889",
+        "state": "preparing",
+        "observed_at": "2026-10-01T22:37:11.265029Z",
+        "execution": "unresolved",
+        "startup_forbidden": false,
+        "container_id": null,
+        "container_name": null,
+        "started_at": null,
+        "finished_at": null,
+        "exit_code": null,
+        "forced": false,
+        "oom_killed": false,
+        "reason": null
+      },
+      "projection_write_denied": true,
+      "accepted_bytes_unchanged_after_kill": true,
+      "held_next_slot": {
+        "round_id": "e623d3e2-5d3f-4ea4-8d45-cd9c6067d6ec",
+        "stage": "complete",
+        "unresolved_jobs": [
+          "6513723f-b0e2-4a36-86cf-a2d6868f2889"
+        ]
+      }
+    },
+    "mixed": {
+      "round_id": "2c027339-efc2-4552-ac97-8e658985ae5e",
+      "sequence": 1,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:34:23.691569Z",
+        "generation_end": "2026-10-01T22:34:43.691569Z",
+        "evaluation_start": "2026-10-01T22:34:48.691569Z",
+        "judge_end": "2026-10-01T22:35:13.691569Z",
+        "round_end": "2026-10-01T22:35:18.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "2e74a5d2-710f-410b-9973-f5961dede8ae",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:983ab449d445cd8a7b01a7058f91ea7204f21a68194389ac10763f0e8a1d594d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "52784bb19f97ad191fb6ce94fed0d14dfb356ae9fa1ac57cc07147f3fe5e3c59",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:34:26.952035101Z",
+              "FinishedAt": "2026-10-01T22:34:27.129470489Z"
+            }
+          }
+        },
+        {
+          "job_id": "3eb7b3ed-cea5-47ad-84f1-67a91b870706",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb12e8ad1a686cb76fc753a86ed400cb337cf1042b2933356f8e44245d74b6dc",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "55aa4ec4401cc3b82ed87827f8e9312ae50ac16b96dff1c25bfb55ca4f51536b",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:34:26.966850731Z",
+              "FinishedAt": "2026-10-01T22:34:27.138217143Z"
+            }
+          }
+        },
+        {
+          "job_id": "6491adfd-abd8-4124-b9e5-1702824ee6f6",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4db29af62f3d1682505d2ed6a40cfe154da9f0c6adc1c89a9098b1fed74f7157",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "4373f12f8b2ae2f12c4f437cb8c6a8b551c9cdafed01d164dce87088ac1a6a7c",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:34:28.985804317Z",
+              "FinishedAt": "2026-10-01T22:34:47.226912237Z"
+            }
+          }
+        },
+        {
+          "job_id": "aa950421-9a23-4d36-9a32-2a9082837cc4",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "c8d730e5e370341b88c3345b8a94fbe5e67e2b3ba9c4fb9615762ee900e01bd6",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:34:26.969438017Z",
+              "FinishedAt": "2026-10-01T22:34:27.133828432Z"
+            }
+          }
+        },
+        {
+          "job_id": "b9e5fef9-9385-422a-b8ca-691ac46a3ec8",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.7948899744549321,
+          "docker": {
+            "Id": "8778c11ee75abb5220876d82f18f52fd3826fe82bbce43983e2bd9c65bcbc564",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:34:53.322354578Z",
+              "FinishedAt": "2026-10-01T22:34:53.483913245Z"
+            }
+          }
+        },
+        {
+          "job_id": "eac12495-68ea-483c-ae53-0c217be8db63",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:5b69b497991e11ecd2b05019270449bf5e66e40d73cb7911a6bced77134ad258",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "ffb984f8fbb7fe2540d2e98968c6a37b5bfbb2027a1a91db59fef07a4111b22f",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:34:26.959214182Z",
+              "FinishedAt": "2026-10-01T22:34:27.144430688Z"
+            }
+          }
+        }
+      ],
+      "weights": {
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 1.0
+      }
+    },
+    "next_cohort": {
+      "round_id": "14f87492-ca49-4213-841a-7cc927dbb053",
+      "sequence": 2,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:35:18.691569Z",
+        "generation_end": "2026-10-01T22:35:38.691569Z",
+        "evaluation_start": "2026-10-01T22:35:43.691569Z",
+        "judge_end": "2026-10-01T22:36:08.691569Z",
+        "round_end": "2026-10-01T22:36:13.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "24d4691b-336c-4aa9-b86c-9120404620eb",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:5b69b497991e11ecd2b05019270449bf5e66e40d73cb7911a6bced77134ad258",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "606829dfd965805eb43d27d869f09163bc55bd12ee6f960e2c3c2adde287fd53",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:35:23.753439889Z",
+              "FinishedAt": "2026-10-01T22:35:23.918807303Z"
+            }
+          }
+        },
+        {
+          "job_id": "7e85e1ab-36fc-48c4-9520-8358f41d588a",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.29479691447202794,
+          "docker": {
+            "Id": "29f286167da960dde3f87040abd7e287a123e56238672d9674ddc1164f87d7f1",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:35:48.180659853Z",
+              "FinishedAt": "2026-10-01T22:35:48.354909151Z"
+            }
+          }
+        },
+        {
+          "job_id": "a23fd381-e9f5-405c-939b-5e67e71411e6",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "2e9b6b4d1c1c9fbeb8028bb0837eecd463a63e886d17f35b8a10e388f7118341",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:35:23.790476065Z",
+              "FinishedAt": "2026-10-01T22:35:23.962547648Z"
+            }
+          }
+        },
+        {
+          "job_id": "b32226e5-41e9-4807-a447-8d586189c5f5",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:983ab449d445cd8a7b01a7058f91ea7204f21a68194389ac10763f0e8a1d594d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "cf2d466c4763f74e2ae2456e6b750b59bf26f51620a06196e2a8fe16a6781717",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:35:23.79275552Z",
+              "FinishedAt": "2026-10-01T22:35:23.957006479Z"
+            }
+          }
+        },
+        {
+          "job_id": "c0891f17-3a09-4be3-8f8c-361e9dc14ec3",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.2707786704577705,
+          "docker": {
+            "Id": "dffc90da9cea2afbb78ed8b98bd97a5093752f67670d18782f251a23a78bcfff",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:35:48.182991591Z",
+              "FinishedAt": "2026-10-01T22:35:48.355198146Z"
+            }
+          }
+        },
+        {
+          "job_id": "e93b665b-81f2-4789-b1f3-623f412bf238",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "a6dbbbfd00f1ebf1c7bd981f4cf6ce83c091f23421bb5ecc91b51c06cf672f85",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:35:25.816528256Z",
+              "FinishedAt": "2026-10-01T22:35:25.974600823Z"
+            }
+          }
+        },
+        {
+          "job_id": "ebafe5e9-bdff-4fab-8b51-8d1058a25b8c",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4db29af62f3d1682505d2ed6a40cfe154da9f0c6adc1c89a9098b1fed74f7157",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "a2da871c5a8681a9b002c093fca7b4a72943d820c0e9c2b89159b357bc57bfd0",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:35:25.82438514Z",
+              "FinishedAt": "2026-10-01T22:35:42.054178517Z"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "reports": {
+    "judge-hang": {
+      "round_id": "c987a6d0-785b-4c39-acbf-be2a805a9acd",
+      "sequence": 5,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:38:58.691569Z",
+        "generation_end": "2026-10-01T22:39:18.691569Z",
+        "evaluation_start": "2026-10-01T22:39:23.691569Z",
+        "judge_end": "2026-10-01T22:39:48.691569Z",
+        "round_end": "2026-10-01T22:39:53.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "2423438a-2798-4670-b7c4-821cb8b6b1ee",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0655b6fa9956b23c86324e14a3d710e175f4c909189a5202b9d1001d238de501",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "afb8bbb6c95a10100d9024fe9fe870443a76497e296bdc480fb0f72601c7e47e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:39:28.759265116Z",
+              "FinishedAt": "2026-10-01T22:39:52.784472565Z"
+            }
+          }
+        },
+        {
+          "job_id": "318796fb-7279-4ccb-aa31-be804bda7b03",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0655b6fa9956b23c86324e14a3d710e175f4c909189a5202b9d1001d238de501",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "b4ef3027e9ff3dab16efef8dd6e5876e48ccb14cb80d0e2836080fe750ed9522",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:39:28.738133547Z",
+              "FinishedAt": "2026-10-01T22:39:52.784536929Z"
+            }
+          }
+        },
+        {
+          "job_id": "44c5c5c0-4363-4d79-b0bf-c1e397949d4a",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "946083cf59d21348cda416f429987aa56afb3701418dbe82764ab7da5977b8cd",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:39:03.117689932Z",
+              "FinishedAt": "2026-10-01T22:39:03.296064587Z"
+            }
+          }
+        },
+        {
+          "job_id": "7594e7ea-570b-4f68-9547-19848c7e32ae",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0655b6fa9956b23c86324e14a3d710e175f4c909189a5202b9d1001d238de501",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "098fdc43c520f86bf868b4811cd75b1fec55b3387b90a0803daf9bc206e58545",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:39:28.761554984Z",
+              "FinishedAt": "2026-10-01T22:39:52.789176986Z"
+            }
+          }
+        },
+        {
+          "job_id": "93b68a21-7586-4c25-a6e6-6dccccd047f6",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "dd3362e0a087e87871ca65f4c81a265a7e156660338084c4460ed8a7b87f5c2b",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:39:03.13493879Z",
+              "FinishedAt": "2026-10-01T22:39:03.294684414Z"
+            }
+          }
+        },
+        {
+          "job_id": "b3c6dc30-2f31-442c-844b-e4a6254b2f41",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "3123e778b2ec3283641aa6e841070d65406832d4f2298aee58fbe75d516aa96c",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:39:03.142596Z",
+              "FinishedAt": "2026-10-01T22:39:03.301546804Z"
+            }
+          }
+        },
+        {
+          "job_id": "b3cd6bdf-05d0-4d4d-a9fb-a7ec815bb770",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0655b6fa9956b23c86324e14a3d710e175f4c909189a5202b9d1001d238de501",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "db2f8c05f4b916583b801a45a6b9a9a54d78bfc558538a3f0ca252082ad9f84e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:39:30.921248597Z",
+              "FinishedAt": "2026-10-01T22:39:52.79719311Z"
+            }
+          }
+        },
+        {
+          "job_id": "d330631d-a29a-46f1-966a-b6f7d7d1db41",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "7aa66df3dba6a1ba24cdb55d6c09c659e5be6f0d813c1f935f2ba3fdb69732f5",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:39:05.283131395Z",
+              "FinishedAt": "2026-10-01T22:39:05.42492104Z"
+            }
+          }
+        },
+        {
+          "job_id": "d3f35acf-1763-4e07-ab25-210fb0ef7653",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:0655b6fa9956b23c86324e14a3d710e175f4c909189a5202b9d1001d238de501",
+          "execution": "exited",
+          "exit_code": 137,
+          "forced": true,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "c75bc2cf4ac8afbbf011f103a79ab78d7a5315d5400dcbf1e236c1d6ee849d71",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 137,
+              "StartedAt": "2026-10-01T22:39:28.800671989Z",
+              "FinishedAt": "2026-10-01T22:39:52.814956664Z"
+            }
+          }
+        },
+        {
+          "job_id": "fbd883ef-8a0d-4855-a322-3091ccf7f172",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "52081227f7a82259828eed308a1cf81cb5f98eeafbfa8751e9b32eabbb0cf784",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:39:03.158212041Z",
+              "FinishedAt": "2026-10-01T22:39:03.304276266Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-infinite": {
+      "round_id": "b3366e6b-b490-4b48-b6a0-9ea7090cadc4",
+      "sequence": 6,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:39:53.691569Z",
+        "generation_end": "2026-10-01T22:40:13.691569Z",
+        "evaluation_start": "2026-10-01T22:40:18.691569Z",
+        "judge_end": "2026-10-01T22:40:43.691569Z",
+        "round_end": "2026-10-01T22:40:48.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "1f8514c0-b9a1-49a3-b74b-8a6ccca4d39c",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "cdee5dc144ed55097633cd2f6ac34fb59daf247e595a73913738c0aff5ff855c",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:01.469805271Z",
+              "FinishedAt": "2026-10-01T22:40:01.644062092Z"
+            }
+          }
+        },
+        {
+          "job_id": "5e937a25-a16b-459e-b174-f615fd315fb6",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:824fa0f4745f9e8e6cf0733e2cd78be2d6f0a6ec990b6dbcfe429fc06c46fe44",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "3c05cff73cd039b82ae0c1ebb0b4ba32c2a79fb3826db22085bf29aa4892334f",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:23.58969292Z",
+              "FinishedAt": "2026-10-01T22:40:23.798497778Z"
+            }
+          }
+        },
+        {
+          "job_id": "6442faa4-1c33-472e-90cd-d4f832e3948e",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "39dc9bd2842459973c31b11a78ef635dfae93f0f30c90673b06e62318de9136d",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:01.52138942Z",
+              "FinishedAt": "2026-10-01T22:40:01.685938935Z"
+            }
+          }
+        },
+        {
+          "job_id": "6ad9652d-5a9d-4838-84c1-cd5a4aff509b",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "885ea9a518ea35e0ad99a9208eef7ca161e8480ab44a960c8f8cd6a3f0fdfe61",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:01.539637123Z",
+              "FinishedAt": "2026-10-01T22:40:01.712396676Z"
+            }
+          }
+        },
+        {
+          "job_id": "9031075a-a287-4b23-9d74-8a3265915ce5",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "c47baeec35e80690646d86e6ccd9fdf5bda2c3bd047985058241f31de274a3ce",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:01.545281364Z",
+              "FinishedAt": "2026-10-01T22:40:01.712412059Z"
+            }
+          }
+        },
+        {
+          "job_id": "a80d5501-97f7-4f32-a5a4-23dab42b8795",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:824fa0f4745f9e8e6cf0733e2cd78be2d6f0a6ec990b6dbcfe429fc06c46fe44",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "7d146f9cb8427174420648f74596696edfe2f00233afdcdd1bc50203c8359dbe",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:23.701091882Z",
+              "FinishedAt": "2026-10-01T22:40:23.888197407Z"
+            }
+          }
+        },
+        {
+          "job_id": "ad88dc59-253b-4fc1-b6d6-362aa1f15a0c",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:824fa0f4745f9e8e6cf0733e2cd78be2d6f0a6ec990b6dbcfe429fc06c46fe44",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "4b3407e7f547bc70b7c2d83753468f7c0666f360e45fbaa0f7ca7dad1127686e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:23.680507849Z",
+              "FinishedAt": "2026-10-01T22:40:23.873235288Z"
+            }
+          }
+        },
+        {
+          "job_id": "bdec846b-d372-4221-a6ec-b1b4f566e3fe",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:824fa0f4745f9e8e6cf0733e2cd78be2d6f0a6ec990b6dbcfe429fc06c46fe44",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "87dd61548a7d1ef7c5ef9e8e24e60c95c4b182b8dcbf75236311fc523544b8fe",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:23.692250597Z",
+              "FinishedAt": "2026-10-01T22:40:23.872632788Z"
+            }
+          }
+        },
+        {
+          "job_id": "c3b9b9cf-0e97-4b09-9c67-b3a5abdce554",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:824fa0f4745f9e8e6cf0733e2cd78be2d6f0a6ec990b6dbcfe429fc06c46fe44",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "9232a393267a033ef1f2b366cf82e9de07abd11011ebb77aa8ee310314f2f17e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:23.710101837Z",
+              "FinishedAt": "2026-10-01T22:40:23.893332495Z"
+            }
+          }
+        },
+        {
+          "job_id": "d3b9cdde-a9b3-4414-acaa-d4210dfb4ab2",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "562869e6be3949ed2bd0d285026d0918f28a1ce8de6289d2c65370f33a6b3f35",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:01.56555271Z",
+              "FinishedAt": "2026-10-01T22:40:01.729054172Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-malformed": {
+      "round_id": "7bcd09f6-6c0a-472e-9879-2ceeffb9a64a",
+      "sequence": 7,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:40:48.691569Z",
+        "generation_end": "2026-10-01T22:41:08.691569Z",
+        "evaluation_start": "2026-10-01T22:41:13.691569Z",
+        "judge_end": "2026-10-01T22:41:38.691569Z",
+        "round_end": "2026-10-01T22:41:43.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "0b73753a-6441-4253-ae65-9054f39256c3",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:e000c6823ae041e9d2c62e22a336450c6f4f81876f29ea4a091cfc2633f3c6cf",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: JSONDecodeError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "c29d9ce7629d9e510cf0bccf398a5d3950dcbd3224642be48a62cbb9a36fdf7c",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:19.628842996Z",
+              "FinishedAt": "2026-10-01T22:41:19.809666288Z"
+            }
+          }
+        },
+        {
+          "job_id": "4644e5cd-8c70-4a0f-985a-a0312d58f747",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:e000c6823ae041e9d2c62e22a336450c6f4f81876f29ea4a091cfc2633f3c6cf",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: JSONDecodeError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "03d31371732648de48ef19efecb14019c82c3147c55b1b7c13d8297ce2b069db",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:19.618655842Z",
+              "FinishedAt": "2026-10-01T22:41:19.793734777Z"
+            }
+          }
+        },
+        {
+          "job_id": "7254fa0f-2c26-425b-bef0-9937e017c39a",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "7adf54ec6f68b3372384135eefd06827f952e701c8ef5d1b1c353b546e7b89dc",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:52.555646736Z",
+              "FinishedAt": "2026-10-01T22:40:52.714984064Z"
+            }
+          }
+        },
+        {
+          "job_id": "9ce3b433-c7cb-47f9-a5e4-50996f2be3d7",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:e000c6823ae041e9d2c62e22a336450c6f4f81876f29ea4a091cfc2633f3c6cf",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: JSONDecodeError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "714c85bbaefd0ad50a4321e585d4d7be47dfd5db9a722587e826c2b352533da2",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:19.604059457Z",
+              "FinishedAt": "2026-10-01T22:41:19.795053332Z"
+            }
+          }
+        },
+        {
+          "job_id": "a4096b5c-8e0e-4d2e-b1a0-f4c47a8ab799",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:e000c6823ae041e9d2c62e22a336450c6f4f81876f29ea4a091cfc2633f3c6cf",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: JSONDecodeError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "33d7ce4d14e094d12fdce178433468f600b317ed74ca2de7e3ce4d5663cdddcc",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:19.611367398Z",
+              "FinishedAt": "2026-10-01T22:41:19.80902002Z"
+            }
+          }
+        },
+        {
+          "job_id": "bdd4e5b2-7111-49c6-a145-987f35bdba44",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "6bea8e4b3280bac744bd95548c7e12aacd7357237af544e15a271665fb7c3924",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:52.591769594Z",
+              "FinishedAt": "2026-10-01T22:40:52.745631714Z"
+            }
+          }
+        },
+        {
+          "job_id": "c4046b78-b9aa-4867-a121-da1ae0f47bea",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "c6bf13b6e93440f4b1704b89f85541d7805d68e0bb21b4923e9d99bdd4b5dd5a",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:52.615490142Z",
+              "FinishedAt": "2026-10-01T22:40:52.77973336Z"
+            }
+          }
+        },
+        {
+          "job_id": "c79573ea-6d10-4c8a-8adf-b6675b58b1b9",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "4e7da2c0db19723b35ccee31eff12ff2c02c6452beddfa946348b9e85a8fd501",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:52.611150748Z",
+              "FinishedAt": "2026-10-01T22:40:52.784339701Z"
+            }
+          }
+        },
+        {
+          "job_id": "d7f70d5d-821d-4e63-b1f9-13341c9462ed",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:e000c6823ae041e9d2c62e22a336450c6f4f81876f29ea4a091cfc2633f3c6cf",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: JSONDecodeError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "305c4f40ca1b8de9ee5c970015e2b637a58639d3ec7103994a07ab775b891c88",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:19.657727436Z",
+              "FinishedAt": "2026-10-01T22:41:19.830900833Z"
+            }
+          }
+        },
+        {
+          "job_id": "e17d9142-2c84-4c24-9396-cd780062216f",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "83da1fc2dceff182717774804f34f5de860b600f1608ef20c44b6f7a9a60f406",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:40:54.881802088Z",
+              "FinishedAt": "2026-10-01T22:40:55.037950624Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-mismatch": {
+      "round_id": "d2841917-6e08-4a78-977e-cce6f30abf7d",
+      "sequence": 8,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:41:43.691569Z",
+        "generation_end": "2026-10-01T22:42:03.691569Z",
+        "evaluation_start": "2026-10-01T22:42:08.691569Z",
+        "judge_end": "2026-10-01T22:42:33.691569Z",
+        "round_end": "2026-10-01T22:42:38.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "0efc7600-a44f-4206-ae90-315478a8acb4",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "8cde9714c6465985fa67b5c0fbef6d77413b9416ffe9700c3c8a98d23a71b8e2",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:48.741315407Z",
+              "FinishedAt": "2026-10-01T22:41:48.897415224Z"
+            }
+          }
+        },
+        {
+          "job_id": "11a51413-9ef1-421b-a7d9-9c73a1d030c5",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "30e21c7e1d188f503780d5d1498e96eadf54816a6004dab65e44a62d7ce12183",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:48.753022609Z",
+              "FinishedAt": "2026-10-01T22:41:48.903047551Z"
+            }
+          }
+        },
+        {
+          "job_id": "38e0b496-8211-4ec9-b492-dd0cd0e67c8c",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2d56aadc6419cd01c104155c0d012cc9fdc998f9c46d3e1c5e4c91423d7dd39c",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "e477fdc9d6eb75aca95c99d975aa24362a4fb014c7bce55ee0534bcffd6df2b4",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:13.910919868Z",
+              "FinishedAt": "2026-10-01T22:42:14.089539096Z"
+            }
+          }
+        },
+        {
+          "job_id": "5af5fefd-8172-41ac-83a9-6c6eb75c0a6e",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2d56aadc6419cd01c104155c0d012cc9fdc998f9c46d3e1c5e4c91423d7dd39c",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "e8c8fe7ac1955811bc1fe286c96d6d16196866434da383bda0bcccad952115d5",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:13.894717148Z",
+              "FinishedAt": "2026-10-01T22:42:14.077344461Z"
+            }
+          }
+        },
+        {
+          "job_id": "6c5e4cd6-1fd6-42fc-8494-da74622bde53",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2d56aadc6419cd01c104155c0d012cc9fdc998f9c46d3e1c5e4c91423d7dd39c",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "5e01aceac52f67ff4c9d139314acf73def87c90b05e8fdd6c931328bb018c02a",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:13.846220355Z",
+              "FinishedAt": "2026-10-01T22:42:14.041732573Z"
+            }
+          }
+        },
+        {
+          "job_id": "76e66840-43f7-4ea1-a3be-74ced0793db0",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2d56aadc6419cd01c104155c0d012cc9fdc998f9c46d3e1c5e4c91423d7dd39c",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "92e5ea52e4cb57bc483efbfc122da232215b0bb2bb18d6156b902c6c46e45363",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:13.925853841Z",
+              "FinishedAt": "2026-10-01T22:42:14.113200845Z"
+            }
+          }
+        },
+        {
+          "job_id": "84e4c9d3-1d72-4e40-8c86-a7bc04283a8a",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2d56aadc6419cd01c104155c0d012cc9fdc998f9c46d3e1c5e4c91423d7dd39c",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "9731cf04da034dc905973ac3e1d96a9576efff1b9ac7c89f8e0fde15e9be35de",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:13.938819671Z",
+              "FinishedAt": "2026-10-01T22:42:14.109591669Z"
+            }
+          }
+        },
+        {
+          "job_id": "cc6274c2-5b63-45a2-9813-4ebc7ae8a5c2",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "4c409625f7871bbd0662980975802e01fc8676b55ec83167c8ace2beabdfdcce",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:48.899072438Z",
+              "FinishedAt": "2026-10-01T22:41:49.045568938Z"
+            }
+          }
+        },
+        {
+          "job_id": "f3c1521d-52f6-49d6-ab72-13c857eacfea",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "1879374c3b1e63a71bb76bf467bb30516d2057794cd3ba85d2159ac2e97b377d",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:51.168766888Z",
+              "FinishedAt": "2026-10-01T22:41:51.317554123Z"
+            }
+          }
+        },
+        {
+          "job_id": "f6a80f34-2b2d-4988-afe8-4b2c813cabed",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "f6598edeaa03d5d62f7701caf3f7c2b93acc0b4738a9c23d2c702227430d6ddb",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:41:51.160193577Z",
+              "FinishedAt": "2026-10-01T22:41:51.332833542Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-missing": {
+      "round_id": "f1f4b52a-d70b-44d5-86ab-b63aafbaffb0",
+      "sequence": 9,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:42:38.691569Z",
+        "generation_end": "2026-10-01T22:42:58.691569Z",
+        "evaluation_start": "2026-10-01T22:43:03.691569Z",
+        "judge_end": "2026-10-01T22:43:28.691569Z",
+        "round_end": "2026-10-01T22:43:33.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "0fb47229-a44f-41a4-a53e-a99c00ea7024",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:c87378e7e87127b6dd30a54c51a23b68fe0e9569ffd5f2dd365656c02962b19d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: FileNotFoundError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "419e10333f4bbd48c818fa00ee258acadc4ee2290229feb6d8bc2e66177f7170",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:07.311824291Z",
+              "FinishedAt": "2026-10-01T22:43:07.525339167Z"
+            }
+          }
+        },
+        {
+          "job_id": "5d094e06-7ba5-40bb-8b5b-859a982d82a1",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "cdffe54f9aeba2c2fdcdf1f763d71975a7959786db34a336e6fe735cd51a7f74",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:43.976948756Z",
+              "FinishedAt": "2026-10-01T22:42:44.149350723Z"
+            }
+          }
+        },
+        {
+          "job_id": "69d11779-c3d7-4bae-b036-e20deb9c97e7",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:c87378e7e87127b6dd30a54c51a23b68fe0e9569ffd5f2dd365656c02962b19d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: FileNotFoundError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "f01a7d25a3bc9150a70cf867aabcb9a39b66eb437e0436af338a1d0aafc711a9",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:07.327352335Z",
+              "FinishedAt": "2026-10-01T22:43:07.53440529Z"
+            }
+          }
+        },
+        {
+          "job_id": "93e06d93-8691-4c27-b9d4-d73f38d2a8cc",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:c87378e7e87127b6dd30a54c51a23b68fe0e9569ffd5f2dd365656c02962b19d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: FileNotFoundError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "a3056d2cda639c040d84db61381fab5fd60a3aa261ca889bf59ad0ff2bb0bcdd",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:07.425946694Z",
+              "FinishedAt": "2026-10-01T22:43:07.609558035Z"
+            }
+          }
+        },
+        {
+          "job_id": "b69c71d0-d4b2-49ab-959a-7a408613683c",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "72ad6bd1daa23124d8b71ed8b0fd7e8c2fe9cbe26e551362e058984b7b04dded",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:44.110058508Z",
+              "FinishedAt": "2026-10-01T22:42:44.300840712Z"
+            }
+          }
+        },
+        {
+          "job_id": "c17db250-c3e2-4bc0-9172-1e552e44ff4f",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:c87378e7e87127b6dd30a54c51a23b68fe0e9569ffd5f2dd365656c02962b19d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: FileNotFoundError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "d00e16b3ca50c59bc34a010ef6fd635dfabae8a6dd7b4fecb64b5777f0a41d28",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:07.45795595Z",
+              "FinishedAt": "2026-10-01T22:43:07.635545982Z"
+            }
+          }
+        },
+        {
+          "job_id": "c58589cd-f3b6-4d2d-8ac2-7e6398bf6bf3",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "53617220feb7c520ac7a7b72d56cfb3824f1f3fd46d06c30025d48cfbe2fa14c",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:44.133739632Z",
+              "FinishedAt": "2026-10-01T22:42:44.324259392Z"
+            }
+          }
+        },
+        {
+          "job_id": "d0994b16-6e94-4472-8aff-f84fa32a725c",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "a9be16f2b80ab8aa5cc62013b77fdf400dbb8423192134dba6bc09fa57f15123",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:44.159036814Z",
+              "FinishedAt": "2026-10-01T22:42:44.321511277Z"
+            }
+          }
+        },
+        {
+          "job_id": "d9af0ca1-3f6a-4d7f-ad4b-dfc0571a3b6e",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "01c0e14b9e7c58baec5183930edd63198c6908e76d8efd38a7ba4dc486e6863a",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:42:44.161344012Z",
+              "FinishedAt": "2026-10-01T22:42:44.337043653Z"
+            }
+          }
+        },
+        {
+          "job_id": "f3b80b5b-403d-4524-adfe-56baf9603550",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:c87378e7e87127b6dd30a54c51a23b68fe0e9569ffd5f2dd365656c02962b19d",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: FileNotFoundError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "f49a504d48349ecc39faefdba9a4e69565211acdda736f5bb19ccf1c401f361e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:07.527673256Z",
+              "FinishedAt": "2026-10-01T22:43:07.709524113Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-nan": {
+      "round_id": "2490c73c-0b0d-4e60-977f-d91e3f35a44e",
+      "sequence": 10,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:43:33.691569Z",
+        "generation_end": "2026-10-01T22:43:53.691569Z",
+        "evaluation_start": "2026-10-01T22:43:58.691569Z",
+        "judge_end": "2026-10-01T22:44:23.691569Z",
+        "round_end": "2026-10-01T22:44:28.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "0076d505-1d8e-4184-b566-d639cc873f55",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:7e4d407bb2f23eca698355de2f13fa1a55aabc044d94a177b83fcabcdd2da247",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "d392028befb5ecb19cac5085a3029a3b9c5c05a7eea61a3d48a8276b178e2257",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:01.982598405Z",
+              "FinishedAt": "2026-10-01T22:44:02.209673529Z"
+            }
+          }
+        },
+        {
+          "job_id": "17e3bf80-8f42-4620-b387-8e633c0a51db",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:7e4d407bb2f23eca698355de2f13fa1a55aabc044d94a177b83fcabcdd2da247",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "e0fd43d9e79ceafb470e30340fc064f50157c1090fe4f23674968535fbc7669a",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:02.03098564Z",
+              "FinishedAt": "2026-10-01T22:44:02.246746306Z"
+            }
+          }
+        },
+        {
+          "job_id": "3e621f5b-39ec-4760-8ff2-e6ad70829396",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "42a84f0ad7b0ff96c912dbec41afc7a3a47ef8f5b15956274ac307cc6bab6bea",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:40.54000554Z",
+              "FinishedAt": "2026-10-01T22:43:40.724091989Z"
+            }
+          }
+        },
+        {
+          "job_id": "4a5b9372-7f2a-478e-9659-8e6ba2799f58",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:7e4d407bb2f23eca698355de2f13fa1a55aabc044d94a177b83fcabcdd2da247",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "4b19987b6e89fecb850c9e19a8779d89987a80ee26ca9ec4d38a77a4e9f631b7",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:02.060305198Z",
+              "FinishedAt": "2026-10-01T22:44:02.269873229Z"
+            }
+          }
+        },
+        {
+          "job_id": "6cc18b76-5d80-4473-996a-f621b39c928e",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:7e4d407bb2f23eca698355de2f13fa1a55aabc044d94a177b83fcabcdd2da247",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "5e37d56c9dfc1d35458bf6d6b91dd8bf40faf51196031afcc699d8318405c99e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:02.163875759Z",
+              "FinishedAt": "2026-10-01T22:44:02.356182917Z"
+            }
+          }
+        },
+        {
+          "job_id": "800a310c-3c93-4ef0-babc-59680a160770",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "f4c1fed4fab0c8587a21308b76052a59acab246e5141971d4b91c8d44e91cfe1",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:38.226586021Z",
+              "FinishedAt": "2026-10-01T22:43:38.395085452Z"
+            }
+          }
+        },
+        {
+          "job_id": "80da7fcd-ceb0-4c1c-8c5b-f0db8d36a69d",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "30c32c6844e0686dc51fd0d2a90ff5dce123d560719796e64b96f4c97402ac76",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:40.63833718Z",
+              "FinishedAt": "2026-10-01T22:43:40.822755242Z"
+            }
+          }
+        },
+        {
+          "job_id": "95175696-e73f-469e-aa0f-fc42b8b68555",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "4096a88ac83cf56da1443c6dd19c74def569c0a68a495f077f70aed114fe0484",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:40.650796166Z",
+              "FinishedAt": "2026-10-01T22:43:40.81975204Z"
+            }
+          }
+        },
+        {
+          "job_id": "d4e53b7a-bcdb-4760-aa4c-44a4e242da3f",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:7e4d407bb2f23eca698355de2f13fa1a55aabc044d94a177b83fcabcdd2da247",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "1aa91d90f365b08d46bcaa233a4be1970925e1b9b8010f2bbb1b8b8d35428890",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:02.288495103Z",
+              "FinishedAt": "2026-10-01T22:44:02.45611589Z"
+            }
+          }
+        },
+        {
+          "job_id": "f835a31d-8bbe-48b1-8848-4af819dd9dfa",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "897f20dd845f86e8393c5885c5e1cc74e41326e09876ad42f8a346600f7b3dac",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:43:40.79636573Z",
+              "FinishedAt": "2026-10-01T22:43:40.956181132Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-nonzero": {
+      "round_id": "0a0952b2-28d1-457d-962a-9d632dde24e0",
+      "sequence": 11,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:44:28.691569Z",
+        "generation_end": "2026-10-01T22:44:48.691569Z",
+        "evaluation_start": "2026-10-01T22:44:53.691569Z",
+        "judge_end": "2026-10-01T22:45:18.691569Z",
+        "round_end": "2026-10-01T22:45:23.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "0b45431f-14c5-49b1-9b87-33e53c6ff5b6",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:db74c9fd4263c5fefd7844fdec6bd97b5d733cfaa786285edf4a55ba824b60d4",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "3fbffaa83a98563a4d49d3bc2dbd316f8345b5a9239fe3f870f0cd99622d7ea6",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:44:57.889785754Z",
+              "FinishedAt": "2026-10-01T22:44:58.096374015Z"
+            }
+          }
+        },
+        {
+          "job_id": "108cee35-222f-4eb1-8074-df3493f485ae",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:db74c9fd4263c5fefd7844fdec6bd97b5d733cfaa786285edf4a55ba824b60d4",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "1d404fa95cbf146616343b94bf84aa25b0f4ae1b79185285c7f0039a4a36c972",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:44:57.907748344Z",
+              "FinishedAt": "2026-10-01T22:44:58.111453881Z"
+            }
+          }
+        },
+        {
+          "job_id": "2390eb91-7683-4c36-9855-4f70562a0beb",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "0af644c9ba20deed71d8ca1853ed926df86dd4b7e1fa59da267bfad170dd2900",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:33.46974923Z",
+              "FinishedAt": "2026-10-01T22:44:33.669592202Z"
+            }
+          }
+        },
+        {
+          "job_id": "5a4ea694-53cf-4a0f-8ada-b04b08c398b5",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:db74c9fd4263c5fefd7844fdec6bd97b5d733cfaa786285edf4a55ba824b60d4",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "7b30662defe75a16e07c397cccf8a755cce473a943c9cdccbdb013622acbb2da",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:44:57.941745759Z",
+              "FinishedAt": "2026-10-01T22:44:58.140089969Z"
+            }
+          }
+        },
+        {
+          "job_id": "66171a0d-ef97-4bd4-975a-1de2e6ceea2a",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "fc9c7e5550c47587fdf65f64946ed8ac6e6e79e097309f7f3e4f89ae8811c7c9",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:33.566818142Z",
+              "FinishedAt": "2026-10-01T22:44:33.748150486Z"
+            }
+          }
+        },
+        {
+          "job_id": "79ec0acc-7717-45fe-86e8-8c8970db360c",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "6f7e06f2b8ec672044dcfe5295f8f4a3216ac590290a5345525b2f8383be5f24",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:33.58541744Z",
+              "FinishedAt": "2026-10-01T22:44:33.751406253Z"
+            }
+          }
+        },
+        {
+          "job_id": "7bf6f0b8-484b-4ffe-8964-9b6338181ff7",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:db74c9fd4263c5fefd7844fdec6bd97b5d733cfaa786285edf4a55ba824b60d4",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "29e13edf316a11f4baf8851e9cc95ef3d37207fcdd85f6c7b562c4fed120d43b",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:44:58.062714334Z",
+              "FinishedAt": "2026-10-01T22:44:58.281087759Z"
+            }
+          }
+        },
+        {
+          "job_id": "a211cce0-2c95-480d-a0c9-c2a3e2fc3fac",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "df8a109aa5379cecf45b561981e375553ebde6740fcc41cb6ced03d76c9091a9",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:33.660730262Z",
+              "FinishedAt": "2026-10-01T22:44:33.826119367Z"
+            }
+          }
+        },
+        {
+          "job_id": "fb61a867-303d-4fc7-8edf-a706441affbf",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:db74c9fd4263c5fefd7844fdec6bd97b5d733cfaa786285edf4a55ba824b60d4",
+          "execution": "exited",
+          "exit_code": 7,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Factory/judge did not exit cleanly",
+          "accepted_score": null,
+          "docker": {
+            "Id": "20bdcdb60bb08e6275352141a132704eaf08ffbc29b1f5a37a502bb84e173a74",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 7,
+              "StartedAt": "2026-10-01T22:44:58.243775117Z",
+              "FinishedAt": "2026-10-01T22:44:58.422393923Z"
+            }
+          }
+        },
+        {
+          "job_id": "fc00e2f8-295b-4e5b-8494-18b7a72f9e3a",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "366411f79dff84a54d8e3b8f7bbeec5f8324acdb095e64d06182085fb9a84717",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:44:33.808048627Z",
+              "FinishedAt": "2026-10-01T22:44:33.96342938Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-range": {
+      "round_id": "7a28153d-0b32-4b90-a3f6-4933742fadcd",
+      "sequence": 12,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:45:23.691569Z",
+        "generation_end": "2026-10-01T22:45:43.691569Z",
+        "evaluation_start": "2026-10-01T22:45:48.691569Z",
+        "judge_end": "2026-10-01T22:46:13.691569Z",
+        "round_end": "2026-10-01T22:46:18.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "20cdecb4-2a7b-4221-b8d4-87d6aa314883",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2bee274ba20fc1c29a6ccf1b4c7d8aeecfd683544b17cfe013e8799b083f15d2",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: ValidationError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "cd10bb93b50d32af15d723eea66cd778e0fa7b1e0c808def495d1a4bd9c34edf",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:52.224465269Z",
+              "FinishedAt": "2026-10-01T22:45:52.440474175Z"
+            }
+          }
+        },
+        {
+          "job_id": "241a9eb9-a8c1-4c14-8164-71ed8628fc2d",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2bee274ba20fc1c29a6ccf1b4c7d8aeecfd683544b17cfe013e8799b083f15d2",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: ValidationError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "53af53696cfb489f24e2adaa53939e8874e8af597d955bee9a330c5acb94f329",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:52.228055684Z",
+              "FinishedAt": "2026-10-01T22:45:52.435836611Z"
+            }
+          }
+        },
+        {
+          "job_id": "890fd089-63f6-4eda-abc1-2c2645d833d9",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "cd7f26618a0f80898b7afd8392281507c23d1137a0f35b2b51b63115f38d4620",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:30.138318904Z",
+              "FinishedAt": "2026-10-01T22:45:30.314649524Z"
+            }
+          }
+        },
+        {
+          "job_id": "8e0f5db2-c7db-468a-b920-8749fbdc6948",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "69d95e59893bfd72efbe1d0134c15d12f3c9260781783034f1ad9da713a57247",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:30.13427683Z",
+              "FinishedAt": "2026-10-01T22:45:30.305128897Z"
+            }
+          }
+        },
+        {
+          "job_id": "994df5eb-f9c4-4665-9314-0f29731c45f0",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2bee274ba20fc1c29a6ccf1b4c7d8aeecfd683544b17cfe013e8799b083f15d2",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: ValidationError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "971580610a7a435c3ee180f25ad6a8b2f5b15c139855a2a3e351a147fb4cdfbd",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:52.427542204Z",
+              "FinishedAt": "2026-10-01T22:45:52.62315592Z"
+            }
+          }
+        },
+        {
+          "job_id": "c7f45c7a-d639-4fd4-bc2b-b387990b46d3",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2bee274ba20fc1c29a6ccf1b4c7d8aeecfd683544b17cfe013e8799b083f15d2",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: ValidationError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "fab9961958e339b83cc178a8a2ccfa11cc740f305c4bc6915dad10a0746e3c09",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:52.523894347Z",
+              "FinishedAt": "2026-10-01T22:45:52.69289219Z"
+            }
+          }
+        },
+        {
+          "job_id": "cbae96af-7b81-4077-9c34-bafa7747e0ea",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "6ab86afbd3f35a20d0b7861549e503a9f1b5b55b9892e15b20f7b47ae8e6eb13",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:30.276426932Z",
+              "FinishedAt": "2026-10-01T22:45:30.460392856Z"
+            }
+          }
+        },
+        {
+          "job_id": "e30fd90e-160f-4670-afaa-b87def639917",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "eba36be3c678177389e6d8798f1f935f65ba0cd2e6f70539351ab0de05d9fa6a",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:30.301602831Z",
+              "FinishedAt": "2026-10-01T22:45:30.479405455Z"
+            }
+          }
+        },
+        {
+          "job_id": "eea5c2b6-1acf-4609-af23-ffef77aa2f80",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:2bee274ba20fc1c29a6ccf1b4c7d8aeecfd683544b17cfe013e8799b083f15d2",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: ValidationError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "b9549ec2aea30c80aa90087d3dfa48afff48cd7318f44c9e2047efece770b633",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:52.589996809Z",
+              "FinishedAt": "2026-10-01T22:45:52.76158301Z"
+            }
+          }
+        },
+        {
+          "job_id": "f460fec0-81fd-45cb-9fa3-fcc831de88d1",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "ecc9db41fda262b0b2317b87d243957fa8886af2e0324f19960240a7bb8be948",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:45:30.309363562Z",
+              "FinishedAt": "2026-10-01T22:45:30.479432457Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-symlink": {
+      "round_id": "813ad048-600f-429c-96b3-aad500667bfa",
+      "sequence": 13,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:46:18.691569Z",
+        "generation_end": "2026-10-01T22:46:38.691569Z",
+        "evaluation_start": "2026-10-01T22:46:43.691569Z",
+        "judge_end": "2026-10-01T22:47:08.691569Z",
+        "round_end": "2026-10-01T22:47:13.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "033a1a76-ca4e-4984-ac24-4df105ac0012",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4534ae3325c46ce6e86fc4a44abf2421c85e81ec2ad43233e5feb204077f42a6",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "5f26df9f58845a8e4cc750de34555e5aeb7128e3ced3d23ecf390254a7ca3dd7",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:47.439748427Z",
+              "FinishedAt": "2026-10-01T22:46:47.645673998Z"
+            }
+          }
+        },
+        {
+          "job_id": "393664ea-72ff-4331-b7d1-fed296cac114",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "fb09defe3a9611c45e39ab407534cbea6d4f6284c4bc31676d3dac1c740a20b6",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:24.776320696Z",
+              "FinishedAt": "2026-10-01T22:46:24.974572275Z"
+            }
+          }
+        },
+        {
+          "job_id": "499ee758-f797-4436-b38c-4688032d4e7d",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "d0f88db31294db20670692bd6a76ef22da82e7842c3aa26905180439e45b1c42",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:24.789385058Z",
+              "FinishedAt": "2026-10-01T22:46:24.970917298Z"
+            }
+          }
+        },
+        {
+          "job_id": "4fd9017e-8229-4a15-9ef0-1c5884f414d3",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4534ae3325c46ce6e86fc4a44abf2421c85e81ec2ad43233e5feb204077f42a6",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "7a047913f1ba6d85a7fe63919744734c14a1a97ea5be94287fcce35b5facd651",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:47.54605648Z",
+              "FinishedAt": "2026-10-01T22:46:47.756068156Z"
+            }
+          }
+        },
+        {
+          "job_id": "5e77f248-ff31-4ffe-8fba-b21794782874",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4534ae3325c46ce6e86fc4a44abf2421c85e81ec2ad43233e5feb204077f42a6",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "202413e8a34e2744f1bd664cffe78df29a06bfc5887911518713ec5fdaac0dfc",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:47.58716338Z",
+              "FinishedAt": "2026-10-01T22:46:47.794191048Z"
+            }
+          }
+        },
+        {
+          "job_id": "69c9c0c3-96ea-41cb-9065-d6c83840c94e",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "9519bd89278bf7ac86e859dbeee5e3ad918c436372105fbff9522491fd3593d7",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:24.869043416Z",
+              "FinishedAt": "2026-10-01T22:46:25.05426235Z"
+            }
+          }
+        },
+        {
+          "job_id": "7bcb9dcc-3103-42eb-b4f8-6a3b2c445034",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "1273983e3ced28b74395779c1ca9b87d7b2fbaa70c463d94d9474c0c69963a54",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:24.919173231Z",
+              "FinishedAt": "2026-10-01T22:46:25.102201856Z"
+            }
+          }
+        },
+        {
+          "job_id": "ab8a8661-6bbd-4b88-8de7-69d02ffa358a",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4534ae3325c46ce6e86fc4a44abf2421c85e81ec2ad43233e5feb204077f42a6",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "ec6c016ec79feeabaf82864e12864ea64194778359460887ad6056179b1d876c",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:47.805688271Z",
+              "FinishedAt": "2026-10-01T22:46:47.973043077Z"
+            }
+          }
+        },
+        {
+          "job_id": "e775920a-f776-47b9-bf5f-d62fea6fcbb4",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "bc0fab0205939b7956489ae2bccf6adc2c28c5f3c536d60aaa73248b1f5f0020",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:25.116069125Z",
+              "FinishedAt": "2026-10-01T22:46:25.264242189Z"
+            }
+          }
+        },
+        {
+          "job_id": "f635fa6f-8caa-478f-a64f-1f479e31b91c",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:4534ae3325c46ce6e86fc4a44abf2421c85e81ec2ad43233e5feb204077f42a6",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": "Judge report rejected: RecordFormatError",
+          "accepted_score": null,
+          "docker": {
+            "Id": "62a9a43459ed243307341d7d3c7f24fd5fec8f8ebaa1624fb385e67a73f46e60",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:46:47.912683182Z",
+              "FinishedAt": "2026-10-01T22:46:48.080058956Z"
+            }
+          }
+        }
+      ]
+    },
+    "judge-valid": {
+      "round_id": "95c6dbc6-e7ee-4871-8366-86d52e713e42",
+      "sequence": 14,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T22:47:13.691569Z",
+        "generation_end": "2026-10-01T22:47:33.691569Z",
+        "evaluation_start": "2026-10-01T22:47:38.691569Z",
+        "judge_end": "2026-10-01T22:48:03.691569Z",
+        "round_end": "2026-10-01T22:48:08.691569Z"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "outcomes": [
+        {
+          "job_id": "1e28f564-170c-454d-be82-8bf846bc0d00",
+          "kind": "judge",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.3269421948255802,
+          "docker": {
+            "Id": "b94af84500ec7e0c2f5d40fa5949399e200a4c47efbd32cc9d2a36935d35958e",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:43.968955185Z",
+              "FinishedAt": "2026-10-01T22:47:44.181447476Z"
+            }
+          }
+        },
+        {
+          "job_id": "21f5d478-11d0-4779-84ad-4b3062b8c451",
+          "kind": "factory",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "90a53143f5c6dc8b4c8da5668aa7ca9c23bed0f668a4c00272674b221d82b9a1",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:18.132244286Z",
+              "FinishedAt": "2026-10-01T22:47:18.326597443Z"
+            }
+          }
+        },
+        {
+          "job_id": "3e621eb2-83ef-4900-9873-fcb54f849ca0",
+          "kind": "judge",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.45769830034038483,
+          "docker": {
+            "Id": "ef58f3f6da1fe55f773ab63b6f8c57c7288fd23e64ca2d1835616ce038678a23",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:44.032079871Z",
+              "FinishedAt": "2026-10-01T22:47:44.229510379Z"
+            }
+          }
+        },
+        {
+          "job_id": "553eeaed-252c-4404-81cf-1a19a592f47d",
+          "kind": "factory",
+          "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "c157fae0d24a30ba62a13b9f7d1ab465acf4c54b876a7f448fc0ab81ab65bb16",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:18.234446043Z",
+              "FinishedAt": "2026-10-01T22:47:18.431189971Z"
+            }
+          }
+        },
+        {
+          "job_id": "6bb9f5b2-7005-41c7-bb05-a9bd5dafc58e",
+          "kind": "factory",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "4ccf9d65273f3e07e31c9224e56f3e55fe5ec82d805fca35b7ece8324df595d0",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:18.335574814Z",
+              "FinishedAt": "2026-10-01T22:47:18.519448379Z"
+            }
+          }
+        },
+        {
+          "job_id": "72032386-278d-4a07-8859-1f7a4c064a47",
+          "kind": "judge",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.003965881911742075,
+          "docker": {
+            "Id": "cff068090e831388bce5b3f90a8236100d28f530226670647b1077080c94195b",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:44.246710045Z",
+              "FinishedAt": "2026-10-01T22:47:44.43277463Z"
+            }
+          }
+        },
+        {
+          "job_id": "75683c6a-a58e-48b5-9e60-8f3693f5c4b5",
+          "kind": "judge",
+          "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.5609652358238528,
+          "docker": {
+            "Id": "b0ff1782d339f7eb3808dfecf44c23b05b84dea9af602b0ca18f473a28240747",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:44.265135059Z",
+              "FinishedAt": "2026-10-01T22:47:44.435262316Z"
+            }
+          }
+        },
+        {
+          "job_id": "93944fae-3c9d-456c-ad60-b69b7eb96626",
+          "kind": "factory",
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "361d6f529b6c6108bab8034c53eba91dfde8e9abd4b7afcbf3ba79908ab1d3f8",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:18.429237573Z",
+              "FinishedAt": "2026-10-01T22:47:18.588007427Z"
+            }
+          }
+        },
+        {
+          "job_id": "ef87604e-f65a-453c-913a-977b34402d5f",
+          "kind": "judge",
+          "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:85dbd73387d519c37b219b29eed3c52456322a048c57cd5f37be90897d7781f9",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": 0.9679435541367798,
+          "docker": {
+            "Id": "37bbb70b2d70b793d31f4ba417bb8ce7f5d029f0128c01d62184611539757f12",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:44.437191153Z",
+              "FinishedAt": "2026-10-01T22:47:44.594025392Z"
+            }
+          }
+        },
+        {
+          "job_id": "f6ebc87b-13c1-40e3-a016-976f7581bc8d",
+          "kind": "factory",
+          "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:bb961da8ef4d7b7e184db3f9b9deb002ccf4aacf7d2f92677dca8259e0e28993",
+          "execution": "exited",
+          "exit_code": 0,
+          "forced": false,
+          "confirmed_stopped": true,
+          "failure": null,
+          "accepted_score": null,
+          "docker": {
+            "Id": "442a8d77c9d48c14e2ddf4beca0d3df60d720953c4e77b8b8797cbcc8eea1705",
+            "State": {
+              "Status": "exited",
+              "Running": false,
+              "ExitCode": 0,
+              "StartedAt": "2026-10-01T22:47:18.601336463Z",
+              "FinishedAt": "2026-10-01T22:47:18.748145928Z"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "executor_recovery": {
+    "crash_create_exit": {
+      "before": {
+        "Id": "023606e13de76186de6498e2c42c6a52fa410accdc93521c3f039b3d04c9689b",
+        "State": {
+          "Status": "created",
+          "Running": false,
+          "ExitCode": 0,
+          "StartedAt": "0001-01-01T00:00:00Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      },
+      "status": {
+        "protocol_version": 1,
+        "round_id": "7e8915af-e521-4a2c-9e46-81b98b7d9eb5",
+        "job_id": "7a844600-3b6c-472c-a384-ac61e90c0214",
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "kind": "factory",
+        "factory_job_id": "7a844600-3b6c-472c-a384-ac61e90c0214",
+        "state": "finished",
+        "observed_at": "2026-10-01T22:47:57.371910Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "023606e13de76186de6498e2c42c6a52fa410accdc93521c3f039b3d04c9689b",
+        "container_name": "factory-horde-7a844600-3b6c-472c-a384-ac61e90c0214",
+        "started_at": "2026-10-01T22:47:54.027386Z",
+        "finished_at": "2026-10-01T22:47:54.195970Z",
+        "exit_code": 0,
+        "forced": false,
+        "oom_killed": false,
+        "reason": null
+      }
+    },
+    "crash_start_ignore-term": {
+      "before": {
+        "Id": "a176fa9266692a9fbe6160876df8520056e7ad2395ba1b9d25a93a4d248fdffd",
+        "State": {
+          "Status": "running",
+          "Running": true,
+          "ExitCode": 0,
+          "StartedAt": "2026-10-01T22:48:09.117514843Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      },
+      "status": {
+        "protocol_version": 1,
+        "round_id": "75b51080-6b8e-4507-a71f-8d956809d4ff",
+        "job_id": "90759f9f-3baa-4127-a6c4-31157639d67d",
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "kind": "factory",
+        "factory_job_id": "90759f9f-3baa-4127-a6c4-31157639d67d",
+        "state": "failed",
+        "observed_at": "2026-10-01T22:48:18.123309Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "a176fa9266692a9fbe6160876df8520056e7ad2395ba1b9d25a93a4d248fdffd",
+        "container_name": "factory-horde-90759f9f-3baa-4127-a6c4-31157639d67d",
+        "started_at": "2026-10-01T22:48:09.117514Z",
+        "finished_at": "2026-10-01T22:48:18.019401Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      }
+    },
+    "unavailable_and_missing": {
+      "actual_before": {
+        "Id": "d3b46a51700d206980620fd7b6c886e337c2492836d29654b56bc6cd9037d4de",
+        "State": {
+          "Status": "running",
+          "Running": true,
+          "ExitCode": 0,
+          "StartedAt": "2026-10-01T22:48:29.522347648Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      },
+      "unavailable": {
+        "protocol_version": 1,
+        "round_id": "d4becdd2-76fd-4be8-8a7a-d6216417ec36",
+        "job_id": "15202313-9d9b-40a8-b28e-ae86d7b46aa4",
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "kind": "factory",
+        "factory_job_id": "15202313-9d9b-40a8-b28e-ae86d7b46aa4",
+        "state": "failed",
+        "observed_at": "2026-10-01T22:48:34.592995Z",
+        "execution": "unresolved",
+        "startup_forbidden": false,
+        "container_id": "d3b46a51700d206980620fd7b6c886e337c2492836d29654b56bc6cd9037d4de",
+        "container_name": "factory-horde-15202313-9d9b-40a8-b28e-ae86d7b46aa4",
+        "started_at": null,
+        "finished_at": null,
+        "exit_code": null,
+        "forced": false,
+        "oom_killed": false,
+        "reason": "Fixture: Docker observation unavailable"
+      },
+      "missing": {
+        "protocol_version": 1,
+        "round_id": "d4becdd2-76fd-4be8-8a7a-d6216417ec36",
+        "job_id": "15202313-9d9b-40a8-b28e-ae86d7b46aa4",
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "kind": "factory",
+        "factory_job_id": "15202313-9d9b-40a8-b28e-ae86d7b46aa4",
+        "state": "failed",
+        "observed_at": "2026-10-01T22:48:37.526203Z",
+        "execution": "unresolved",
+        "startup_forbidden": false,
+        "container_id": "d3b46a51700d206980620fd7b6c886e337c2492836d29654b56bc6cd9037d4de",
+        "container_name": "factory-horde-15202313-9d9b-40a8-b28e-ae86d7b46aa4",
+        "started_at": null,
+        "finished_at": null,
+        "exit_code": null,
+        "forced": false,
+        "oom_killed": false,
+        "reason": "Expected Docker execution is missing; replacement is forbidden"
+      }
+    }
+  },
+  "restored_commitments_block": 32823,
+  "restored_commitments_block_hash": "0xe094b382cc09defe54575d31abe3f12a7cc23910d4d02b8ba2d16fae4a2d366c",
+  "commitments_restored": true,
+  "isolated_executor_stopped_and_disabled": true,
+  "unit_qa": {
+    "passed": 157,
+    "skipped": 9,
+    "ruff": "passed",
+    "basedpyright": "passed"
+  },
+  "limits": [
+    "This suite calculates failure-excluding weights but does not submit them; task 12 supplies independent chain-write evidence.",
+    "Bypassing the selected Pylon writer limit with 129 bytes timed out. Production submitter/discovery size checks reject overlong values before dispatch."
+  ],
+  "validator_source_sha256": {
+    "validator/src/validator/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "validator/src/validator/chain_observer.py": "99af705dcbce667917fd25f38b9cfed5d064d7657ce12da2761776e1dc97c002",
+    "validator/src/validator/coordinator.py": "46225ad1ec21d148ade7ab430d394f917c5fa0f072785cba681e6d00ec4d1674",
+    "validator/src/validator/discovery.py": "d0728cacda2761e1e85392186b6f460c8988504772132bc426b6a4d241e6e648",
+    "validator/src/validator/file_communicator.py": "7a9f55c5a2c46508ad451c67948eb046e273a57e994882c24480479e6062200e",
+    "validator/src/validator/logging_config.py": "b4046361bab09ee5bf79800af3dcc9dd4558d857621e2e93a0bb652cebf92abf",
+    "validator/src/validator/main.py": "4d7a770944fc2255b970d404ea4e23a592804f4aa171de710a868f3f44d3ad8e",
+    "validator/src/validator/otel.py": "766d7a1fbaeda264d1e73da41ef6ebe379ebf0b84c18297c33fd18d61ea2c974",
+    "validator/src/validator/record_files.py": "80da42ea3f9709913efbaa55a584e17627e2865475bb3901d3137ae14d1e3d7a",
+    "validator/src/validator/records.py": "82948d00fcdedee59766ff5448e1ab49a9ecc2ce72711c5bf28d5f12cd16a88b",
+    "validator/src/validator/response_logger.py": "2aee6aaa80cdd013d62731c0a89e76572729d4479e6bb85812ee9847a8eb6bf2",
+    "validator/src/validator/result_records.py": "7455a835a8eb8e5b8dc7f98a38905cb8eacd6d8df7ee206dbc742561ba609c5a",
+    "validator/src/validator/result_repository.py": "6eb26cc9fd08fe5c48e183cde795cdb3cf2cd63e26b34451fa1d9d47a2b2bb9c",
+    "validator/src/validator/result_store.py": "4d648e00c2264b0846c43399c5ce820009d263c2227eeb89f9cd2c2b28672ec7",
+    "validator/src/validator/round_actor.py": "ff4ddf6a0ec48fe1177bd9397fd5945e5bc900ca37b74ce9453bb5b298a733b5",
+    "validator/src/validator/round_repository.py": "a09dedea5421e9d5ae4e7c87bb6a1a7c167c840dfdfda0fd7f4f4cc89e0765b0",
+    "validator/src/validator/tasks.py": "bb38eda467f9354dd2d20f727a39fa0d72cba4a1ecc65177843c22f527f171be",
+    "validator/src/validator/weighing.py": "6765687f64250aeb4f849fb7bcecaade0e3875ef95ce3e3b12f165fdaccab200",
+    "validator/src/validator/weight_gate.py": "20f78d3c17a011253e5807a4e6e80440dd92d811ea705190e4395efc45961eca"
+  }
+}

@@ -31,3 +31,7 @@ fixture package, with one digest artifact per profile. Acceptance uses
 its registry digest, anonymous pulls and the installed host executor. Run `python -m localnet.check_executor_recovery IMAGE` through the validator uv
 environment as documented in the localnet guide. Task 8 records the real fault
 checks and evidence.
+
+The complete profile suite is `python -m localnet.check_adversarial METADATA_DIR` in
+the validator uv environment. See the [localnet guide](../../README.md#adversarial-application-acceptance)
+for downloading the exact GHCR digest artifacts, prerequisites and retained evidence.

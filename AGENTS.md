@@ -49,6 +49,10 @@ membership before returning stable softmax weights. `weight_gate.py` suppresses 
 both Nexus weight nodes receive `Settings.mechanism_id` and use the tasks' shared store provider.
 Weight writes are independently opt-in. `localnet/check_weights.py` uses the miner bootstrap SDK to
 verify the actual chain vector and mechanism-0 non-interference without relying on Pylon acknowledgements.
+`localnet/check_adversarial.py` exercises published fault profiles with the production coordinator,
+real chain and an isolated systemd executor. It restores miner commitments and retains unresolved
+fixture evidence in its own root. Workload artifact rejection distinguishes invalid output from
+transient host I/O failure; neither supplies a score.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

@@ -1,5 +1,6 @@
 """Linux shared-tree I/O: no-follow paths, atomic visibility and fsync durability."""
 
+import errno
 import json
 import os
 import stat
@@ -134,6 +135,20 @@ class RecordFiles:
         parts = self._parts(relative)
         with self._operation("read"), self._directory(parts[:-1], create=False) as directory:
             return self._read(directory, parts[-1])
+
+    def read_artifact(self, relative: str) -> bytes:
+        """Read untrusted output, distinguishing invalid paths/permissions from transient host I/O.
+
+        Raises:
+            RecordFormatError: The workload supplied an unsafe or unreadable artifact.
+            OSError: Missing output or a transient host I/O error remains distinguishable.
+        """
+        try:
+            return self.read_bytes(relative)
+        except OSError as error:
+            if error.errno in (errno.ELOOP, errno.ENOTDIR, errno.EISDIR, errno.EACCES, errno.EPERM):
+                raise RecordFormatError("Artifact path or permissions are invalid") from error
+            raise
 
     def read[T: Record](self, relative: str, model: type[T]) -> T:
         """Parse one complete record; malformed final files are errors, not observations."""

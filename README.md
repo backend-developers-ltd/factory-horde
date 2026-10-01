@@ -28,8 +28,9 @@ validator restart. The round coordinator now freezes discovery and deadlines, ga
 judging on clean stopped output, and holds future slots while any job remains
 unresolved. Nexus now submits stable softmax weights from accepted scores through
 Pylon; direct Subtensor checks verify mechanism 1 and mechanism-0 non-interference.
-This completes the first localnet milestone. Adversarial acceptance and packaging
-remain in the task list. The public installer is still scaffold code
+This completes the first localnet milestone. The real-container adversarial suite
+also passes; operational visibility and packaging remain in the task list.
+The public installer is still scaffold code
 pending its implementation task.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,

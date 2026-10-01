@@ -393,3 +393,18 @@ def test_changed_framework_observation_cannot_replace_business_evidence(pair: Pa
         store.add_successful_task_result(ctx, EVALUATION_TASK, incoming)
     assert pair.repo.read(pair.judge) == original
     assert store.get_successful_tasks_for_epoch(EVALUATION_TASK, Epoch(BlockNumber(0), BlockNumber(1000))) == ()
+
+
+@pytest.mark.parametrize("artifact", ["symlink", "directory", "unreadable"])
+def test_unsafe_report_is_failed_without_following_target(pair: Pair, artifact: str) -> None:
+    report = pair.repo.files.root / str(pair.judge.report_dir) / "report.json"
+    if artifact == "unreadable":
+        report.chmod(0)
+    else:
+        report.unlink()
+        if artifact == "directory":
+            report.mkdir()
+        else:
+            report.symlink_to("/etc/passwd")
+    result = pair.repo.finalize(pair.judge, BEAT)
+    assert result.failure is not None and result.accepted is None
