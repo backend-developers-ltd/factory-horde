@@ -1,0 +1,50 @@
+{
+  "status": "Local image checks passed; public publication and anonymous registry pulls pending. Task 5 is incomplete.",
+  "platform": "linux/amd64",
+  "pi": {
+    "package": "@earendil-works/pi-coding-agent",
+    "version": "0.87.1",
+    "command": [
+      "/opt/pi/node_modules/.bin/pi",
+      "--version"
+    ],
+    "network": "none",
+    "observed_stdout": "0.87.1"
+  },
+  "local_build_ids_not_published_references": {
+    "factory": "sha256:3e76b16869e10067f9bd3d1c6eea6191821d749549ee62164714b8dfb3043794",
+    "judge": "sha256:306230cef0792d98405531e799f28dc51deedec80aaf3d2a756cfa5dc3b1cabd"
+  },
+  "sources_sha256": {
+    "miner/factory/Dockerfile": "a822026017c992de643ba82cd541cf0edf74c980f1fde72249508208f97997ae",
+    "miner/factory/factory.mjs": "7d99349dc2b1a52fdc0bfa1ff541a6452eb026e6ecd0b6be2e5061a580e37d03",
+    "miner/factory/package.json": "a121ee515b09c37d22b438713fb695f881c949f933e0adb8105d41179fedbe09",
+    "miner/factory/package-lock.json": "ad8af45c2be7904ae2c6f20b610ee8cd70ab17fad283f8a74a5be5ed7273d82b",
+    "judge/Dockerfile": "46f31da8bc36335b6ad37b15da590220b1376c45ac4377dbcc7f2d7d263c2142",
+    "judge/judge.py": "247d991f0c5e14255e395cdf0283b5119ed713ee821302181392cd416dd9243f"
+  },
+  "docker_tests": {
+    "passed": 9,
+    "elapsed_seconds": 65.75,
+    "factory_elapsed_assertion": "60 <= elapsed < 90 seconds",
+    "settings": {
+      "network": "none",
+      "read_only_rootfs": true,
+      "uid": 1000,
+      "gid": 1000,
+      "memory": "512m",
+      "cpus": 1,
+      "pids_limit": 128
+    }
+  },
+  "qa": {
+    "ruff": "passed",
+    "basedpyright": "0 errors, 0 warnings",
+    "full_suite": {
+      "passed": 59,
+      "elapsed_seconds": 68.3,
+      "timestamp": "2026-10-01T20:13:15.591935+00:00"
+    }
+  },
+  "publication": null
+}

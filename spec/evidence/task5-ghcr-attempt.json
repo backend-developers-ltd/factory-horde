@@ -1,0 +1,21 @@
+{
+  "attempted_at": "2026-10-01T19:56:13.891408+00:00",
+  "repository": "https://github.com/backend-developers-ltd/factory-horde",
+  "registry": "ghcr.io",
+  "attempted_tag": "ghcr.io/backend-developers-ltd/factory-horde-judge:prototype-306230cef079",
+  "result": "rejected_before_publication",
+  "registry_error": "error from registry: permission_denied: `backend-developers-ltd` forbids access via a personal access token (classic). Please use a GitHub App, OAuth App, or a personal access token with fine-grained permissions.",
+  "published_references": [],
+  "anonymous_pull_verification": "not possible: publication rejected",
+  "source_labels_added": true,
+  "local_rebuild_ids_not_registry_references": {
+    "factory": "sha256:3e76b16869e10067f9bd3d1c6eea6191821d749549ee62164714b8dfb3043794",
+    "judge": "sha256:306230cef0792d98405531e799f28dc51deedec80aaf3d2a756cfa5dc3b1cabd"
+  },
+  "metadata_change": "Rebuilt both images with source-repository and description OCI labels; executable sources unchanged from the nine passing Docker tests.",
+  "dockerfiles_sha256": {
+    "miner/factory/Dockerfile": "a822026017c992de643ba82cd541cf0edf74c980f1fde72249508208f97997ae",
+    "judge/Dockerfile": "46f31da8bc36335b6ad37b15da590220b1376c45ac4377dbcc7f2d7d263c2142"
+  },
+  "localnet_services": "remain stopped"
+}

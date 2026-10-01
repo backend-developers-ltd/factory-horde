@@ -6,7 +6,7 @@ separate judging, persistent scores, and local-chain weight submission. Generati
 and judging are intentionally stubs: no model inference occurs, and random scores
 do not measure software quality or validate production economics.
 
-Miners publish public Docker Hub or GHCR image digests using a short-lived submission
+Miners publish public GHCR image digests using a short-lived submission
 tool. A containerized Nexus validator discovers submissions and coordinates rounds.
 A single-file host executor runs factories and judges through Docker, exchanging
 requests and outcomes with the validator through a shared directory.
@@ -24,7 +24,7 @@ installer are still scaffold code pending their implementation tasks.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,
 actual Docker execution and independently verified chain weights. Localnet now
-use the same application Compose services and host systemd executor as deployment,
+uses the same application Compose services and host systemd executor as deployment,
 with isolated wallets, local Subtensor and bootstrap added. The current
 [localnet guide](localnet/README.md) provides the verified Compose/bootstrap setup;
 the systemd executor is installed in task 7. Public deployment, subnet-12
@@ -33,8 +33,10 @@ changes and emissions changes are outside this prototype.
 ## Repository
 
 - `validator/`: independent Python/uv project for the Nexus validator.
-- `miner/`: independent Python/uv project being adapted into submission tooling,
-  with baseline factory assets planned under `miner/factory/`.
+- `miner/`: independent Python/uv project being adapted into submission tooling;
+  [baseline factory](miner/factory/README.md) source and local image checks exist,
+  with registry publication pending.
+- `judge/`: separate [fixture judge](judge/README.md), verified locally through Docker.
 - `envs/deployed/`, `installer/`: application deployment and operator installation.
 - `localnet/`: isolated development chain, bootstrap and acceptance fixtures.
 - `spec/`, `subnet_design.md`: requirements, implementation order and design.
