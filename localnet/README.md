@@ -3,8 +3,8 @@
 This is the task-4 application foundation, with factory dispatch disabled. It runs
 the common validator, Pylon and monitoring services plus a local Subtensor overlay.
 Factory/judge source-build checks now run through `localnet/build-baselines.sh`.
-Public image publication, submission, the host systemd executor and complete rounds
-remain incomplete; successful startup alone is not V2 acceptance.
+Public baseline images are available on GHCR; see [image evidence](../spec/evidence/task5-published-images.json).
+Submission, the host systemd executor and complete rounds remain incomplete; successful startup alone is not V2 acceptance.
 
 ## Prerequisites
 

@@ -1,0 +1,38 @@
+{
+  "checked_at": "2026-10-01T20:24:13.899820+00:00",
+  "registry": "GHCR only, selected by user",
+  "images": {
+    "factory": {
+      "kind": "factory",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "commit": "a9d800d83f8560b4d14505f1d84d02ac1aba5a56",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36920750021"
+    },
+    "judge": {
+      "kind": "judge",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "commit": "a9d800d83f8560b4d14505f1d84d02ac1aba5a56",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36920750021"
+    }
+  },
+  "anonymous_pulls": {
+    "passed": true,
+    "platform": "linux/amd64",
+    "authentication": "docker --config with a newly created empty directory"
+  },
+  "published_image_tests": {
+    "passed": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "elapsed_seconds": 66.526
+  },
+  "local_source_suite": {
+    "passed": 59,
+    "elapsed_seconds": 68.3
+  },
+  "localnet": "All five services restarted; localnet/check.py passed",
+  "verification_log_sha256": "229f2fde7f52bcef09d61a15452336f28842d6bc5c8064c60d198d28186bda80"
+}

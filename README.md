@@ -34,9 +34,8 @@ changes and emissions changes are outside this prototype.
 
 - `validator/`: independent Python/uv project for the Nexus validator.
 - `miner/`: independent Python/uv project being adapted into submission tooling;
-  [baseline factory](miner/factory/README.md) source and local image checks exist,
-  with registry publication pending.
-- `judge/`: separate [fixture judge](judge/README.md), verified locally through Docker.
+  [baseline factory](miner/factory/README.md) and [judge](judge/README.md) images are published publicly on GHCR and verified by digest.
+- `judge/`: separate fixture judge, verified through Docker without executing submissions.
 - `envs/deployed/`, `installer/`: application deployment and operator installation.
 - `localnet/`: isolated development chain, bootstrap and acceptance fixtures.
 - `spec/`, `subnet_design.md`: requirements, implementation order and design.

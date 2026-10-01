@@ -14,7 +14,7 @@ cd "$REPO_ROOT"
 mkdir -p localnet/state
 ANONYMOUS_CONFIG="$(mktemp -d)"
 TEMP_FILE="$(mktemp localnet/state/.published-images.XXXXXX)"
-trap 'rm -f "$TEMP_FILE"; rm -rf "$ANONYMOUS_CONFIG"' EXIT
+trap '[ ! -e "$TEMP_FILE" ] || unlink "$TEMP_FILE"; rmdir "$ANONYMOUS_CONFIG"' EXIT
 for reference in "$FACTORY_IMAGE" "$JUDGE_IMAGE"; do
     docker --config "$ANONYMOUS_CONFIG" pull --platform linux/amd64 "$reference"
 done

@@ -44,6 +44,14 @@ This uses GitHub Actions because the organization's policy rejected the earlier
 local classic-token push; [attempt evidence](../../spec/evidence/task5-ghcr-attempt.json)
 records that failure.
 
-Task 5 remains incomplete until public pulls and image checks on the published
-references pass. [Local evidence](../../spec/evidence/task5-local-images.json) records
-the passing source-build checks.
+Both published references passed anonymous pulls and all nine container tests.
+[Publication evidence](../../spec/evidence/task5-published-images.json) records the
+exact image digests and build commit; [local evidence](../../spec/evidence/task5-local-images.json)
+records the 59 passing source-build validator/image checks.
+
+Verified prototype image references:
+
+```text
+ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3
+ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf
+```
