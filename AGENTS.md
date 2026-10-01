@@ -36,8 +36,9 @@ before working on it. There is no global `uv run` from the repo root.
 
 See `localnet/README.md` for the common Compose services and isolated bootstrap. Validator dispatch is
 disabled until the application task graph exists. The host systemd executor is implemented;
-`installer/install-executor.sh` installs its standalone file and unit. Concurrency/reconciliation acceptance
-is task 8. Development tests live beside it but are not deployed.
+`installer/install-executor.sh` installs its standalone file and unit. Concurrent dispatch, permanent
+cancellation and Docker reconciliation have focused unit and real systemd fault checks. Development tests
+live beside it but are not deployed.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

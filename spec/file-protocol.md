@@ -3,7 +3,7 @@
 Implemented validator types are in `validator/records.py`, with atomic I/O in
 `validator/record_files.py` and round/job publication in `validator/round_repository.py`.
 The standalone executor implements the same wire contract without importing those modules.
-Concurrent cancellation and fault-recovery acceptance are completed in task 8. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
+Concurrent cancellation and fault-recovery evidence are recorded under task 8. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
 This contract defines records and publication. Docker observations are implemented;
 automated stage scheduling and report acceptance remain later tasks.
 
@@ -126,7 +126,20 @@ names; malformed committed JSON is an explicit error.
 An in-process reentrant lock serializes repository writes between actor threads;
 immutable publication additionally arbitrates concurrent repository instances at
 the filesystem level. Mutable round state has one validator writer; the executor
-alone replaces statuses. The executor service must serialize its own observations.
+alone replaces statuses. The executor service uses one in-flight worker per job and one process lock per
+root. Different jobs pull independently. TERM intent stores a fixed `stop_by` time;
+service replacement does not grant another grace period. KILL intent is persisted
+before the signal, and only subsequent Docker inspection can establish exit.
+
+The executor retains create/start intent before each Docker side effect and binds
+the original container ID to the immutable request fingerprint. A crash after
+create can recover that same created container. An ambiguous attempted start is
+never repeated: a running/exited container supplies evidence; an unchanged created
+container remains unresolved. Missing expected execution never authorizes a new
+container. A delayed pull/create worker cannot publish a cancellation acknowledgement
+until its startup work has completed and later startup is permanently closed.
+Terminal records are restored from the ledger without querying or recreating Docker
+containers, including after an operator deletes a finalized container.
 
 An fsync failure propagates even if the new name is already visible. Callers must
 not infer successful publication or trigger follow-up effects from an exception.

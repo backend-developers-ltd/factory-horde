@@ -117,6 +117,31 @@ sudo systemctl stop factory-horde-localnet-executor
 Stopping the service leaves detached workloads running; normal job cancellation
 uses permanent protocol stop records. Preserve its data root to resume observation.
 
+## Executor recovery acceptance
+
+The lifecycle fixture is published on GHCR by `build-executor-fixture.yml`:
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_executor_recovery \
+  ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:d3b79c5980ae248bc905e2782d022173ca50735e1b09ccc6361ac635c8b0ad17
+```
+
+The check installs the same executor/unit as a separate
+`factory-horde-recovery-executor` service, with data under
+`state/executor-acceptance/data`. A local test-only Docker CLI wrapper holds real
+create/start/pull responses or simulates unavailable observation. The production
+executor contains no fault hooks. All workload containers are real; statuses are
+written by the service, never injected by the test.
+
+It runs five TERM-resistant factories concurrently, restarts during stop grace,
+crashes after create/start, replays finalized work, deletes finalized containers,
+cancels a delayed pull while another job finishes, and deletes an expected
+container before final observation. The last scenario deliberately retains an
+unresolved record in the isolated acceptance root; it never clears evidence to
+force a rerun. The check removes its wrapper override and stops/disables only the
+acceptance service. Normal localnet services keep running. Public results are in
+[task8-recovery.json](../spec/evidence/task8-recovery.json).
+
 ## Monitoring
 
 Pylon listens on loopback port 8000, Subtensor on 9944 and Prometheus on 9090.

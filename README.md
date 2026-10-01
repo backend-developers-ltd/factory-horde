@@ -28,7 +28,7 @@ actual Docker execution and independently verified chain weights. Localnet now
 uses the same application Compose services and host systemd executor as deployment,
 with isolated wallets, local Subtensor and bootstrap added. The current
 [localnet guide](localnet/README.md) provides the verified Compose/bootstrap setup;
-the systemd executor runs real factory/judge requests and preserves their outcomes across restart. Public deployment, subnet-12
+the systemd executor runs concurrent factory/judge requests with permanent cancellation and restart recovery. Public deployment, subnet-12
 changes and emissions changes are outside this prototype.
 
 ## Repository

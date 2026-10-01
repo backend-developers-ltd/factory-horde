@@ -1,0 +1,377 @@
+{
+  "checked_at": "2026-10-01T21:20:14.410458+00:00",
+  "fixture_image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:d3b79c5980ae248bc905e2782d022173ca50735e1b09ccc6361ac635c8b0ad17",
+  "concurrent_stops": {
+    "start_spread_seconds": 2.080832,
+    "stop_seconds": 9.182095481999568,
+    "pre_restart_ledgers": [
+      {
+        "closed": true,
+        "container_id": "ac1f67b1c50e2012fccac764d7033195ba638cdf256211520e51b3be44326e94",
+        "phase": "start_attempted",
+        "stop_by": "2026-10-01T21:20:30.774490+00:00",
+        "term_sent": true
+      },
+      {
+        "closed": true,
+        "container_id": "d568026577ad64b25cc710d8e1d3b96a9d9788d11292f94a1c258b81fda189a9",
+        "phase": "start_attempted",
+        "stop_by": "2026-10-01T21:20:30.796317+00:00",
+        "term_sent": true
+      },
+      {
+        "closed": true,
+        "container_id": "9e72b454959e8445e8210a860c603bb264c9949dae7864a13167542f4b4969eb",
+        "phase": "start_attempted",
+        "stop_by": "2026-10-01T21:20:30.785478+00:00",
+        "term_sent": true
+      },
+      {
+        "closed": true,
+        "container_id": "9da1b43fa625a41df17a0e87c46e9dab7cf4169d9976e33d23e977ca1a3a5496",
+        "phase": "start_attempted",
+        "stop_by": "2026-10-01T21:20:30.787789+00:00",
+        "term_sent": true
+      },
+      {
+        "closed": true,
+        "container_id": "1031a98e2f9ab18327ebda95ce79eafd44e180c23ec0b8f3691d912a97b39328",
+        "phase": "start_attempted",
+        "stop_by": "2026-10-01T21:20:30.792285+00:00",
+        "term_sent": true
+      }
+    ],
+    "statuses": [
+      {
+        "protocol_version": 1,
+        "round_id": "bfa8725c-8cc0-4c5c-88d9-402d31be3eb5",
+        "job_id": "237f4b10-03da-4d06-b8da-5a45a2f053c7",
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "kind": "factory",
+        "factory_job_id": "237f4b10-03da-4d06-b8da-5a45a2f053c7",
+        "state": "failed",
+        "observed_at": "2026-10-01T21:20:32.641817Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "ac1f67b1c50e2012fccac764d7033195ba638cdf256211520e51b3be44326e94",
+        "container_name": "factory-horde-237f4b10-03da-4d06-b8da-5a45a2f053c7",
+        "started_at": "2026-10-01T21:20:19.697723Z",
+        "finished_at": "2026-10-01T21:20:32.518782Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "bfa8725c-8cc0-4c5c-88d9-402d31be3eb5",
+        "job_id": "f363254a-d275-41bc-8a69-7951ca003ff2",
+        "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+        "kind": "factory",
+        "factory_job_id": "f363254a-d275-41bc-8a69-7951ca003ff2",
+        "state": "failed",
+        "observed_at": "2026-10-01T21:20:32.680971Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "d568026577ad64b25cc710d8e1d3b96a9d9788d11292f94a1c258b81fda189a9",
+        "container_name": "factory-horde-f363254a-d275-41bc-8a69-7951ca003ff2",
+        "started_at": "2026-10-01T21:20:19.707712Z",
+        "finished_at": "2026-10-01T21:20:32.535679Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "bfa8725c-8cc0-4c5c-88d9-402d31be3eb5",
+        "job_id": "aabdd06a-916b-442e-b9eb-3cc6f11c7ee7",
+        "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+        "kind": "factory",
+        "factory_job_id": "aabdd06a-916b-442e-b9eb-3cc6f11c7ee7",
+        "state": "failed",
+        "observed_at": "2026-10-01T21:20:32.669832Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "9e72b454959e8445e8210a860c603bb264c9949dae7864a13167542f4b4969eb",
+        "container_name": "factory-horde-aabdd06a-916b-442e-b9eb-3cc6f11c7ee7",
+        "started_at": "2026-10-01T21:20:21.759698Z",
+        "finished_at": "2026-10-01T21:20:32.526920Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "bfa8725c-8cc0-4c5c-88d9-402d31be3eb5",
+        "job_id": "1296c75a-d2b3-444b-b40a-35fc89164b92",
+        "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+        "kind": "factory",
+        "factory_job_id": "1296c75a-d2b3-444b-b40a-35fc89164b92",
+        "state": "failed",
+        "observed_at": "2026-10-01T21:20:32.672240Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "9da1b43fa625a41df17a0e87c46e9dab7cf4169d9976e33d23e977ca1a3a5496",
+        "container_name": "factory-horde-1296c75a-d2b3-444b-b40a-35fc89164b92",
+        "started_at": "2026-10-01T21:20:19.678866Z",
+        "finished_at": "2026-10-01T21:20:32.529312Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "bfa8725c-8cc0-4c5c-88d9-402d31be3eb5",
+        "job_id": "d359473b-b5aa-4a4d-a6cf-b08d62d3a0cf",
+        "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+        "kind": "factory",
+        "factory_job_id": "d359473b-b5aa-4a4d-a6cf-b08d62d3a0cf",
+        "state": "failed",
+        "observed_at": "2026-10-01T21:20:32.683245Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "1031a98e2f9ab18327ebda95ce79eafd44e180c23ec0b8f3691d912a97b39328",
+        "container_name": "factory-horde-d359473b-b5aa-4a4d-a6cf-b08d62d3a0cf",
+        "started_at": "2026-10-01T21:20:19.705205Z",
+        "finished_at": "2026-10-01T21:20:32.532524Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      }
+    ]
+  },
+  "crash_create_exit": {
+    "before": {
+      "Id": "e0c88cb76f0a79cd21be25ab6720686a4e37c33c268f5d3b29c42d6455d1adbc",
+      "State": {
+        "Status": "created",
+        "Running": false,
+        "ExitCode": 0,
+        "StartedAt": "0001-01-01T00:00:00Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      }
+    },
+    "status": {
+      "protocol_version": 1,
+      "round_id": "600fb613-d23f-4915-b08f-6db33120521b",
+      "job_id": "0ea6679e-e18b-482b-ab9a-fbb232c4e312",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "0ea6679e-e18b-482b-ab9a-fbb232c4e312",
+      "state": "finished",
+      "observed_at": "2026-10-01T21:20:38.227221Z",
+      "execution": "exited",
+      "startup_forbidden": true,
+      "container_id": "e0c88cb76f0a79cd21be25ab6720686a4e37c33c268f5d3b29c42d6455d1adbc",
+      "container_name": "factory-horde-0ea6679e-e18b-482b-ab9a-fbb232c4e312",
+      "started_at": "2026-10-01T21:20:36.232088Z",
+      "finished_at": "2026-10-01T21:20:36.390663Z",
+      "exit_code": 0,
+      "forced": false,
+      "oom_killed": false,
+      "reason": null
+    }
+  },
+  "crash_start_exit": {
+    "before": {
+      "Id": "2d17bc7e7aa1d8382f31063423207f3cdbe14ccbaf35c7252bf4278ebe3b4176",
+      "State": {
+        "Status": "exited",
+        "Running": false,
+        "ExitCode": 0,
+        "StartedAt": "2026-10-01T21:20:48.574666224Z",
+        "FinishedAt": "2026-10-01T21:20:48.744556359Z"
+      }
+    },
+    "status": {
+      "protocol_version": 1,
+      "round_id": "158b2444-b93a-49eb-8a4b-99be3388bdbc",
+      "job_id": "e0cd050a-9da2-4096-9288-be06764ba743",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "e0cd050a-9da2-4096-9288-be06764ba743",
+      "state": "finished",
+      "observed_at": "2026-10-01T21:20:49.289728Z",
+      "execution": "exited",
+      "startup_forbidden": true,
+      "container_id": "2d17bc7e7aa1d8382f31063423207f3cdbe14ccbaf35c7252bf4278ebe3b4176",
+      "container_name": "factory-horde-e0cd050a-9da2-4096-9288-be06764ba743",
+      "started_at": "2026-10-01T21:20:48.574666Z",
+      "finished_at": "2026-10-01T21:20:48.744556Z",
+      "exit_code": 0,
+      "forced": false,
+      "oom_killed": false,
+      "reason": null
+    }
+  },
+  "crash_start_ignore-term": {
+    "before": {
+      "Id": "875fbeaf92babe75e005f43e3d3e4381687e0b088bcdde741bb9489084a83cb3",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "ExitCode": 0,
+        "StartedAt": "2026-10-01T21:20:59.657816385Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      }
+    },
+    "status": {
+      "protocol_version": 1,
+      "round_id": "eadf1c16-1b9e-418a-a090-2d7bafee02c1",
+      "job_id": "a1739d52-3357-41a2-bebf-0b22486f7eee",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "a1739d52-3357-41a2-bebf-0b22486f7eee",
+      "state": "failed",
+      "observed_at": "2026-10-01T21:21:08.594224Z",
+      "execution": "exited",
+      "startup_forbidden": true,
+      "container_id": "875fbeaf92babe75e005f43e3d3e4381687e0b088bcdde741bb9489084a83cb3",
+      "container_name": "factory-horde-a1739d52-3357-41a2-bebf-0b22486f7eee",
+      "started_at": "2026-10-01T21:20:59.657816Z",
+      "finished_at": "2026-10-01T21:21:08.491478Z",
+      "exit_code": 137,
+      "forced": true,
+      "oom_killed": false,
+      "reason": "Factory/judge did not exit cleanly"
+    }
+  },
+  "slow_pull": {
+    "fast_status": {
+      "protocol_version": 1,
+      "round_id": "45ab9853-b6a6-405c-9f48-d4cccdd1b9ae",
+      "job_id": "043b15d3-4dec-4eb0-b7f9-6e721b551e4d",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "043b15d3-4dec-4eb0-b7f9-6e721b551e4d",
+      "state": "finished",
+      "observed_at": "2026-10-01T21:21:22.874266Z",
+      "execution": "exited",
+      "startup_forbidden": true,
+      "container_id": "36f2da413d0a5df215b5afb92c48d511c0fcacac063ab693eddd6bae327687d0",
+      "container_name": "factory-horde-043b15d3-4dec-4eb0-b7f9-6e721b551e4d",
+      "started_at": "2026-10-01T21:21:20.867876Z",
+      "finished_at": "2026-10-01T21:21:21.034032Z",
+      "exit_code": 0,
+      "forced": false,
+      "oom_killed": false,
+      "reason": null
+    },
+    "during_pull": {
+      "protocol_version": 1,
+      "round_id": "d5239ac3-f919-49ef-a9c3-39af8a9a959a",
+      "job_id": "ba5ed070-dd58-4863-986d-60a808d189a6",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "ba5ed070-dd58-4863-986d-60a808d189a6",
+      "state": "preparing",
+      "observed_at": "2026-10-01T21:21:16.618455Z",
+      "execution": "unresolved",
+      "startup_forbidden": false,
+      "container_id": null,
+      "container_name": null,
+      "started_at": null,
+      "finished_at": null,
+      "exit_code": null,
+      "forced": false,
+      "oom_killed": false,
+      "reason": null
+    },
+    "cancelled": {
+      "protocol_version": 1,
+      "round_id": "d5239ac3-f919-49ef-a9c3-39af8a9a959a",
+      "job_id": "ba5ed070-dd58-4863-986d-60a808d189a6",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "ba5ed070-dd58-4863-986d-60a808d189a6",
+      "state": "cancelled",
+      "observed_at": "2026-10-01T21:21:26.267309Z",
+      "execution": "never_started",
+      "startup_forbidden": true,
+      "container_id": null,
+      "container_name": null,
+      "started_at": null,
+      "finished_at": null,
+      "exit_code": null,
+      "forced": false,
+      "oom_killed": false,
+      "reason": "Startup closed after pull"
+    }
+  },
+  "unavailable_and_missing": {
+    "actual_before": {
+      "Id": "edb8c73cc9c7f509bce06ecb41769b36fb4d88401603442d158d61ea5ed5c491",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "ExitCode": 0,
+        "StartedAt": "2026-10-01T21:21:33.834735631Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      }
+    },
+    "unavailable": {
+      "protocol_version": 1,
+      "round_id": "d199d913-d1e8-48a3-8032-899b08ee3ab3",
+      "job_id": "4338046d-c5b7-4ec7-8478-05d218342c64",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "4338046d-c5b7-4ec7-8478-05d218342c64",
+      "state": "failed",
+      "observed_at": "2026-10-01T21:21:37.952728Z",
+      "execution": "unresolved",
+      "startup_forbidden": false,
+      "container_id": "edb8c73cc9c7f509bce06ecb41769b36fb4d88401603442d158d61ea5ed5c491",
+      "container_name": "factory-horde-4338046d-c5b7-4ec7-8478-05d218342c64",
+      "started_at": null,
+      "finished_at": null,
+      "exit_code": null,
+      "forced": false,
+      "oom_killed": false,
+      "reason": "Fixture: Docker observation unavailable"
+    },
+    "missing": {
+      "protocol_version": 1,
+      "round_id": "d199d913-d1e8-48a3-8032-899b08ee3ab3",
+      "job_id": "4338046d-c5b7-4ec7-8478-05d218342c64",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "4338046d-c5b7-4ec7-8478-05d218342c64",
+      "state": "failed",
+      "observed_at": "2026-10-01T21:21:40.546404Z",
+      "execution": "unresolved",
+      "startup_forbidden": false,
+      "container_id": "edb8c73cc9c7f509bce06ecb41769b36fb4d88401603442d158d61ea5ed5c491",
+      "container_name": "factory-horde-4338046d-c5b7-4ec7-8478-05d218342c64",
+      "started_at": null,
+      "finished_at": null,
+      "exit_code": null,
+      "forced": false,
+      "oom_killed": false,
+      "reason": "Expected Docker execution is missing; replacement is forbidden"
+    }
+  },
+  "executor_sha256": "58d171e65e473d535c7b4eae9c39e16fc76d495ed55ab4bbb87da288f7d2fe86",
+  "image_publication": {
+    "kind": "fixture",
+    "image": "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:d3b79c5980ae248bc905e2782d022173ca50735e1b09ccc6361ac635c8b0ad17",
+    "commit": "1b68a2d07015c2f0980e2969df326b7a65a4c6cd",
+    "platform": "linux/amd64",
+    "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36927109593",
+    "anonymous_pull_verified": true
+  },
+  "qa": {
+    "executor_tests_passed": 25,
+    "validator_tests_passed": 64,
+    "unchanged_image_tests_skipped": 9,
+    "ruff": "passed",
+    "basedpyright": "0 errors, 0 warnings, 0 notes",
+    "shell_syntax": "passed",
+    "compose_config": "passed",
+    "normal_localnet_runtime_check": "passed",
+    "normal_executor_update_preserved_terminal_bytes": true
+  }
+}

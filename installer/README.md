@@ -49,8 +49,15 @@ The executor pulls public GHCR digests using its own empty Docker configuration.
 Its journal records Docker operation outcomes and durations. Current observations,
 terminal evidence and metrics snapshots are under `control/`; failed observation
 is unresolved, never proof that a container has stopped. Keep these records and
-containers when diagnosing a failure. Concurrent cancellation/recovery acceptance
-is task 8; coherent verified updates remain task 15.
+containers when diagnosing a failure. `EXECUTOR_WORKERS` defaults to 32 (range
+5–256); each job has at most one worker. Slow pulls run independently, and stop
+polling retains a durable grace deadline across service replacement. Cancellation
+is acknowledged only after that job has no outstanding startup operation.
+
+The executor reconciles names, immutable request labels and the original container
+ID. It never replaces missing expected execution or retries an ambiguous start.
+Those cases remain unresolved for operator investigation, while finalized outcomes
+survive later container deletion. Coherent verified updates remain task 15.
 
 ## Current monitoring
 

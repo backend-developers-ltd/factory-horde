@@ -16,9 +16,10 @@ import subprocess
 import threading
 import time
 from collections.abc import Generator
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import FrameType
 from typing import cast
@@ -159,7 +160,7 @@ class Files:
     """Descriptor-relative no-follow I/O with durable atomic record publication."""
 
     def __init__(self, root: Path):
-        if not root.is_absolute() or ".." in root.parts:
+        if not root.is_absolute() or ".." in root.parts or any(c in str(root) for c in (",", "\n", "\r")):
             raise ProtocolError("Data root must be absolute and canonical")
         self.root = root
         with self.directory((), create=False):
@@ -358,6 +359,7 @@ class Settings:
     cpus: float = 1
     pids: int = 128
     poll_seconds: float = 2
+    workers: int = 32
 
 
 class Metrics:
@@ -544,6 +546,7 @@ class Executor:
         self.metrics = Metrics()
         self.docker = Docker(settings, self.files, self.metrics)
         self.shutdown = threading.Event()
+        self.active: dict[str, Future[None]] = {}
 
     def cancelled(self, request: Request) -> bool:
         """A valid permanent stop or elapsed deadline closes startup.
@@ -555,8 +558,10 @@ class Executor:
             stop = self.files.read(f"control/stops/{request.job_id}.json")
         except FileNotFoundError:
             return datetime.now(UTC) >= request.deadline
-        if set(stop) != {*IDENTITY_FIELDS, "requested_at", "reason"} or any(
-            stop[key] != value for key, value in request.identity().items()
+        if (
+            set(stop) != {*IDENTITY_FIELDS, "requested_at", "reason"}
+            or integer(stop["protocol_version"]) != PROTOCOL_VERSION
+            or any(stop[key] != value for key, value in request.identity().items())
         ):
             raise ProtocolError("Stop identity mismatch")
         timestamp(stop["requested_at"])
@@ -634,7 +639,7 @@ class Executor:
             self.status(
                 request,
                 ledger,
-                state="running",
+                state="stopping" if ledger.get("closed") else "running",
                 execution="running",
                 started_at=timestamp(state["StartedAt"]).isoformat(),
             )
@@ -642,7 +647,7 @@ class Executor:
             self.status(request, ledger, state="preparing", execution="unresolved")
 
     def stop(self, request: Request, ledger: dict[str, object], container: dict[str, object]) -> None:
-        """Close startup, signal TERM, then KILL after grace, and inspect the actual exit.
+        """Advance durable TERM/KILL intent without blocking another job's polling.
 
         Raises:
             DockerError: The expected container disappeared instead of confirming stop.
@@ -662,19 +667,21 @@ class Executor:
             )
             return
         if state["Running"] is True:
-            self.docker.require("kill", "--signal", "TERM", request.name)
-            until = time.monotonic() + request.grace
-            while time.monotonic() < until:
-                observed = self.docker.inspect(request)
-                if observed is None:
-                    raise DockerError("Expected container disappeared during stop")
-                if object_value(observed["State"])["Running"] is not True:
-                    self.observe(request, ledger, observed)
-                    return
-                time.sleep(min(0.5, max(0, until - time.monotonic())))
-            ledger["forced"] = True
-            self.save_ledger(request, ledger)
-            self.docker.require("kill", "--signal", "KILL", request.name)
+            stop_by = ledger.get("stop_by")
+            first_stop = stop_by is None
+            if stop_by is None:
+                stop_by = (datetime.now(UTC) + timedelta(seconds=request.grace)).isoformat()
+                ledger["stop_by"] = stop_by
+                self.save_ledger(request, ledger)
+            if not first_stop and datetime.now(UTC) >= timestamp(stop_by):
+                ledger["forced"] = True
+                self.save_ledger(request, ledger)
+                self.docker.call("kill", "--signal", "KILL", request.name)
+            elif ledger.get("term_sent") is not True:
+                result = self.docker.call("kill", "--signal", "TERM", request.name)
+                if result.returncode == 0:
+                    ledger["term_sent"] = True
+                    self.save_ledger(request, ledger)
         observed = self.docker.inspect(request)
         if observed is None:
             raise DockerError("Expected container disappeared during stop")
@@ -701,7 +708,13 @@ class Executor:
                 self.save_ledger(request, ledger)
             terminal = ledger.get("terminal")
             if terminal is not None:
-                self.files.write(f"control/statuses/{request.job_id}.json", object_value(terminal))
+                terminal = object_value(terminal)
+                try:
+                    current = self.files.read(f"control/statuses/{request.job_id}.json")
+                except FileNotFoundError:
+                    current = None
+                if current != terminal:
+                    self.files.write(f"control/statuses/{request.job_id}.json", terminal)
                 return
             container = self.docker.inspect(request)
             closed = self.cancelled(request) or ledger.get("closed") is True
@@ -709,15 +722,20 @@ class Executor:
                 self.status(request, ledger, state="pending", execution="unresolved")
                 return
             if container is not None:
+                expected = ledger.get("container_id")
+                if (expected is not None and expected != container["Id"]) or ledger.get("phase") == "reserved":
+                    raise DockerError("Unexpected Docker identity; replacement is forbidden")
                 state = object_value(container["State"])
                 if closed:
                     self.stop(request, ledger, container)
                 elif state["Status"] == "created" and ledger.get("phase") != "start_attempted":
                     ledger.update(phase="start_attempted", container_id=string(container["Id"]))
                     self.save_ledger(request, ledger)
-                    if self.cancelled(request):
+                    if self.shutdown.is_set() or self.cancelled(request):
                         ledger["phase"] = "created"
-                        self.stop(request, ledger, container)
+                        self.save_ledger(request, ledger)
+                        if not self.shutdown.is_set():
+                            self.stop(request, ledger, container)
                         return
                     self.docker.require("start", request.name)
                 else:
@@ -790,7 +808,7 @@ class Executor:
             identifier = self.docker.create(request)
             ledger.update(phase="created", container_id=identifier)
             self.save_ledger(request, ledger)
-        except (OSError, ValueError, DockerError, subprocess.SubprocessError) as error:
+        except (OSError, ValueError, KeyError, DockerError, subprocess.SubprocessError) as error:
             self.status(request, ledger, reason=str(error)[:512] or type(error).__name__)
             print(
                 json.dumps(
@@ -803,30 +821,41 @@ class Executor:
                 flush=True,
             )
 
-    def run(self) -> None:
-        """Poll only committed request files; process termination leaves Docker jobs detached."""
-        while not self.shutdown.is_set():
-            for name in self.files.names("control/requests"):
-                if self.shutdown.is_set():
-                    break
-                if re.fullmatch(r"[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.json", name) is None:
-                    continue
+    def poll(self, pool: ThreadPoolExecutor) -> None:
+        """Schedule at most one worker per job; a pull never acknowledges its own cancellation early."""
+        for job_id, future in tuple(self.active.items()):
+            if future.done():
+                del self.active[job_id]
                 try:
-                    request = Request.load(self.files.read(f"control/requests/{name}"), name)
-                    self.step(request)
+                    future.result()
                 except (OSError, ValueError) as error:
                     print(
-                        json.dumps(
-                            {
-                                "event": "request_rejected",
-                                "filename": name,
-                                "reason": str(error)[:512],
-                            }
-                        ),
+                        json.dumps({"event": "request_rejected", "job_id": job_id, "reason": str(error)[:512]}),
                         flush=True,
                     )
-            self.files.write("control/executor-metrics.json", self.metrics.snapshot())
-            self.shutdown.wait(self.settings.poll_seconds)
+        for name in self.files.names("control/requests"):
+            if self.shutdown.is_set():
+                break
+            if re.fullmatch(r"[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.json", name) is None:
+                continue
+            try:
+                request = Request.load(self.files.read(f"control/requests/{name}"), name)
+                if request.job_id not in self.active:
+                    self.active[request.job_id] = pool.submit(self.step, request)
+            except (OSError, ValueError) as error:
+                print(
+                    json.dumps({"event": "request_rejected", "filename": name, "reason": str(error)[:512]}), flush=True
+                )
+        snapshot = self.metrics.snapshot()
+        snapshot["active_workers"] = sum(not future.done() for future in self.active.values())
+        self.files.write("control/executor-metrics.json", snapshot)
+
+    def run(self) -> None:
+        """Poll concurrently; detached Docker jobs survive service termination and replacement."""
+        with ThreadPoolExecutor(max_workers=self.settings.workers, thread_name_prefix="job") as pool:
+            while not self.shutdown.is_set():
+                self.poll(pool)
+                self.shutdown.wait(self.settings.poll_seconds)
 
 
 def main() -> None:
@@ -842,6 +871,7 @@ def main() -> None:
         cpus=float(os.environ.get("EXECUTOR_CPUS", "1")),
         pids=int(os.environ.get("EXECUTOR_PIDS_LIMIT", "128")),
         poll_seconds=float(os.environ.get("EXECUTOR_POLL_SECONDS", "2")),
+        workers=int(os.environ.get("EXECUTOR_WORKERS", "32")),
     )
     if (
         settings.uid < 1
@@ -851,6 +881,7 @@ def main() -> None:
         or settings.pids < 1
         or settings.poll_seconds <= 0
         or not math.isfinite(settings.poll_seconds)
+        or not 5 <= settings.workers <= 256
     ):
         parser.error("Require non-root UID/GID and positive CPU, PID and polling settings")
     executor = Executor(settings)

@@ -3,14 +3,29 @@
 import json
 import os
 import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import override
+from uuid import uuid4
 
 import pytest
 from validator.records import JobStatus
 
-from .executor import Docker, DockerError, Executor, Files, ProtocolError, Request, Settings, encode, now, parse
+from .executor import (
+    Docker,
+    DockerError,
+    Executor,
+    Files,
+    ProtocolError,
+    Request,
+    Settings,
+    encode,
+    now,
+    object_value,
+    parse,
+)
 
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
 
@@ -179,3 +194,237 @@ def test_strict_json() -> None:
         parse('{"key":NaN}')
     with pytest.raises(json.JSONDecodeError):
         parse('{"key":')
+
+
+def cancel(executor: Executor, request: Request) -> None:
+    executor.files.write(
+        f"control/stops/{request.job_id}.json",
+        {**request.identity(), "requested_at": now(), "reason": "operator"},
+        immutable=True,
+    )
+
+
+@pytest.mark.parametrize("phase", ["reserved", "created", "expired"])
+def test_cancel_before_execution_is_permanent(executor: Executor, job_request: Request, phase: str) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    if phase == "created":
+        executor.step(job_request)
+    if phase == "expired":
+        record = {
+            **job_request.record,
+            "created_at": (datetime.now(UTC) - timedelta(minutes=2)).isoformat(),
+            "deadline": (datetime.now(UTC) - timedelta(minutes=1)).isoformat(),
+        }
+        job_request = Request.load(record, job_request.job_id + ".json")
+    else:
+        cancel(executor, job_request)
+    executor.step(job_request)
+    terminal = status(executor, job_request)
+    assert terminal.confirmed_stopped and terminal.execution == "never_started"
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    assert status(replacement, job_request) == terminal and daemon.started == 0
+
+
+@pytest.mark.parametrize("phase", ["created", "running", "exited"])
+def test_restart_reconciles_actual_execution_without_replacement(
+    executor: Executor, job_request: Request, phase: str
+) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    executor.step(job_request)
+    if phase != "created":
+        executor.step(job_request)
+    if phase == "exited":
+        daemon.finish()
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    replacement.step(job_request)
+    assert daemon.created == daemon.started == 1
+    assert status(replacement, job_request).execution == ("exited" if phase == "exited" else "running")
+
+
+def test_ambiguous_start_cannot_acknowledge_cancel_or_retry(executor: Executor, job_request: Request) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    executor.step(job_request)
+    executor.save_ledger(job_request, {"phase": "start_attempted", "container_id": "a" * 64, "closed": False})
+    cancel(executor, job_request)
+    executor.step(job_request)
+    observed = status(executor, job_request)
+    assert observed.execution == "unresolved" and observed.startup_forbidden
+    assert not observed.confirmed_stopped and daemon.started == 0
+
+
+def test_same_name_with_replacement_id_is_unresolved(executor: Executor, job_request: Request) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    executor.step(job_request)
+    daemon.container = {"Id": "b" * 64, "State": {"Status": "created", "Running": False}}
+    executor.step(job_request)
+    assert not status(executor, job_request).confirmed_stopped
+    assert daemon.started == 0 and daemon.created == 1
+
+
+class HangingDocker(FakeDocker):
+    """TERM-resistant fixture whose KILL produces independently inspected evidence."""
+
+    def __init__(self, executor: Executor):
+        super().__init__(executor)
+        self.signals: list[str] = []
+
+    @override
+    def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[0] == "kill":
+            self.signals.append(args[2])
+            if args[2] == "KILL":
+                self.finish()
+                assert self.container is not None
+                object_value(self.container["State"])["ExitCode"] = 137
+        return super().call(*args, timeout=timeout)
+
+
+def test_grace_survives_restart_and_force_stop_requires_inspection(executor: Executor, job_request: Request) -> None:
+    daemon = HangingDocker(executor)
+    executor.docker = daemon
+    executor.step(job_request)
+    executor.step(job_request)
+    cancel(executor, job_request)
+    executor.step(job_request)
+    assert daemon.signals == ["TERM"] and not status(executor, job_request).confirmed_stopped
+    ledger = executor.files.read(f"control/executor/{job_request.job_id}.json")
+    ledger["stop_by"] = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
+    executor.save_ledger(job_request, ledger)
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    terminal = status(replacement, job_request)
+    assert daemon.signals == ["TERM", "KILL"]
+    assert terminal.confirmed_stopped and terminal.forced and terminal.exit_code == 137
+    assert not terminal.application_succeeded
+
+
+class SlowPullDocker(FakeDocker):
+    """A pull held in flight until the test explicitly releases its worker."""
+
+    def __init__(self, executor: Executor):
+        super().__init__(executor)
+        self.pulling = threading.Event()
+        self.release = threading.Event()
+
+    @override
+    def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[0] == "pull":
+            self.pulling.set()
+            if not self.release.wait(10):
+                raise TimeoutError("Fixture pull was not released")
+        return super().call(*args, timeout=timeout)
+
+
+def test_pending_pull_has_no_early_cancellation_ack(executor: Executor, job_request: Request) -> None:
+    daemon = SlowPullDocker(executor)
+    executor.docker = daemon
+    executor.files.write(f"control/requests/{job_request.job_id}.json", job_request.record, immutable=True)
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        executor.poll(pool)
+        assert daemon.pulling.wait(2)
+        cancel(executor, job_request)
+        for _ in range(3):
+            executor.poll(pool)
+        assert not status(executor, job_request).confirmed_stopped
+        assert len(executor.active) == 1
+        daemon.release.set()
+        executor.active[job_request.job_id].result(timeout=2)
+    assert status(executor, job_request).confirmed_stopped and daemon.created == 0
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    assert daemon.started == 0 and daemon.created == 0
+
+
+def test_slow_pull_does_not_block_other_cancelled_jobs(executor: Executor, job_request: Request) -> None:
+    daemon = SlowPullDocker(executor)
+    executor.docker = daemon
+    executor.files.write(f"control/requests/{job_request.job_id}.json", job_request.record)
+    others: list[Request] = []
+    for _ in range(4):
+        job_id = str(uuid4())
+        record = {**job_request.record, "job_id": job_id, "factory_job_id": job_id}
+        request = Request.load(record, job_id + ".json")
+        executor.files.write(f"control/requests/{job_id}.json", record)
+        cancel(executor, request)
+        others.append(request)
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        executor.poll(pool)
+        assert daemon.pulling.wait(2)
+        for request in others:
+            executor.active[request.job_id].result(timeout=2)
+            assert status(executor, request).confirmed_stopped
+        assert not executor.active[job_request.job_id].done()
+        daemon.release.set()
+        executor.active[job_request.job_id].result(timeout=2)
+    assert daemon.created == 1
+
+
+def test_future_request_cannot_start_early(executor: Executor, job_request: Request) -> None:
+    record = {**job_request.record, "created_at": (datetime.now(UTC) + timedelta(minutes=1)).isoformat()}
+    request = Request.load(record, job_request.job_id + ".json")
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    executor.step(request)
+    assert status(executor, request).state == "pending" and daemon.created == 0
+
+
+class SlowCreateDocker(FakeDocker):
+    """A daemon may create the container before a CLI response reaches its caller."""
+
+    def __init__(self, executor: Executor):
+        super().__init__(executor)
+        self.creating = threading.Event()
+        self.release = threading.Event()
+
+    @override
+    def create(self, request: Request) -> str:
+        identifier = super().create(request)
+        self.creating.set()
+        if not self.release.wait(10):
+            raise TimeoutError("Fixture create was not released")
+        return identifier
+
+
+def test_cancel_during_create_never_acknowledges_outstanding_startup(executor: Executor, job_request: Request) -> None:
+    daemon = SlowCreateDocker(executor)
+    executor.docker = daemon
+    executor.files.write(f"control/requests/{job_request.job_id}.json", job_request.record)
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        executor.poll(pool)
+        assert daemon.creating.wait(2)
+        cancel(executor, job_request)
+        executor.poll(pool)
+        assert not status(executor, job_request).confirmed_stopped
+        daemon.release.set()
+        executor.active[job_request.job_id].result(timeout=2)
+    executor.step(job_request)
+    terminal = status(executor, job_request)
+    assert terminal.confirmed_stopped and terminal.execution == "never_started"
+    assert daemon.started == 0 and daemon.created == 1
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    assert status(replacement, job_request) == terminal and daemon.started == 0
+
+
+def test_zero_grace_still_sends_term_before_kill(executor: Executor, job_request: Request) -> None:
+    job_request = Request.load({**job_request.record, "stop_grace_seconds": 0}, job_request.job_id + ".json")
+    daemon = HangingDocker(executor)
+    executor.docker = daemon
+    executor.step(job_request)
+    executor.step(job_request)
+    cancel(executor, job_request)
+    executor.step(job_request)
+    assert daemon.signals == ["TERM"] and not status(executor, job_request).confirmed_stopped
+    executor.step(job_request)
+    assert daemon.signals == ["TERM", "KILL"] and status(executor, job_request).confirmed_stopped
