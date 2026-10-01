@@ -1,0 +1,212 @@
+{
+  "checked_at": "2026-10-01T21:49:22.172087+00:00",
+  "image_id": "sha256:3fcb66506d1c82e32e7dd1dfe1414b01b3c7ff3886f0ab58c26c4a4e6fc32de7",
+  "probe_container_id": "599042acf4b6f87c7fd1cd98a9e08c3da7e7d8efa1658c49d0f140ab11f9cacd",
+  "validator_restarted_during_generation": true,
+  "nexus_runtime": {
+    "protocol_version": 1,
+    "round_id": "84740c07-fde6-49aa-938b-2935572e03f3",
+    "runtime_actor_ids": [
+      "Actor-internal-subnet-clock-0",
+      "Actor-factory-horde-chain-observer-1",
+      "Actor-factory-horde-errors-sink-2",
+      "Actor-factory-horde-observed-sink-3",
+      "Actor-factory-horde-file-poll-clock-4",
+      "Actor-factory-horde-judge-files-5",
+      "Actor-factory-horde-factory-files-6",
+      "Actor-factory-horde-factory-task-result-dispatcher-7",
+      "Actor-factory-horde-task-successes-sink-8",
+      "Actor-factory-horde-task-failures-sink-9",
+      "Actor-factory-horde-task-outputs-sink-10",
+      "Actor-factory-horde-factory-error-mux-11",
+      "Actor-factory-horde-factory-payload-12",
+      "Actor-factory-horde-factory-router-13",
+      "Actor-factory-horde-factory-result-14",
+      "Actor-factory-horde-factory-task-result-preparer-15",
+      "Actor-factory-horde-factory-successful-task-result-storer-16",
+      "Actor-factory-horde-factory-executor-failure-task-result-storer-17",
+      "Actor-factory-horde-factory-retry-18",
+      "Actor-factory-horde-evaluation-task-result-dispatcher-19",
+      "Actor-factory-horde-evaluation-error-mux-20",
+      "Actor-factory-horde-evaluation-payload-21",
+      "Actor-factory-horde-evaluation-router-22",
+      "Actor-factory-horde-evaluation-result-23",
+      "Actor-factory-horde-evaluation-task-result-preparer-24",
+      "Actor-factory-horde-evaluation-successful-task-result-storer-25",
+      "Actor-factory-horde-evaluation-executor-failure-task-result-storer-26",
+      "Actor-factory-horde-evaluation-retry-27",
+      "Actor-fixture-factory-requests-28",
+      "Actor-fixture-judge-requests-29",
+      "Actor-factory-horde-factory-timestamper-30",
+      "Actor-factory-horde-evaluation-timestamper-31"
+    ],
+    "task_result_ids": [
+      "075d8972-fc31-5f0c-8512-c46ae37c5e53",
+      "15b3f8d5-6d80-5a46-b947-8067a5fb2021",
+      "36f75dc1-199d-512e-a39d-eb52ca931346",
+      "90b76368-e06e-5424-9f66-e1c53346dcc0",
+      "a4abb80c-be05-5a99-b686-e7e6f0108952",
+      "a5349294-75fe-54c0-b8e6-3515ae925a1a",
+      "d30fd00b-628b-5479-8e09-47a642977e71",
+      "dfa6e761-81d5-57b0-b6ea-3e9ea5fa9b98",
+      "ee96d664-e244-5e0e-9148-09cabb80aec9",
+      "f966e13a-db5a-5ccc-a8df-bd84a1445de4",
+      "fc036aef-567e-5004-b51c-718bf5c02d2d"
+    ],
+    "block_clocks_ready": 2,
+    "pending_contexts": [
+      0,
+      0
+    ]
+  },
+  "round_id": "84740c07-fde6-49aa-938b-2935572e03f3",
+  "deadlines": {
+    "protocol_version": 1,
+    "start": "2026-10-01T21:46:41.857230Z",
+    "generation_end": "2026-10-01T21:48:21.857230Z",
+    "evaluation_start": "2026-10-01T21:48:26.857230Z",
+    "judge_end": "2026-10-01T21:49:11.857230Z",
+    "round_end": "2026-10-01T21:49:21.857230Z"
+  },
+  "jobs": [
+    {
+      "result_id": "90b76368-e06e-5424-9f66-e1c53346dcc0",
+      "processing_started": "2026-10-01T21:46:46.731430Z",
+      "processing_finished": "2026-10-01T21:47:47.208622Z",
+      "job_id": "7b95f779-2205-4dfd-bf00-2e2170fa0c95",
+      "kind": "factory",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "container_id": "a367038eeddd0a0a25b104a697b6ab8748ba4e30fd0c40afb0953803d91689ec",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "f966e13a-db5a-5ccc-a8df-bd84a1445de4",
+      "processing_started": "2026-10-01T21:48:30.240631Z",
+      "processing_finished": "2026-10-01T21:48:30.478124Z",
+      "job_id": "b0460a14-9d73-40e7-8935-ac5c7f5e7bf3",
+      "kind": "judge",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "container_id": "334e6ee76df5c099a7d4466ca906d3123763bbf35745f6dcd2e2b5679248f5a3",
+      "exit_code": 0,
+      "score": 0.9678262468853756
+    },
+    {
+      "result_id": "ee96d664-e244-5e0e-9148-09cabb80aec9",
+      "processing_started": "2026-10-01T21:46:46.680861Z",
+      "processing_finished": "2026-10-01T21:47:47.209798Z",
+      "job_id": "a1d28f94-6a32-423a-9ceb-9e272bc32c96",
+      "kind": "factory",
+      "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "container_id": "1b15631357a4e92f05bc79bb8987f313d55fd2fc9184d5a84bdc916c2964d94a",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "dfa6e761-81d5-57b0-b6ea-3e9ea5fa9b98",
+      "processing_started": "2026-10-01T21:48:30.243246Z",
+      "processing_finished": "2026-10-01T21:48:30.495425Z",
+      "job_id": "496393b7-198f-4c2f-830f-d09574c0ac10",
+      "kind": "judge",
+      "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "container_id": "67d86b6bd3fa2a57c55967692ba8413ed042855e99d1f5820944b09c94dfa304",
+      "exit_code": 0,
+      "score": 0.6930737152691993
+    },
+    {
+      "result_id": "a5349294-75fe-54c0-b8e6-3515ae925a1a",
+      "processing_started": "2026-10-01T21:46:44.716393Z",
+      "processing_finished": "2026-10-01T21:47:45.286066Z",
+      "job_id": "f11d5b6d-8f95-4f43-b2b7-88549b5c7f9c",
+      "kind": "factory",
+      "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "container_id": "29f22ced285a0fb4f2d78688950b78d7125218c9d396fce59e6b19e77870ce1e",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "36f75dc1-199d-512e-a39d-eb52ca931346",
+      "processing_started": "2026-10-01T21:48:30.222757Z",
+      "processing_finished": "2026-10-01T21:48:30.475140Z",
+      "job_id": "f26ee4c1-ce13-4c23-bd97-976169b759c9",
+      "kind": "judge",
+      "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "container_id": "64d892f9b7aeadf0917a29354b0914306b60ff28be4759fc134defe28c2b2117",
+      "exit_code": 0,
+      "score": 0.4546280078911453
+    },
+    {
+      "result_id": "15b3f8d5-6d80-5a46-b947-8067a5fb2021",
+      "processing_started": "2026-10-01T21:46:46.717859Z",
+      "processing_finished": "2026-10-01T21:47:47.246624Z",
+      "job_id": "bc8c7cf5-a121-40cf-9808-c4391cb4055d",
+      "kind": "factory",
+      "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "container_id": "262566acbe598fee83cdf45a93a67895b46c8919be65cab125ea51dfbacfa38f",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "fc036aef-567e-5004-b51c-718bf5c02d2d",
+      "processing_started": "2026-10-01T21:48:30.231375Z",
+      "processing_finished": "2026-10-01T21:48:30.479286Z",
+      "job_id": "8fc7d5d2-b113-4675-b694-4c6bf2313173",
+      "kind": "judge",
+      "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "container_id": "7b46de1a70dbe6d813fbe116f1e74a69927f4dce2995b8855ea2004fbc16a3bb",
+      "exit_code": 0,
+      "score": 0.8741789583706165
+    },
+    {
+      "result_id": "d30fd00b-628b-5479-8e09-47a642977e71",
+      "processing_started": "2026-10-01T21:46:46.727657Z",
+      "processing_finished": "2026-10-01T21:47:47.290610Z",
+      "job_id": "5b5666a1-3a10-44e4-a5ef-9e105541b86e",
+      "kind": "factory",
+      "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "container_id": "cddefd586c6e717d24f74a214df70b8daf72cab91b8ef5ec92a26ac766497cea",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "a4abb80c-be05-5a99-b686-e7e6f0108952",
+      "processing_started": "2026-10-01T21:48:30.194663Z",
+      "processing_finished": "2026-10-01T21:48:30.414719Z",
+      "job_id": "9efc7434-aea0-4462-a549-cb5e11e404cb",
+      "kind": "judge",
+      "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "container_id": "15ee40b5baeb39782e918fb90ea83505b725033f07173b060f88f5d03a28809a",
+      "exit_code": 0,
+      "score": 0.7373377861322392
+    }
+  ],
+  "failed_pull": {
+    "job_id": "1e7b158f-8c34-4dcc-8881-bf33f1c93491",
+    "result_id": "075d8972-fc31-5f0c-8512-c46ae37c5e53",
+    "failure": "Image pull failed: Error response from daemon: failed to resolve reference \"ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:0000000000000000000000000000000000000000000000000000000000000000\": ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:0000000000000000000000000000000000000000000000000000000000000000: not found"
+  },
+  "checks": [
+    "five factories outstanding concurrently",
+    "same factory container IDs after validator restart",
+    "separate judges after evaluation boundary and confirmed factory exit",
+    "both task timestamper clocks discovered",
+    "ten successful and one failed Nexus task results persisted",
+    "exact Docker mounts, commands, resource limits and user inspected"
+  ],
+  "qa": {
+    "validator_tests_passed": 106,
+    "unchanged_image_tests_skipped": 9,
+    "ruff": "passed",
+    "basedpyright": "0 errors, 0 warnings, 0 notes"
+  }
+}

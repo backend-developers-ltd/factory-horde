@@ -12,7 +12,13 @@ publication. Host factory/judge execution and recovery are verified. The result
 repository validates confirmed clean factory/judge termination and linked reports,
 then persists an immutable decision and score. Its public Nexus store/provider
 keeps original result IDs, Docker times and completion-block metadata across replay.
-Application task wiring remains task 10.
+The factory and evaluation Nexus tasks share this provider and use separate instances
+of a nonblocking file communicator. Input publishes or reobserves a frozen request;
+poll ticks deliver results on the original context. Five consecutive file errors
+emit an explicit framework error; unconfirmed jobs remain pending. A new context
+can resubscribe to the same durable job without executing it again. Both tasks use
+one attempt, distinct node IDs and Nexus-installed block clocks. Automatic round
+input is implemented in task 11.
 
 A successful score of zero is eligible; failed, forced, nonzero, malformed or
 unconfirmed outcomes carry no accepted score. Missing final reports become retained

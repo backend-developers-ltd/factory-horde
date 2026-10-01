@@ -21,8 +21,10 @@ implemented record/publication layer, and the [working design](subnet_design.md)
 implementation shape and defaults. The validator now observes the local chain
 through Nexus/Pylon with dispatch disabled. The [miner submitter](miner/README.md)
 and frozen commitment discovery are implemented and verified on localnet. Accepted scores
-and the public Nexus result-store adapter now persist/recover existing execution evidence.
-The application task graph and round coordinator are next. The public installer is still scaffold code
+and the public Nexus result-store adapter persist/recover existing execution evidence.
+Two Nexus tasks now publish factory/judge requests and poll durable results without
+waiting for containers. A five-miner containerized check verifies both tasks across a
+validator restart. Automatic round coordination is next. The public installer is still scaffold code
 pending its implementation task.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,

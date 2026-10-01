@@ -147,6 +147,16 @@ scores: use `AcceptedResult.miner_hotkey`, not Nexus routed-neuron count helpers
 Counters and latency histograms use `factory_horde_result_operations_total` and
 `factory_horde_result_operation_seconds` with bounded operation/outcome labels.
 
+The two public Nexus tasks share this store/provider and use one file communicator
+implementation, with distinct node IDs and a one-attempt task policy. Input handlers
+authorize/publish frozen requests and return; an actor-owned wall-clock producer
+feeds independent poll sinks. Terminal outcomes are correlated to the original
+request context. Only an actual block beat permits first acceptance. Five consecutive
+file-observation failures end that runtime subscription with an explicit framework
+error; they do not declare execution stopped or authorize another run. A fresh
+context can reobserve the same business job. Metrics use
+`factory_horde_file_transport_total` and `factory_horde_file_transport_seconds`.
+
 ## Atomicity, concurrency and recovery
 
 Writers use a uniquely named same-directory `.tmp` file, flush and fsync its content,

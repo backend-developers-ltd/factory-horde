@@ -154,8 +154,26 @@ This reads the existing Docker statuses/report and a current Pylon block, accept
 the original score, saves both Nexus projections and rebuilds them using a fresh
 store. It checks unchanged requests, report, stable IDs and original execution
 times across fresh contexts. It creates no execution requests or containers.
-Evidence is written to `state/task9-results.json`; the application task graph remains
-disabled until task 10.
+Evidence is written to `state/task9-results.json`.
+
+## Exercise both Nexus tasks
+
+With the current validator image built, the executor active, five baseline
+commitments and the retained task-7 failed-pull fixture:
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_tasks
+```
+
+This approximately three-minute check freezes a new five-miner plan and runs the
+application's actual Nexus tasks in a container created by the common Compose
+service. It restarts that validator while all five factories run, verifies unchanged
+Docker identities, waits for evaluation before launching separate judges, and
+checks five accepted scores plus the retained failed-pull result. The probe also
+verifies automatic discovery of both task block clocks. Fixture actors supply the
+fixed plan; automatic round coordination remains task 11. Runtime artifacts stay
+under `state/`, with a public summary in
+[task10-tasks.json](../spec/evidence/task10-tasks.json).
 
 ## Monitoring
 

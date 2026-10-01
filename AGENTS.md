@@ -35,12 +35,14 @@ There is **no** top-level Python project and **no** uv workspace. Run `uv sync` 
 before working on it. There is no global `uv run` from the repo root.
 
 See `localnet/README.md` for the common Compose services and isolated bootstrap. Validator dispatch is
-disabled until the application task graph exists. The host systemd executor is implemented;
+disabled until the round coordinator exists. The host systemd executor is implemented;
 `installer/install-executor.sh` installs its standalone file and unit. Concurrent dispatch, permanent
 cancellation and Docker reconciliation have focused unit and real systemd fault checks. Development tests
 live beside it but are not deployed. `result_repository.py` owns immutable execution decisions
 and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
-The task graph is wired in task 10.
+`tasks.py` wires distinct factory/evaluation Nexus tasks with the shared provider;
+`file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
+Automatic round admission and stage transitions arrive in task 11.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

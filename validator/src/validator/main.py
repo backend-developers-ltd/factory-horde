@@ -1,4 +1,4 @@
-"""FactoryHorde validator startup: chain observation, with dispatch disabled until task wiring."""
+"""FactoryHorde chain observation and file tasks; automatic rounds await the coordinator."""
 
 from __future__ import annotations
 
@@ -26,6 +26,9 @@ from validator.chain_observer import ChainObservation, ChainObserverNode
 from validator.logging_config import LoggingSettings, configure_logging
 from validator.otel import OtelSettings, setup_otel
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
+from validator.result_repository import ResultRepository
+from validator.round_repository import RoundRepository
+from validator.tasks import FileTasks
 
 
 class Settings(PylonClientSettingsMixin, BaseSettings):
@@ -46,7 +49,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
 
 
 class Validator(NexusValidator):
-    """Containerized Nexus runtime observing Pylon's chain clock without creating jobs."""
+    """Containerized Nexus runtime with two file tasks and no automatic round input yet."""
 
     def __init__(self, settings: Settings) -> None:
         super().__init__(settings)
@@ -56,6 +59,9 @@ class Validator(NexusValidator):
         self.connect(self.subnet_clock.source, observer.sink)
         self.connect(observer.error, errors.sink)
         self.connect(observer.ok, observed.sink)
+        self.results = ResultRepository(RoundRepository(settings.data_root))
+        self.tasks = FileTasks(self.results)
+        self.tasks.connect(self, errors)
 
 
 def _setup_sentry() -> None:
