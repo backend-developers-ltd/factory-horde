@@ -1,0 +1,29 @@
+# FactoryHorde Validator
+
+Validator node for the FactoryHorde Bittensor subnet.
+
+## What this is
+
+A `docker compose` stack whose core containers are:
+
+- **pylon** — sidecar that proxies all Bittensor / subtensor communication for the
+  validator (handles wallet, weight setting, metagraph reads).
+- **validator** — the FactoryHorde validator process built from this repo.
+- **alloy** — Grafana Alloy sidecar that collects the validator's OpenTelemetry traces and forwards
+  them to the configured OTLP upstream — the observability proxy or a Tempo backend.
+
+alongside a Prometheus-based metrics stack (see [`installer/README.md`](../installer/README.md)).
+
+## Observability
+
+The validator ships structured JSON logs (`structlog`) and OpenTelemetry traces. The traces
+upstream is configured via `TRACES_UPSTREAM_URL` / `TRACES_UPSTREAM_USER` / `TRACES_UPSTREAM_PASSWORD`.
+
+## Running a validator
+
+See [`installer/README.md`](../installer/README.md) for installation, configuration,
+updates and prerequisites.
+
+## More
+
+- Repository root `README.md` — what FactoryHorde is and how the subnet works.
