@@ -191,4 +191,4 @@ tested. Take great care to avoid drift between these files.
 
 ---
 
-Note: Keep AGENTS.md, CLAUDE.md and .cursorrules identical; these are tracked copies, not symlinks.
+`AGENTS.md` is the repository's sole agent instruction file.
