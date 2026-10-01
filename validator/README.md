@@ -8,7 +8,19 @@ readiness. Dispatch remains disabled, and enabling it currently fails configurat
 The pinned Nexus `mechanism-id` revision, Pylon versions and verified API checks are
 documented in [dependency selection](../spec/dependency-selection.md).
 The [file protocol](../spec/file-protocol.md) supplies typed records and atomic
-publication. Factory execution and application task wiring remain later tasks.
+publication. Host factory/judge execution and recovery are verified. The result
+repository validates confirmed clean factory/judge termination and linked reports,
+then persists an immutable decision and score. Its public Nexus store/provider
+keeps original result IDs, Docker times and completion-block metadata across replay.
+Application task wiring remains task 10.
+
+A successful score of zero is eligible; failed, forced, nonzero, malformed or
+unconfirmed outcomes carry no accepted score. Missing final reports become retained
+failures. Accepted decisions survive loss of their raw report without redrawing a
+score. Nexus routing targets are observation metadata; miner attribution comes from
+the frozen business request. Future weighing must read accepted hotkeys, not the
+router-based count helpers. Queries use the latest completed round with scores,
+independently of epoch ranges used for framework queries.
 
 Use the [localnet guide](../localnet/README.md) to build the validator, bootstrap
 isolated identities and start the application. The common Compose file still has

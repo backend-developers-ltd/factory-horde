@@ -142,6 +142,21 @@ force a rerun. The check removes its wrapper override and stops/disables only th
 acceptance service. Normal localnet services keep running. Public results are in
 [task8-recovery.json](../spec/evidence/task8-recovery.json).
 
+## Recover accepted results from the real pair
+
+After `localnet.check_executor` has retained a successful factory/judge pair:
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_results
+```
+
+This reads the existing Docker statuses/report and a current Pylon block, accepts
+the original score, saves both Nexus projections and rebuilds them using a fresh
+store. It checks unchanged requests, report, stable IDs and original execution
+times across fresh contexts. It creates no execution requests or containers.
+Evidence is written to `state/task9-results.json`; the application task graph remains
+disabled until task 10.
+
 ## Monitoring
 
 Pylon listens on loopback port 8000, Subtensor on 9944 and Prometheus on 9090.

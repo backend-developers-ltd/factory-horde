@@ -20,7 +20,9 @@ records completion; the [file protocol](spec/file-protocol.md) documents the
 implemented record/publication layer, and the [working design](subnet_design.md) records the selected
 implementation shape and defaults. The validator now observes the local chain
 through Nexus/Pylon with dispatch disabled. The [miner submitter](miner/README.md)
-and frozen commitment discovery are implemented and verified on localnet. The public installer is still scaffold code
+and frozen commitment discovery are implemented and verified on localnet. Accepted scores
+and the public Nexus result-store adapter now persist/recover existing execution evidence.
+The application task graph and round coordinator are next. The public installer is still scaffold code
 pending its implementation task.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,

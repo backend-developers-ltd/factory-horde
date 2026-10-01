@@ -5,7 +5,7 @@ Implemented validator types are in `validator/records.py`, with atomic I/O in
 The standalone executor implements the same wire contract without importing those modules.
 Concurrent cancellation and fault-recovery evidence are recorded under task 8. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
 This contract defines records and publication. Docker observations are implemented;
-automated stage scheduling and report acceptance remain later tasks.
+report acceptance is implemented; automated task/stage scheduling remains later work.
 
 ## Roots, identity and ownership
 
@@ -26,6 +26,7 @@ control/
   executor/service.lock          # host process lock for this root
   executor/docker-config/        # deliberately empty anonymous registry configuration
   executor-metrics.json          # atomic process heartbeat/counters/latency buckets
+  projections/<result-id>.json   # immutable Nexus routing metadata and business-result pointer
 rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
   specification.md
@@ -33,7 +34,8 @@ rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
     input/{specification.md,task.json}
     output/{main.py,README.md}
     evaluation/report.json
-    result.json                   # accepted score, implemented by task 9
+    factory-result.json           # immutable factory JobResult
+    result.json                   # immutable judge JobResult, containing AcceptedResult on success
 ```
 
 Use UTC ISO-8601 timestamps and UUID4 round/job IDs. A round has two reserved IDs
@@ -106,11 +108,44 @@ verify an assertion against Docker. Tasks 7–8 supply actual execution evidence
 Reports link the precise judge, factory, miner and round. A successful report has
 exactly the expected file checks and one finite score in `[0,1]`, including zero;
 a failed report has a reason and no score. Parsing a report is not acceptance:
-task 9 additionally checks confirmed clean judge termination and factory eligibility.
+`ResultRepository.finalize` additionally checks confirmed clean factory and judge
+termination, complete attribution and execution ordering.
 Accepted metadata uses a deterministic UUID5 of `factory-horde:v1:<kind>:<job-id>`
 under the standard URL namespace, plus the original completion block/times and
 SHA-256 of the report's canonical JSON encoding. Fresh framework contexts do not
 produce a new execution or result identity.
+
+## Accepted decisions and Nexus projections
+
+`JobResult` in `result_records.py` is the atomically published business outcome.
+It contains the complete immutable request, terminal executor status, original
+Docker start/finish times (observation time for never-started jobs), first acceptance
+block number/hash/timestamp, stable result ID and either a failure or an accepted
+judge score. The existing `AcceptedResult` schema is embedded in the successful
+judge decision. This is the only persisted copy of the score. The entire decision
+publishes in one operation; score and outcome cannot become partially committed.
+
+Unconfirmed execution raises `ResultNotReady`; it is never finalized as stopped.
+After confirmed clean judge termination, a missing, malformed or misattributed report
+becomes an immutable failed evaluation. A report arriving later does not turn that
+failure into a new run or score. Once accepted, a decision is reused even if raw
+reports/statuses are later lost. Publication conflicts fail and preserve the original.
+
+`FileTaskResultStore` implements the public Nexus store/provider contracts with fixed
+task names `factory-horde-factory` and `factory-horde-evaluation`. Projections contain
+only routing metadata and the canonical result path. They are written after the
+business decision; a failed projection save can be retried without accepting again.
+Fresh framework times/blocks/contexts never overwrite the original decision.
+A process restart rebuilds by-ID and ordered block indexes from these references.
+Epoch queries use inclusive original completion-block ranges. Returned mutable
+Pylon routing models are copied to preserve thread-safe cached observations.
+
+`latest_usable_round` reads completed rounds and skips empty ones, including when
+other jobs remain unresolved. This query supplies score history; it does not grant
+permission to start another round. Synthetic routing identities never attribute
+scores: use `AcceptedResult.miner_hotkey`, not Nexus routed-neuron count helpers.
+Counters and latency histograms use `factory_horde_result_operations_total` and
+`factory_horde_result_operation_seconds` with bounded operation/outcome labels.
 
 ## Atomicity, concurrency and recovery
 

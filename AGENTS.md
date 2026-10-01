@@ -38,7 +38,9 @@ See `localnet/README.md` for the common Compose services and isolated bootstrap.
 disabled until the application task graph exists. The host systemd executor is implemented;
 `installer/install-executor.sh` installs its standalone file and unit. Concurrent dispatch, permanent
 cancellation and Docker reconciliation have focused unit and real systemd fault checks. Development tests
-live beside it but are not deployed.
+live beside it but are not deployed. `result_repository.py` owns immutable execution decisions
+and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
+The task graph is wired in task 10.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.
