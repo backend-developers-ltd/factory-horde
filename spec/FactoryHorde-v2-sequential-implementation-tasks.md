@@ -1,6 +1,6 @@
 # FactoryHorde V2 — sequential implementation tasks
 
-Date: 1 October 2026. Status: implementation plan; no implementation or runtime verification performed.
+Date: 1 October 2026. Status: implementation in progress. Task completion and verification notes are recorded below; unmarked tasks remain incomplete.
 
 ## Scope and provenance
 
@@ -32,7 +32,7 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 
 ## Phase A — ground the adaptation and select compatible dependencies
 
-### 1. Adapt the rendered scaffold and record the implementation shape
+### 1. [DONE] Adapt the rendered scaffold and record the implementation shape
 
 **Objective and scope.** Continue the already-rendered template workflow. Use V2 to write a concise `subnet_design.md` describing the submitted container commodity, intentionally meaningless random scoring, component ownership, actor graph, shared data contract and localnet-first acceptance. Record the chosen proposed defaults above and the concrete treatment of confirmed nonzero/forced-stop output eligibility without weakening V2's failure classifications. Keep this a working design note, not another full specification.
 
@@ -43,6 +43,8 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 **Deliverables.** Compact repository design note; updated root README/AGENTS project identity; a placement decision for the single executor file, judge, factory image assets, protocol fixtures and localnet scripts. Preserve independent `validator/` and `miner/` projects; avoid a new general platform package.
 
 **Completion.** Rendered-file checklist is satisfied without Copier. The design identifies two generic Nexus tasks, one file communicator implementation, one small persisted coordinator, and one shared-tree result adapter as project additions. No component is marked implemented merely because an example or interface exists. It distinguishes miner submitter, factory, judge and validator operator, and leaves no mainnet work in the prototype acceptance path.
+
+**Verified 1 October 2026.** Rendered checklist passed: no tracked `.jinja` files or root `copier.yml`; all six expected rendered files exist. Added `subnet_design.md` with component placement, stage/score/default choices and explicit clean-exit eligibility. Updated README and agent instructions to FactoryHorde identity. Runtime implementation and integrated acceptance remain pending. Validator `uv sync` succeeds with Python 3.14.6; task 2 will reconcile the installed dependency versions.
 
 ### 2. Consume the upstream compatibility and mechanism fixes — integration gate
 
@@ -282,6 +284,6 @@ Use this checklist to review the implementation after the corresponding tasks. I
 
 ## What remains unperformed and what can block execution
 
-Only this plan was written. The specifications and repositories were not modified. No environments were created, dependencies installed, runtime imports/tests/builds executed, containers/services started, registries written, wallets accessed or chain operations performed for this planning work.
+At planning time only this plan was written; no runtime work had been performed. Subsequent implementation evidence is recorded with each task above. An unmarked task is not complete, and a static source finding is not runtime acceptance evidence.
 
 The genuine integration dependencies are the exact compatible upstream fix releases/revisions (task 2), a capable prepared Linux/local-chain runtime (tasks 4/12), usable full-reference commitment limits and correct identity access (task 6), the verified Pi package/version/non-inference command (task 5), and actual filesystem/platform/systemd privileges (tasks 4/7/15). These are assigned verification work, not newly invented architecture or approval gates. No blocker prevents delivering this plan; none of these runtime prerequisites is claimed satisfied by static source inspection.

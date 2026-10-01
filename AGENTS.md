@@ -1,9 +1,15 @@
 # Context
 
-This project is a template for a Bittensor subnet project. It is meant as a starting point for new projects,
-containing the necessary knowledge and structure to quickly bootstrap a new subnet. As an agent, use this
-template and modify it as needed. Once you start developing it, update this notice to reflect what the actual
-project is about and keep its template origin as a short note.
+FactoryHorde is a localnet-first orchestration prototype for software factories submitted as immutable
+container images. A Nexus validator coordinates host Docker execution through shared files; a separate judge
+produces persistent random fixture scores. No inference, quality validation or public deployment is included.
+Origin: the Copier-rendered Nexus subnet template.
+
+Follow `spec/FactoryHorde-v2-sequential-implementation-tasks.md` in order and use `subnet_design.md` for the
+selected implementation shape. V2 overrides generic HTTP-miner, validator-only and host-tmux recipes. Mark a
+task `[DONE]` only when its required evidence exists, then commit it with a short title and no body. The
+repository is already rendered: do not rerun Copier. New component locations in the design are planned until
+their implementation tasks complete.
 
 ## Repository layout
 
@@ -11,32 +17,32 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 
 - `validator/` — Nexus-based subnet validator (own `pyproject.toml`, `uv.lock`, `.venv`); also holds the
   production `Dockerfile`
-- `miner/` — Bittensor subnet miner (own `pyproject.toml`, `uv.lock`, `.venv`)
+- `miner/` — submission tooling and baseline factory assets (own `pyproject.toml`, `uv.lock`, `.venv`);
+  the inherited HTTP example is replaced in task 6
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
-- `installer/` — Copier-templated validator installer scripts (`install.sh.jinja`,
-  `update_compose.sh.jinja`, `README.md.jinja`); rendered by `copier copy` when adapting the template
-- `envs/deployed/` — Copier-templated production `docker-compose.yml.jinja` (validator + pylon);
+- `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
+- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);
   the rendered repo is promoted on the `deploy-config-production` branch, with this compose file and the
   installer scripts as the operator-critical files
-- `.github/workflows/` — Copier-templated CI; `build-validator.yml.jinja` builds and pushes the validator
+- `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes the validator
   image to a registry on push to `deploy-build-*` branches
-- `copier.yml` — Copier question schema for adapting this template to a concrete subnet
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 
 There is **no** top-level Python project and **no** uv workspace. Run `uv sync` inside `validator/` or `miner/`
 before working on it. There is no global `uv run` from the repo root.
 
-Developer quickstart for the end-to-end dev environment (subtensor + pylon + validator + miner): see
-`localnet/README.md`.
+The inherited `localnet/README.md` is adapted in task 4 to the common application Compose stack and host
+systemd executor. Do not treat its current HTTP/tmux startup as FactoryHorde acceptance evidence.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.
 
 ## Adapting this repository to a new subnet
 
-This template has to be adapted to an actual project at some point. When starting out, refer to the
-knowledge/tasks.project-bootstrap.md file. It contains workflows for:
+Refer to `knowledge/tasks.project-bootstrap.md` for template workflows. The rendered-file checklist has
+passed, and V2 supplies the user-approved design scope. No new design-approval phase is required. The guide
+contains workflows for:
 
 - Bootstrapping the template
 - Designing the subnet
@@ -45,8 +51,8 @@ knowledge/tasks.project-bootstrap.md file. It contains workflows for:
 - Adapting this repository to a new subnet
 - Generally bootstrapping the project
 
-If your task involves any of these, or the task is not clear, but it appears we are not done with the adapting
-yet, adhere strictly to the workflow described in that file and get that done first.
+Use those workflows within V2's sequential tasks. Build an immutable candidate and verify isolated localnet;
+do not promote configuration to active operators, deploy to subnet 12 or change emissions for this prototype.
 
 # Knowledge base
 
@@ -107,14 +113,14 @@ Skip for higher level tasks that do not touch the code.
 
 ### Observability
 
-`envs/deployed/docker-compose.yml.jinja` ships a Prometheus-based metrics stack:
+`envs/deployed/docker-compose.yml` ships a Prometheus-based metrics stack:
 `cadvisor` (per-container metrics), `node-exporter` (host metrics), a local
 `prometheus` service (image `bittensor_prometheus`) that scrapes `cadvisor`,
 the host `node-exporter`, and Pylon's `/metrics` (using the Bearer token from
-`PYLON_METRICS_TOKEN`, generated by `installer/install.sh.jinja`), and a
+`PYLON_METRICS_TOKEN`, generated by `installer/install.sh`), and a
 `prometheus-proxy` sidecar that remote-writes to `https://prometheus.bactensor.io`.
 
-The template's validator does **not** expose a `/metrics` endpoint and ships no
+The inherited validator does **not** expose a `/metrics` endpoint and ships no
 project-specific metrics module — this is an intentional blank slate. When you
 extend the validator (new payload creators, scorers, nodes, weight setters),
 treat metrics as first-class and follow Nexus's own conventions: inspect the
@@ -124,20 +130,20 @@ metrics for its components (actors, engine...), and mirror that
 approach when adding observability to your validator. Every new subsystem
 should ship with at least one event counter and one latency histogram, named
 consistently with the Nexus patterns you find there. If you expose a validator
-`/metrics` endpoint, add it into `envs/deployed/docker-compose.yml.jinja`
-scrape targets and update `installer/README.md.jinja`.
+`/metrics` endpoint, add it into `envs/deployed/docker-compose.yml`
+scrape targets and update `installer/README.md`.
 
 #### Distributed tracing
 
-The validator emits OpenTelemetry traces, configured in `validator/src/validator/otel.py.jinja`
+The validator emits OpenTelemetry traces, configured in `validator/src/validator/otel.py`
 (rendered to `otel.py`) and wired in from `main()` right after `configure_logging`. Resource
 attributes **deliberately carry no operator hotkey** — the observability proxy adds it downstream;
 the structlog processors in `logging_config.py` stamp the same attributes onto every log line so logs
 and traces correlate.
 
-In deployment the validator exports to a `grafana/alloy` sidecar that tail-samples and forwards to an
-OTLP/HTTP upstream (`envs/deployed/alloy/config.alloy.jinja`). **`TRACES_UPSTREAM_*` are required by
-the sidecar** — Alloy crash-loops on startup without an endpoint and credentials. `update_compose.sh`
+The rendered `grafana/alloy` sidecar is commented out. If deliberately enabled, it tail-samples and forwards
+to an OTLP/HTTP upstream (`envs/deployed/alloy/config.alloy`). **`TRACES_UPSTREAM_*` are required by
+the enabled sidecar**; retain disabled tracing until valid settings are configured. `update_compose.sh`
 keeps both `docker-compose.yml` and `alloy/config.alloy` in sync on operator hosts.
 
 #### Structured logging
@@ -184,4 +190,4 @@ tested. Take great care to avoid drift between these files.
 
 ---
 
-Note: CLAUDE.md and .cursorrules both link to CLAUDE.md - they are all the same file. No need to re-read it.
+Note: Keep AGENTS.md, CLAUDE.md and .cursorrules identical; these are tracked copies, not symlinks.
