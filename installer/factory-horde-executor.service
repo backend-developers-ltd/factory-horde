@@ -1,0 +1,25 @@
+[Unit]
+Description=FactoryHorde host Docker executor
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+User=@EXECUTOR_USER@
+Group=@EXECUTOR_GROUP@
+SupplementaryGroups=docker
+UMask=0027
+WorkingDirectory=@INSTALL_ROOT@
+EnvironmentFile=@INSTALL_ROOT@/executor.env
+ExecStart=@EXECUTOR_PYTHON@ -I @INSTALL_ROOT@/executor.py --root @DATA_ROOT@
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=650
+KillMode=control-group
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@DATA_ROOT@
+
+[Install]
+WantedBy=multi-user.target

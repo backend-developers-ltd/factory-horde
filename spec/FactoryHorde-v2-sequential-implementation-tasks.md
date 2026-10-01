@@ -120,7 +120,7 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 
 ## Phase C — execute safely once and expose durable outcomes through Nexus
 
-### 7. Implement the single-file executor and prove a real factory-to-judge run
+### 7. [DONE] Implement the single-file executor and prove a real factory-to-judge run
 
 **Objective and scope.** Implement basic polling, request validation, digest pull, deterministic named/labeled Docker create/start, detached execution, observation and final status publication for both job kinds. Use Python standard-library code and Docker argument arrays, with operator-controlled platform/resource/user configuration and fixed commands/mounts. Add the initial installer/systemd wiring now so all execution checks use the intended service arrangement.
 
@@ -131,6 +131,8 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 **Deliverables.** One deployable Python executor file, service unit and installation command, a minimal test driver using the actual file protocol, and focused Docker integration checks. File requests are sufficient; no executor HTTP server, queue or database.
 
 **Completion — Linux.** The systemd executor consumes a real request, pulls/runs its exact digest, and records actual Docker exit evidence. It binds only that job's input read-only/output writable; a separate judge job binds specification/submission read-only/report writable. A real baseline-to-judge pair completes through files with distinct linked job IDs. Confirmed terminal records survive process restart; absent status or failed Docker inspection never means stopped. Containers have no automatic restart policy and are not removed before outcome recording. Failed pull has an explicit outcome and never falls back to another reference.
+
+**Verified 1 October 2026.** Installed the standalone Python executor as `factory-horde-localnet-executor` through the checked systemd unit. A real public-digest factory ran for 60.44 seconds and produced fresh greeting files; its separate judge exited cleanly with a linked random report. Docker inspection verified exact mounts, digest, fixed commands, numeric user and resource restrictions. Restart preserved container IDs, statuses and report. A missing GHCR manifest failed permanently with no container or fallback. Eleven focused executor tests and 64 validator tests pass (nine unchanged image checks skipped); Ruff, strict typing, shell syntax and the localnet health/identity/scrape checks pass. Subtensor thread-pool bounds fixed an observed cgroup exhaustion without replacing chain state. See [task7-executor.json](evidence/task7-executor.json). Concurrency and full race/crash acceptance remain task 8.
 
 ### 8. Add concurrent dispatch, permanent cancellation and executor reconciliation
 

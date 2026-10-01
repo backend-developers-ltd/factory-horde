@@ -5,7 +5,7 @@ the common validator, Pylon and monitoring services plus a local Subtensor overl
 Factory/judge source-build checks now run through `localnet/build-baselines.sh`.
 Public baseline images are available on GHCR; see [image evidence](../spec/evidence/task5-published-images.json).
 Containerized submissions and frozen discovery are implemented; the host systemd
-executor and complete rounds remain incomplete; successful startup alone is not V2 acceptance.
+executor now runs a real factory/judge pair. Automated complete rounds remain incomplete; successful startup alone is not V2 acceptance.
 
 ## Prerequisites
 
@@ -62,7 +62,10 @@ validator observation and both monitoring scrape targets, then writes public
 check results to `state/compose-check.json`.
 
 Named volumes retain chain, Pylon database and Prometheus state. Subtensor starts
-with `--no-purge`. These commands preserve chain identity and registrations:
+with `--no-purge`. The overlay limits it to four CPUs and sets Tokio/Rayon worker
+counts to four. Without these bounds the three-node image reached this host's
+990-thread cgroup limit and its health checks could not fork. Recreation with the
+same chain volume reduced it to 186 threads and preserved healthy application reads. These commands preserve chain identity and registrations:
 
 ```sh
 localnet/compose.sh restart subtensor
@@ -83,19 +86,36 @@ The host root is `localnet/state/data`, mounted read-write into the validator at
 non-symlink directories owned by the operator's UID/primary GID with mode `0750`.
 The generated `.env` selects that same numeric UID/GID for all workload containers
 and names the host executor user/group. The operator controls the complete tree;
-individual workloads will receive only their job's fixed protocol mounts.
+individual workloads receive only their job's fixed protocol mounts.
 
-Task 7 installs a system service running the single standard-library Python executor
+The installer creates a system service running the single standard-library Python executor
 as `EXECUTOR_USER`/`EXECUTOR_GROUP`, with `UMask=0027`, Docker-group access, automatic
 service restart and this host root. Python defaults to `/usr/bin/python3.14`.
 Docker access grants host-level control; it belongs only to the trusted executor.
 The validator has a read-only container filesystem, no Docker socket, no wallet
-mount and no execution responsibility. Factory/judge containers will have no
+mount and no execution responsibility. Factory/judge containers have no
 automatic restart policy and no wallet/control-root mounts.
 
 The selected workload settings are `linux/amd64`, two-second polling, 512 MiB RAM,
-one CPU and 128 PIDs; they are explicit operator configuration for task 7. Executor
-installation is not yet claimed by this task-4 setup.
+one CPU and 128 PIDs; they are explicit operator configuration.
+
+```sh
+installer/install-executor.sh "$PWD/localnet/.env" factory-horde-localnet-executor
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_executor
+```
+
+This approximately 140-second check publishes a factory request and a separate
+judge request, verifies real Docker identities/mounts/resource limits, then restarts
+the executor and verifies unchanged terminal statuses and report. It writes
+`state/task7-executor-pair.json`. This manually driven fixture does not enable the
+validator round coordinator. Stop the executor separately from Compose when needed:
+
+```sh
+sudo systemctl stop factory-horde-localnet-executor
+```
+
+Stopping the service leaves detached workloads running; normal job cancellation
+uses permanent protocol stop records. Preserve its data root to resume observation.
 
 ## Monitoring
 

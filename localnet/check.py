@@ -16,7 +16,6 @@ from pylon_client.artanis import (
     PylonForbidden,
     PylonUnauthorized,
 )
-
 from validator.chain_observer import ChainObservation
 from validator.record_files import RecordFiles
 
@@ -79,7 +78,6 @@ def main() -> None:
         or observation.dispatch_enabled
         or observation.mechanism_id != expected.mechanism_id
         or expected.mechanism_count <= expected.mechanism_id
-        or files.list_names("control/requests")
     ):
         raise RuntimeError("Validator is stale, configured incorrectly, or dispatching unexpectedly")
     blocks: dict[str, int] = {}

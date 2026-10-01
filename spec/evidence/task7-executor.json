@@ -1,0 +1,253 @@
+{
+  "pair": {
+    "checked_at": "2026-10-01T21:01:39.099537+00:00",
+    "service": "factory-horde-localnet-executor",
+    "executor_sha256": "99dc02cbeed93163c9bc02ece6c5045e324e4a0f308b15926b2c4d212703e7f4",
+    "plan": {
+      "protocol_version": 1,
+      "round_id": "a90bdb08-69ea-41a7-a599-8e14bd87a061",
+      "sequence": 1,
+      "deadlines": {
+        "protocol_version": 1,
+        "start": "2026-10-01T20:59:15.812376Z",
+        "generation_end": "2026-10-01T21:00:55.812376Z",
+        "evaluation_start": "2026-10-01T21:01:00.812376Z",
+        "judge_end": "2026-10-01T21:01:30.812376Z",
+        "round_end": "2026-10-01T21:01:35.812376Z"
+      },
+      "discovery_block": 2221,
+      "discovery_block_hash": "0xd72f289eb1fc5bb82fc907fd6c993bb4ec6235fe62d946385278d54ef7faf58c",
+      "membership_snapshot": "separate_reads",
+      "cohort": [
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+          "uid": 2,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "0fbf079e-33e1-4f27-a92b-e67a40ce64c0",
+          "judge_job_id": "eb08c4b6-feb0-4c6a-904d-b626b32110dd"
+        }
+      ],
+      "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "platform": "linux/amd64",
+      "stop_grace_seconds": 5,
+      "specification_sha256": "8268d142d3f83554cd80ed2247dcd25e2150f60829e75e706de2c1bef50994d6"
+    },
+    "factory_status": {
+      "protocol_version": 1,
+      "round_id": "a90bdb08-69ea-41a7-a599-8e14bd87a061",
+      "job_id": "0fbf079e-33e1-4f27-a92b-e67a40ce64c0",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "factory",
+      "factory_job_id": "0fbf079e-33e1-4f27-a92b-e67a40ce64c0",
+      "state": "finished",
+      "observed_at": "2026-10-01T21:00:23.417361Z",
+      "execution": "exited",
+      "startup_forbidden": true,
+      "container_id": "0d468a6f3c823ab975ac86fa4c4cdbb59cb1e936aea5db68ba5b4e14549e9cd9",
+      "container_name": "factory-horde-0fbf079e-33e1-4f27-a92b-e67a40ce64c0",
+      "started_at": "2026-10-01T20:59:21.561609Z",
+      "finished_at": "2026-10-01T21:00:21.999887Z",
+      "exit_code": 0,
+      "forced": false,
+      "oom_killed": false,
+      "reason": null
+    },
+    "judge_status": {
+      "protocol_version": 1,
+      "round_id": "a90bdb08-69ea-41a7-a599-8e14bd87a061",
+      "job_id": "eb08c4b6-feb0-4c6a-904d-b626b32110dd",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "judge",
+      "factory_job_id": "0fbf079e-33e1-4f27-a92b-e67a40ce64c0",
+      "state": "finished",
+      "observed_at": "2026-10-01T21:01:29.786099Z",
+      "execution": "exited",
+      "startup_forbidden": true,
+      "container_id": "252816589a880a54f7f6ecabaf80173ec9375edbb22f8df6c88c3abc818b9cc7",
+      "container_name": "factory-horde-eb08c4b6-feb0-4c6a-904d-b626b32110dd",
+      "started_at": "2026-10-01T21:01:27.637140Z",
+      "finished_at": "2026-10-01T21:01:27.841889Z",
+      "exit_code": 0,
+      "forced": false,
+      "oom_killed": false,
+      "reason": null
+    },
+    "factory_elapsed_seconds": 60.438278,
+    "factory_container": {
+      "Id": "0d468a6f3c823ab975ac86fa4c4cdbb59cb1e936aea5db68ba5b4e14549e9cd9",
+      "Mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/ubuntu/repo/factory-horde/localnet/state/data/rounds/2026-10-01/round-1-20-59-15-a90bdb08-69ea-41a7-a599-8e14bd87a061/5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98/input",
+          "Destination": "/input",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/ubuntu/repo/factory-horde/localnet/state/data/rounds/2026-10-01/round-1-20-59-15-a90bdb08-69ea-41a7-a599-8e14bd87a061/5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98/output",
+          "Destination": "/output",
+          "RW": true
+        }
+      ],
+      "HostConfig": {
+        "ReadonlyRootfs": true,
+        "NetworkMode": "none",
+        "RestartPolicy": {
+          "Name": "no"
+        },
+        "Memory": 536870912,
+        "NanoCpus": 1000000000,
+        "PidsLimit": 128,
+        "CapDrop": [
+          "ALL"
+        ]
+      },
+      "Config": {
+        "Image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "User": "1000:1000",
+        "Entrypoint": [
+          "/usr/local/bin/factory-horde-factory"
+        ]
+      }
+    },
+    "judge_container": {
+      "Id": "252816589a880a54f7f6ecabaf80173ec9375edbb22f8df6c88c3abc818b9cc7",
+      "Mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/ubuntu/repo/factory-horde/localnet/state/data/rounds/2026-10-01/round-1-20-59-15-a90bdb08-69ea-41a7-a599-8e14bd87a061/5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98/input",
+          "Destination": "/input",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/ubuntu/repo/factory-horde/localnet/state/data/rounds/2026-10-01/round-1-20-59-15-a90bdb08-69ea-41a7-a599-8e14bd87a061/5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98/evaluation",
+          "Destination": "/report",
+          "RW": true
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/ubuntu/repo/factory-horde/localnet/state/data/rounds/2026-10-01/round-1-20-59-15-a90bdb08-69ea-41a7-a599-8e14bd87a061/5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98/output",
+          "Destination": "/submission",
+          "RW": false
+        }
+      ],
+      "HostConfig": {
+        "ReadonlyRootfs": true,
+        "NetworkMode": "none",
+        "RestartPolicy": {
+          "Name": "no"
+        },
+        "Memory": 536870912,
+        "NanoCpus": 1000000000,
+        "PidsLimit": 128,
+        "CapDrop": [
+          "ALL"
+        ]
+      },
+      "Config": {
+        "Image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+        "User": "1000:1000",
+        "Entrypoint": [
+          "/usr/local/bin/factory-horde-judge"
+        ]
+      }
+    },
+    "report": {
+      "protocol_version": 1,
+      "round_id": "a90bdb08-69ea-41a7-a599-8e14bd87a061",
+      "job_id": "eb08c4b6-feb0-4c6a-904d-b626b32110dd",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "kind": "judge",
+      "factory_job_id": "0fbf079e-33e1-4f27-a92b-e67a40ce64c0",
+      "checked_files": [
+        "main.py",
+        "README.md"
+      ],
+      "score": 0.5743309299197505,
+      "failure": null
+    },
+    "restart_preserved_status_and_report": true,
+    "metrics": {
+      "factory_horde_executor_operation_seconds": [],
+      "factory_horde_executor_operations_total": [],
+      "observed_at": "2026-10-01T21:01:38.171266+00:00",
+      "pid": 116595,
+      "protocol_version": 1
+    }
+  },
+  "failed_pull": {
+    "request": {
+      "protocol_version": 1,
+      "round_id": "a9032bfd-2d60-413f-82ae-41a606e6d540",
+      "job_id": "1e7b158f-8c34-4dcc-8881-bf33f1c93491",
+      "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+      "kind": "factory",
+      "factory_job_id": "1e7b158f-8c34-4dcc-8881-bf33f1c93491",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "platform": "linux/amd64",
+      "contract": "factory-v1",
+      "input_dir": "rounds/2026-10-01/round-2-21-02-46-a9032bfd-2d60-413f-82ae-41a606e6d540/5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18/input",
+      "output_dir": "rounds/2026-10-01/round-2-21-02-46-a9032bfd-2d60-413f-82ae-41a606e6d540/5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18/output",
+      "report_dir": null,
+      "created_at": "2026-10-01T21:02:46.647643Z",
+      "deadline": "2026-10-01T22:02:46.647643Z",
+      "stop_grace_seconds": 60
+    },
+    "status": {
+      "protocol_version": 1,
+      "round_id": "a9032bfd-2d60-413f-82ae-41a606e6d540",
+      "job_id": "1e7b158f-8c34-4dcc-8881-bf33f1c93491",
+      "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+      "kind": "factory",
+      "factory_job_id": "1e7b158f-8c34-4dcc-8881-bf33f1c93491",
+      "state": "failed",
+      "observed_at": "2026-10-01T21:02:57.661577Z",
+      "execution": "never_started",
+      "startup_forbidden": true,
+      "container_id": null,
+      "container_name": null,
+      "started_at": null,
+      "finished_at": null,
+      "exit_code": null,
+      "forced": false,
+      "oom_killed": false,
+      "reason": "Image pull failed: Error response from daemon: failed to resolve reference \"ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:0000000000000000000000000000000000000000000000000000000000000000\": ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:0000000000000000000000000000000000000000000000000000000000000000: not found"
+    }
+  },
+  "subtensor_thread_fix": {
+    "before_threads": 990,
+    "cgroup_limit": 990,
+    "after_threads": 186,
+    "health": "healthy",
+    "cpus": 4,
+    "TOKIO_WORKER_THREADS": 4,
+    "RAYON_NUM_THREADS": 4,
+    "chain_volume_preserved": true
+  },
+  "application_check": {
+    "checked_at": "2026-10-01T21:06:55.136320+00:00",
+    "validator_observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-01T21:06:53.130935Z",
+      "block": 12622,
+      "block_hash": "0xabdfbca2ec2ab214404593c48bae1de7c0da19978a125aecd8dc8616bf88207f",
+      "mechanism_id": 1,
+      "dispatch_enabled": false
+    },
+    "authenticated_identity_blocks": {
+      "validator": 12628,
+      "miner1": 12628,
+      "miner2": 12628,
+      "miner3": 12629,
+      "miner4": 12629,
+      "miner5": 12629
+    },
+    "cross_identity_token_rejected": true,
+    "scrapes": {
+      "host": "up",
+      "pylon": "up"
+    }
+  }
+}

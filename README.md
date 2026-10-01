@@ -28,7 +28,7 @@ actual Docker execution and independently verified chain weights. Localnet now
 uses the same application Compose services and host systemd executor as deployment,
 with isolated wallets, local Subtensor and bootstrap added. The current
 [localnet guide](localnet/README.md) provides the verified Compose/bootstrap setup;
-the systemd executor is installed in task 7. Public deployment, subnet-12
+the systemd executor runs real factory/judge requests and preserves their outcomes across restart. Public deployment, subnet-12
 changes and emissions changes are outside this prototype.
 
 ## Repository
@@ -37,6 +37,7 @@ changes and emissions changes are outside this prototype.
 - `miner/`: independent Python/uv project being adapted into submission tooling;
   [baseline factory](miner/factory/README.md) and [judge](judge/README.md) images are published publicly on GHCR and verified by digest.
 - `judge/`: separate fixture judge, verified through Docker without executing submissions.
+- `executor/executor.py`: standalone standard-library host Docker executor, installed through systemd.
 - `envs/deployed/`, `installer/`: application deployment and operator installation.
 - `localnet/`: isolated development chain, bootstrap and acceptance fixtures.
 - `spec/`, `subnet_design.md`: requirements, implementation order and design.

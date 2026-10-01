@@ -2,10 +2,10 @@
 
 Implemented validator types are in `validator/records.py`, with atomic I/O in
 `validator/record_files.py` and round/job publication in `validator/round_repository.py`.
-The standalone executor implements the same wire contract in tasks 7–8 without
-importing those modules. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
-This contract defines records and publication; stage scheduling, Docker observation
-and report acceptance are implemented by later tasks.
+The standalone executor implements the same wire contract without importing those modules.
+Concurrent cancellation and fault-recovery acceptance are completed in task 8. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
+This contract defines records and publication. Docker observations are implemented;
+automated stage scheduling and report acceptance remain later tasks.
 
 ## Roots, identity and ownership
 
@@ -21,6 +21,11 @@ control/
   requests/<job-id>.json           # immutable execution authorization
   stops/<job-id>.json              # immutable permanent cancellation
   statuses/<job-id>.json           # executor's current observation
+  executor/<job-id>.request.json  # executor-retained immutable authorization
+  executor/<job-id>.json          # durable Docker intent, identity, terminal evidence
+  executor/service.lock          # host process lock for this root
+  executor/docker-config/        # deliberately empty anonymous registry configuration
+  executor-metrics.json          # atomic process heartbeat/counters/latency buckets
 rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
   specification.md

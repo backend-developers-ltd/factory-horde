@@ -3,6 +3,10 @@ services:
   subtensor:
     image: ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f
     platform: linux/amd64
+    cpus: 4.0
+    environment:
+      TOKIO_WORKER_THREADS: "4"
+      RAYON_NUM_THREADS: "4"
     command: ["True", "--no-purge"]
     ports:
       - "127.0.0.1:${SUBTENSOR_HOST_PORT:-9944}:9944"
