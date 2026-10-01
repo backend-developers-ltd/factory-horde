@@ -30,8 +30,8 @@ def test_chain_observation_is_persisted_without_dispatch(tmp_path: Path) -> None
     assert not (tmp_path / "control/requests").exists()
 
 
-def test_unimplemented_dispatch_cannot_be_enabled() -> None:
-    with pytest.raises(ValidationError, match="dispatch is not implemented"):
+def test_dispatch_requires_explicit_identity_and_judge() -> None:
+    with pytest.raises(ValidationError, match="Dispatch requires"):
         Settings.model_validate(
             {
                 "NETUID": 2,
@@ -40,3 +40,18 @@ def test_unimplemented_dispatch_cannot_be_enabled() -> None:
                 "dispatch_enabled": True,
             }
         )
+
+
+def test_compose_seconds_configuration_is_validated(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key, value in {
+        "VALIDATOR_GENERATION_WINDOW": "100",
+        "VALIDATOR_CONFIRMATION_WINDOW": "15",
+        "VALIDATOR_EVALUATION_WINDOW": "65",
+        "VALIDATOR_JUDGE_STOP_RESERVE": "10",
+        "VALIDATOR_STOP_GRACE_SECONDS": "5",
+    }.items():
+        monkeypatch.setenv(key, value)
+    settings = Settings.model_validate(
+        {"NETUID": 2, "pylon_service_address": "http://pylon.test", "pylon_open_access_token": "test"}
+    )
+    assert settings.round_timing().interval.total_seconds() == 180

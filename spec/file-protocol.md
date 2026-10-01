@@ -5,7 +5,7 @@ Implemented validator types are in `validator/records.py`, with atomic I/O in
 The standalone executor implements the same wire contract without importing those modules.
 Concurrent cancellation and fault-recovery evidence are recorded under task 8. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
 This contract defines records and publication. Docker observations are implemented;
-report acceptance is implemented; automated task/stage scheduling remains later work.
+report acceptance and automated task/stage scheduling are implemented.
 
 ## Roots, identity and ownership
 
@@ -17,6 +17,8 @@ host Docker. Root and relative path components must not be symlinks.
 
 ```text
 control/
+  schedule.json                   # coordinator cadence and optional pending admission seed
+  discovery/<round-id>.json        # immutable block-aligned cohort and reserved job IDs
   rounds/<round-id>.json           # immutable UTC directory pointer
   requests/<job-id>.json           # immutable execution authorization
   stops/<job-id>.json              # immutable permanent cancellation
@@ -27,6 +29,7 @@ control/
   executor/docker-config/        # deliberately empty anonymous registry configuration
   executor-metrics.json          # atomic process heartbeat/counters/latency buckets
   projections/<result-id>.json   # immutable Nexus routing metadata and business-result pointer
+  skipped-evaluations/<job-id>.json # immutable reason an intended judge was never authorized
 rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
   specification.md
@@ -80,8 +83,27 @@ task 4 establishes actual ownership, with installer verification in task 15.
 publishes the complete specification and manifest immutably, creates output/report
 directories and preserves existing evidence on replay. `publish_request` requires
 the persisted plan, matching specification hash, exact manifest and canonical
-paths before making a request visible. It does not implement the stage gate;
-the coordinator must authorize dispatch using these records in task 11.
+paths before making a request visible. The coordinator applies the stage gate before
+publication; the communicator may idempotently republish the same frozen request.
+
+`Schedule` persists the next slot and an optional `RoundSeed` before discovery. The
+seed freezes round ID, sequence, judge, specification and all deadlines; a retained
+discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
+input publication is repaired using those same identities. The schedule advances
+only after preparation succeeds. No new round is admitted before an actual block
+beat in the current runtime or while old work remains unresolved. Expired intended
+factory requests may be published during recovery solely to obtain permanent
+never-started confirmation from the executor.
+
+The single coordinator writer reconciles canonical files on actor-owned ticks.
+Stops are published at the common factory/judge deadlines for unconfirmed work,
+including when a status cannot be parsed. Separate judge authorization requires a
+successful retained factory decision, readable required output, and the evaluation
+window. `SkippedEvaluation` records failed factories, missing output or expired
+evaluation without claiming that a judge executed. A fully settled round can expose
+its results early during evaluation; the next admission still waits for its frozen
+slot. At round end, partial usable results and unresolved work coexist. Any unresolved
+work holds/skips future slots until reconciled; callback delivery never opens that gate.
 
 ## Execution facts and eligibility
 

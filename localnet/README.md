@@ -171,9 +171,34 @@ service. It restarts that validator while all five factories run, verifies uncha
 Docker identities, waits for evaluation before launching separate judges, and
 checks five accepted scores plus the retained failed-pull result. The probe also
 verifies automatic discovery of both task block clocks. Fixture actors supply the
-fixed plan; automatic round coordination remains task 11. Runtime artifacts stay
+fixed plan; use the coordinator check below to exercise automatic scheduling. Runtime artifacts stay
 under `state/`, with a public summary in
 [task10-tasks.json](../spec/evidence/task10-tasks.json).
+
+## Exercise the persisted round coordinator
+
+After building the current validator image, while ordinary dispatch is disabled:
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_rounds
+```
+
+This bounded check runs the production entrypoint and common Compose service with
+five existing baseline commitments. It verifies initial chain unavailability,
+then uses 100/15/65-second stages, a ten-second judge reserve and five-second stop
+grace. It restarts after request publication and at generation/evaluation boundaries,
+checks early factory completion does not start judges, and reconstructs all ten
+task outcomes and five scores. The same installed systemd executor handles every
+Docker job. It stops the probe after settled results, before the next slot, and
+restores the ordinary validator. Raw artifacts remain in `state/task11-rounds.json`
+and `state/task11-coordinator.log`.
+
+For continuous scheduling, set `VALIDATOR_DISPATCH_ENABLED=true`, `VALIDATOR_HOTKEY`
+to the registered validator's public hotkey and `JUDGE_IMAGE` to the published judge
+digest in `localnet/.env`, then recreate the validator. The example environment lists
+the default two-hour timing. Only one coordinator may write a data root. Keep
+existing files across restart; unresolved old jobs hold future slots. Disabling
+dispatch pauses the coordinator; existing executor requests retain their deadlines.
 
 ## Monitoring
 

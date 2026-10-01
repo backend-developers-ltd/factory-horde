@@ -7,7 +7,7 @@ from uuid import UUID
 
 from prometheus_client import Counter, Histogram
 from pydantic import TypeAdapter
-from pylon_client.artanis import BlockNumber, CommitmentDataBytes, NetUid
+from pylon_client.artanis import BlockNumber, CommitmentDataBytes, Config, NetUid, PylonClient
 from pylon_client.artanis.v1 import GetCommitmentsResponse, GetNeuronsResponse
 
 from validator.record_files import RecordConflictError, RecordFiles
@@ -149,3 +149,11 @@ def freeze_discovery(
     if (result.netuid, result.validator_hotkey, result.allowed_hotkeys) != (netuid, validator_hotkey, allowed):
         raise RecordConflictError("Discovery identity already has a different subnet or role policy")
     return result
+
+
+def freeze_via_pylon(
+    files: RecordFiles, config: Config, netuid: int, validator_hotkey: str, snapshot_id: UUID
+) -> DiscoverySnapshot:
+    """Actor callback using only public Pylon v1; the validator never loads a wallet."""
+    with PylonClient(config) as client:
+        return freeze_discovery(files, snapshot_id, client.v1.identity, netuid, validator_hotkey)

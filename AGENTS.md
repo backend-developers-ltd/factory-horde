@@ -34,15 +34,16 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 There is **no** top-level Python project and **no** uv workspace. Run `uv sync` inside `validator/` or `miner/`
 before working on it. There is no global `uv run` from the repo root.
 
-See `localnet/README.md` for the common Compose services and isolated bootstrap. Validator dispatch is
-disabled until the round coordinator exists. The host systemd executor is implemented;
+See `localnet/README.md` for the common Compose services and isolated bootstrap. Validator dispatch defaults
+to disabled; enabling it requires explicit identity, judge and timing configuration. The host systemd executor is implemented;
 `installer/install-executor.sh` installs its standalone file and unit. Concurrent dispatch, permanent
 cancellation and Docker reconciliation have focused unit and real systemd fault checks. Development tests
 live beside it but are not deployed. `result_repository.py` owns immutable execution decisions
 and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
 `tasks.py` wires distinct factory/evaluation Nexus tasks with the shared provider;
 `file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
-Automatic round admission and stage transitions arrive in task 11.
+`coordinator.py` and `round_actor.py` persist admission, enforce stage/stop gates and recover the same
+jobs/deadlines without relying on task callbacks. Unresolved old workloads hold new round slots.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

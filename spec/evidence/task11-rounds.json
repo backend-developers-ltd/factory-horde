@@ -1,0 +1,202 @@
+{
+  "checked_at": "2026-10-01T22:08:26.264454+00:00",
+  "image_id": "sha256:862ef94bb80936a48c5fc3a744c5bf4b9ce60e48146164099a76a256af076d86",
+  "missing_initial_block_prevented_dispatch": true,
+  "restart_boundaries": [
+    "request_publication",
+    "generation_end",
+    "evaluation_start"
+  ],
+  "early_factory_completion": "2026-10-01T22:07:25.667629+00:00",
+  "result_store_reconstructed": true,
+  "round_id": "6335cda2-6331-4efb-ab9a-26d5adb44903",
+  "deadlines": {
+    "protocol_version": 1,
+    "start": "2026-10-01T22:06:18.364937Z",
+    "generation_end": "2026-10-01T22:07:58.364937Z",
+    "evaluation_start": "2026-10-01T22:08:13.364937Z",
+    "judge_end": "2026-10-01T22:09:08.364937Z",
+    "round_end": "2026-10-01T22:09:18.364937Z"
+  },
+  "completed_at": "2026-10-01T22:08:24.444880Z",
+  "unresolved_jobs": [],
+  "discovery": {
+    "discovery_block": 24212,
+    "discovery_block_hash": "0x82e9eff14a0796144cd5e648ec21b6a9813ceb2eec93971b18f14fd6dec1ac40",
+    "membership_snapshot": "commitment_block",
+    "cohort": [
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "uid": 2,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "factory_job_id": "175b511b-c9ec-4f34-8e2d-f2b7f5992601",
+        "judge_job_id": "fb0f3cc7-f8fe-4820-b5a4-b71d1ecb613a"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+        "uid": 3,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "factory_job_id": "05e492bc-222e-4380-999b-fdf70e6d0508",
+        "judge_job_id": "01d2ab81-3de4-477b-96c1-65bb09b3ca05"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+        "uid": 4,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "factory_job_id": "eec50fb3-b29e-4aef-8005-4ee34815e436",
+        "judge_job_id": "a9b4d5af-7b9b-4463-8576-5729d68990ef"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+        "uid": 5,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "factory_job_id": "39d0ac3b-3333-448c-849f-7e9f4891d4a9",
+        "judge_job_id": "9c54542e-d457-407c-85db-e448718ef636"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+        "uid": 6,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "factory_job_id": "e7de84b3-637c-4e28-bb2d-00d221bafb99",
+        "judge_job_id": "59df7694-c680-43cc-a286-354ff23b57e4"
+      }
+    ]
+  },
+  "jobs": [
+    {
+      "result_id": "4f931f7f-f6ac-5813-b45f-f4e21f4cf155",
+      "processing_started": "2026-10-01T22:06:23.417856Z",
+      "processing_finished": "2026-10-01T22:07:24.156705Z",
+      "job_id": "175b511b-c9ec-4f34-8e2d-f2b7f5992601",
+      "kind": "factory",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "container_id": "8bb8d338b8f0f06ed27ee80aa2c0f3911d4ebf0d8ef3460cc3288f147afc1517",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "09580c4e-c5d5-5211-9dba-a9795d230f95",
+      "processing_started": "2026-10-01T22:06:23.415352Z",
+      "processing_finished": "2026-10-01T22:07:24.079091Z",
+      "job_id": "05e492bc-222e-4380-999b-fdf70e6d0508",
+      "kind": "factory",
+      "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+      "container_id": "868194d7d12c42e9229f44ad478e4924c67798744624215c63c774161b16da6c",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "28ded746-c7f1-5eb0-923f-4cc5f0fe52b2",
+      "processing_started": "2026-10-01T22:06:23.462152Z",
+      "processing_finished": "2026-10-01T22:07:24.167254Z",
+      "job_id": "eec50fb3-b29e-4aef-8005-4ee34815e436",
+      "kind": "factory",
+      "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+      "container_id": "65316478a4251b4236eb2a9ad76c43d3f58fc07e7433b499f4883010f72c6cf1",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "cc4fe867-a3f0-52cb-b490-1a43ffd9d5c1",
+      "processing_started": "2026-10-01T22:06:23.406136Z",
+      "processing_finished": "2026-10-01T22:07:24.077046Z",
+      "job_id": "39d0ac3b-3333-448c-849f-7e9f4891d4a9",
+      "kind": "factory",
+      "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+      "container_id": "ffc69944d6c5b4e7e1cc4792db8edf2b64014d408b93c06ac460f53c72ad959e",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "6148f569-0a48-5c90-b4e4-f2bdafa572e5",
+      "processing_started": "2026-10-01T22:06:23.459290Z",
+      "processing_finished": "2026-10-01T22:07:24.158578Z",
+      "job_id": "e7de84b3-637c-4e28-bb2d-00d221bafb99",
+      "kind": "factory",
+      "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+      "container_id": "ed98cc185ec6ac94d93222630e50ed23f26725369060c6ca816a80dd228f3e08",
+      "exit_code": 0,
+      "score": null
+    },
+    {
+      "result_id": "5a7d0f9c-0df9-5e30-8b22-6da10bf0dfee",
+      "processing_started": "2026-10-01T22:08:21.651741Z",
+      "processing_finished": "2026-10-01T22:08:21.894216Z",
+      "job_id": "fb0f3cc7-f8fe-4820-b5a4-b71d1ecb613a",
+      "kind": "judge",
+      "miner_hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+      "container_id": "91073114146b3c1e032ce94c9f848476cfc6d4d622b69252ce1b9ac433d0815a",
+      "exit_code": 0,
+      "score": 0.044762284900432325
+    },
+    {
+      "result_id": "ff3d18d1-48b2-547c-934d-ae09da513038",
+      "processing_started": "2026-10-01T22:08:21.530306Z",
+      "processing_finished": "2026-10-01T22:08:21.798346Z",
+      "job_id": "01d2ab81-3de4-477b-96c1-65bb09b3ca05",
+      "kind": "judge",
+      "miner_hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+      "container_id": "60ffbb5b0f661ce170147da042540d36e8ca1465552c586dac325794768bec35",
+      "exit_code": 0,
+      "score": 0.5281999489221209
+    },
+    {
+      "result_id": "b1a7ef71-c897-5528-aaf4-d807f11292c3",
+      "processing_started": "2026-10-01T22:08:21.611271Z",
+      "processing_finished": "2026-10-01T22:08:21.855316Z",
+      "job_id": "a9b4d5af-7b9b-4463-8576-5729d68990ef",
+      "kind": "judge",
+      "miner_hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+      "container_id": "c301f2f507c1b12248ec7bebe82c66a85c476fbecdd39178bbf92bb2cf90851f",
+      "exit_code": 0,
+      "score": 0.4238569589721042
+    },
+    {
+      "result_id": "90a5429e-0fb8-58ef-94b3-16aa9f6a0967",
+      "processing_started": "2026-10-01T22:08:21.580550Z",
+      "processing_finished": "2026-10-01T22:08:21.822480Z",
+      "job_id": "9c54542e-d457-407c-85db-e448718ef636",
+      "kind": "judge",
+      "miner_hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+      "container_id": "b6e64af8048e1dc760fb1f4454b84f31b7ad285b7971fe539bedea880379bab7",
+      "exit_code": 0,
+      "score": 0.3115840696597467
+    },
+    {
+      "result_id": "2a64bb20-12c6-57d8-bb56-34d5b3daba92",
+      "processing_started": "2026-10-01T22:08:21.559081Z",
+      "processing_finished": "2026-10-01T22:08:21.826927Z",
+      "job_id": "59df7694-c680-43cc-a286-354ff23b57e4",
+      "kind": "judge",
+      "miner_hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+      "container_id": "981add6495b8928a3aaa236a5de384588eec089890e27971e247c37ea786f9ca",
+      "exit_code": 0,
+      "score": 0.3537170675785499
+    }
+  ],
+  "qa": {
+    "validator_tests_passed": 127,
+    "focused_coordinator_tests_passed": 20,
+    "unchanged_image_tests_skipped": 9,
+    "ruff": "passed",
+    "basedpyright": "0 errors, 0 warnings, 0 notes"
+  },
+  "unit_fault_coverage": [
+    "partial seed, plan, input and request publication recovery",
+    "missing initial block",
+    "independent stop publication after malformed status",
+    "early completion/evaluation gate",
+    "unresolved factory allows other scores but holds next slot",
+    "unresolved judge stops and holds next slot without current block",
+    "stage-boundary restart",
+    "failed, forced, missing-output and expired evaluation exclusion",
+    "fresh per-job Nexus contexts",
+    "completed legacy fixture reconciliation",
+    "60/5/55-minute defaults and duration configuration"
+  ]
+}

@@ -1,4 +1,4 @@
-"""Persist chain connectivity while application dispatch is not yet enabled."""
+"""Persist chain connectivity and the configured dispatch mode."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,10 +32,11 @@ class ChainObserverNode(Transform[BlockBeat, ChainObservation], ActorBuilder):
     source error: publication failure, requiring the runtime's error listener
     """
 
-    def __init__(self, data_root: Path, mechanism_id: int) -> None:
+    def __init__(self, data_root: Path, mechanism_id: int, dispatch_enabled: bool = False) -> None:
         super().__init__("factory-horde-chain-observer")
         self.files = RecordFiles(data_root)
         self.mechanism_id = mechanism_id
+        self.dispatch_enabled = dispatch_enabled
 
     @override
     def build_actor(self, *, pipe_to_bus: PipeToBus, context_store: ContextStore) -> ChainObserverActor:
@@ -58,6 +59,7 @@ class ChainObserverActor(TransformActor[BlockBeat, ChainObservation]):
                     block=payload.block_number,
                     block_hash=payload.block_hash,
                     mechanism_id=self.observer.mechanism_id,
+                    dispatch_enabled=self.observer.dispatch_enabled,
                 )
                 self.observer.files.replace("control/chain-observation.json", observation)
             except Exception:

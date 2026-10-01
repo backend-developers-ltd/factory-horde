@@ -75,11 +75,11 @@ def main() -> None:
     observation = files.read("control/chain-observation.json", ChainObservation)
     if (
         datetime.now(UTC) - observation.observed_at > timedelta(seconds=30)
-        or observation.dispatch_enabled
+        or observation.dispatch_enabled != ((config.get("VALIDATOR_DISPATCH_ENABLED") or "false").lower() == "true")
         or observation.mechanism_id != expected.mechanism_id
         or expected.mechanism_count <= expected.mechanism_id
     ):
-        raise RuntimeError("Validator is stale, configured incorrectly, or dispatching unexpectedly")
+        raise RuntimeError("Validator is stale or its mechanism/dispatch configuration differs")
     blocks: dict[str, int] = {}
     address = f"http://127.0.0.1:{int(config.get('PYLON_HOST_PORT') or '8000')}"
     for identity in ("validator", *(f"miner{i}" for i in range(1, 6))):

@@ -24,7 +24,9 @@ and frozen commitment discovery are implemented and verified on localnet. Accept
 and the public Nexus result-store adapter persist/recover existing execution evidence.
 Two Nexus tasks now publish factory/judge requests and poll durable results without
 waiting for containers. A five-miner containerized check verifies both tasks across a
-validator restart. Automatic round coordination is next. The public installer is still scaffold code
+validator restart. The round coordinator now freezes discovery and deadlines, gates
+judging on clean stopped output, and holds future slots while any job remains
+unresolved. Local-chain weighing is next. The public installer is still scaffold code
 pending its implementation task.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,
