@@ -1,0 +1,107 @@
+{
+  "description": "Task 4 smoke evidence on 1 October 2026; not full prototype acceptance",
+  "runtime_check": {
+    "checked_at": "2026-10-01T19:37:20.261293+00:00",
+    "validator_observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-01T19:37:18.400034Z",
+      "block": 2213,
+      "block_hash": "0x4d3f125039f471d519e9ebeaf8d7a466f20e039b1169577984f8ba7f4d166287",
+      "mechanism_id": 1,
+      "dispatch_enabled": false
+    },
+    "authenticated_identity_blocks": {
+      "validator": 2219,
+      "miner1": 2219,
+      "miner2": 2219,
+      "miner3": 2219,
+      "miner4": 2219,
+      "miner5": 2219
+    },
+    "cross_identity_token_rejected": true,
+    "scrapes": {
+      "host": "up",
+      "pylon": "up"
+    }
+  },
+  "direct_chain_snapshot": {
+    "netuid": 2,
+    "mechanism_id": 1,
+    "mechanism_count": 2,
+    "block": 2221,
+    "block_hash": "0xd72f289eb1fc5bb82fc907fd6c993bb4ec6235fe62d946385278d54ef7faf58c",
+    "registrations": [
+      {
+        "identity": "owner",
+        "uid": 0,
+        "hotkey": "5FhZmS2rdx45T7Se3wYoouJGWVUfPBB6UsPvxq8kqxHXdSqR",
+        "coldkey": "5HW4xSmNmnz89656XPwsP9bQtgG1ueNxLZhhiTKaFvj5t5dJ"
+      },
+      {
+        "identity": "validator",
+        "uid": 1,
+        "hotkey": "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu",
+        "coldkey": "5HSw8VJyezMYaKcEsUboXbDTJyaGJqC7f1btBt1NhUVXGBRx"
+      },
+      {
+        "identity": "miner1",
+        "uid": 2,
+        "hotkey": "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98",
+        "coldkey": "5EPEePaqtSY9MVUKUAkh72fCio8PW3inbRkwBvo1q8D2Yq3M"
+      },
+      {
+        "identity": "miner2",
+        "uid": 3,
+        "hotkey": "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18",
+        "coldkey": "5HmRMetfS4MNZMaCqpgwftD2ACYjKVjVwd9DaVyHPPeNvqAc"
+      },
+      {
+        "identity": "miner3",
+        "uid": 4,
+        "hotkey": "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp",
+        "coldkey": "5GeJ6oj1S9hXHY7RipsS4t94SpNJ3zPuL7gHks8ho4V4zU1x"
+      },
+      {
+        "identity": "miner4",
+        "uid": 5,
+        "hotkey": "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3",
+        "coldkey": "5GU49nvAmborJDmbDbCM5iLJKJaJ4VdBtuXjwVQfhu4S9HkQ"
+      },
+      {
+        "identity": "miner5",
+        "uid": 6,
+        "hotkey": "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t",
+        "coldkey": "5HELAVPmLaMgwhsnuawF7gijiy5KMYWnXNyGd4TnxMzD7N6H"
+      }
+    ]
+  },
+  "validator_container": {
+    "image_id": "sha256:b8ac061bd63cd2a8e631f3feedfde0d291bbf4f0782dfd715851c928260f1a94",
+    "user": "1000:1000",
+    "read_only_rootfs": true,
+    "mounts": [
+      {
+        "Type": "bind",
+        "Source": "/home/ubuntu/repo/factory-horde/localnet/state/data",
+        "Destination": "/var/lib/factory-horde",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": "rprivate"
+      }
+    ],
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_opt": [
+      "no-new-privileges:true"
+    ]
+  },
+  "bootstrap_repeat": "preserved owner, validator, five miners and stake; passed after chain restart and Compose down/up",
+  "qa": {
+    "validator_tests": 50,
+    "validator_basedpyright": "0 errors, 0 warnings",
+    "miner_and_bootstrap_basedpyright": "0 errors, 0 warnings",
+    "ruff": "passed",
+    "shell_syntax": "passed"
+  }
+}

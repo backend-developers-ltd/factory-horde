@@ -1,40 +1,29 @@
 # FactoryHorde Validator
 
-Validator node for the FactoryHorde Bittensor subnet.
+The validator runs inside the common Compose stack. Nexus observes actual blocks
+through Pylon and atomically records `control/chain-observation.json` in the shared
+data root. This proves chain connectivity; it is not full executor/application
+readiness. Dispatch remains disabled, and enabling it currently fails configuration.
 
-Implementation is in progress. The entry point currently contains the inherited
-HTTP ping graph; the deployment still has a placeholder validator image digest.
 The pinned Nexus `mechanism-id` revision, Pylon versions and verified API checks are
-documented in [dependency selection](../spec/dependency-selection.md). This is not
-yet an installable accepted FactoryHorde candidate.
+documented in [dependency selection](../spec/dependency-selection.md).
+The [file protocol](../spec/file-protocol.md) supplies typed records and atomic
+publication. Factory execution and application task wiring remain later tasks.
 
-The [shared-file protocol](../spec/file-protocol.md) implements typed round/job
-records, atomic publication and recovery primitives. Executor integration and
-application task wiring remain later steps in the sequential plan.
+Use the [localnet guide](../localnet/README.md) to build the validator, bootstrap
+isolated identities and start the application. The common Compose file still has
+a placeholder public validator digest; a local build supplies its Docker image ID.
+This is not yet an accepted installable release candidate.
 
-## What this is
+The validator uses structured JSON logs. Common Compose disables trace export and
+starts pinned Prometheus/node-exporter services with authenticated Pylon scraping.
+Validator metrics exposure and full readiness arrive in task 14.
 
-A `docker compose` stack whose core containers are:
+For development, run the QA gates from `validator/`:
 
-- **pylon** — sidecar that proxies all Bittensor / subtensor communication for the
-  validator (handles wallet, weight setting, metagraph reads).
-- **validator** — the FactoryHorde validator process built from this repo.
-
-The optional **alloy** trace sidecar is commented out in the rendered Compose file.
-
-alongside a Prometheus-based metrics stack (see [`installer/README.md`](../installer/README.md)).
-
-## Observability
-
-The validator ships structured JSON logs (`structlog`). OpenTelemetry export is disabled
-unless an OTLP endpoint is configured. If Alloy is deliberately enabled, its upstream
-requires `TRACES_UPSTREAM_URL` / `TRACES_UPSTREAM_USER` / `TRACES_UPSTREAM_PASSWORD`.
-
-## Running a validator
-
-See [`installer/README.md`](../installer/README.md) for installation, configuration,
-updates and prerequisites.
-
-## More
-
-- Repository root `README.md` — what FactoryHorde is and how the subnet works.
+```sh
+env -u UV_EXCLUDE_NEWER uv run ruff check --fix
+env -u UV_EXCLUDE_NEWER uv run ruff format
+env -u UV_EXCLUDE_NEWER uv run basedpyright
+env -u UV_EXCLUDE_NEWER uv run pytest -q --tb=line -r f
+```

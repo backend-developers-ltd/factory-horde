@@ -1,82 +1,61 @@
-"""Demo Nexus validator: every new block, ping a miner over HTTP and log the response."""
+"""FactoryHorde validator startup: chain observation, with dispatch disabled until task wiring."""
 
 from __future__ import annotations
 
 import logging
 import os
-from datetime import timedelta
-from ipaddress import IPv4Address
 from pathlib import Path
+from typing import Self
 
 import click
+import sentry_sdk
 from dotenv import load_dotenv
 from nexus.v1 import (
-    AsyncHttpNeuronCommunicator,
     MechanismId,
     NexusValidator,
-    Port,
     PylonClientSettingsMixin,
-    RoundRobinNeuronRouter,
-    miners_only,
 )
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.litestar import LitestarIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.threading import ThreadingIntegration
 
+from validator.chain_observer import ChainObservation, ChainObserverNode
 from validator.logging_config import LoggingSettings, configure_logging
 from validator.otel import OtelSettings, setup_otel
-from validator.payload import PingInput, PingPayloadCreator, PongOutput
-from validator.response_logger import ErrorLoggerNode, ResponseLoggerNode
+from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
 
 
 class Settings(PylonClientSettingsMixin, BaseSettings):
-    """Runtime configuration for the demo validator."""
+    """Application configuration; chain writes and factory dispatch remain disabled."""
 
     model_config = SettingsConfigDict(env_prefix="VALIDATOR_", extra="ignore")
 
     netuid: int = Field(validation_alias=AliasChoices("VALIDATOR_NETUID", "NETUID"))
     mechanism_id: MechanismId = Field(default=MechanismId(0), ge=0, validation_alias="MECHANISM_ID")
-    callback_host: str = "127.0.0.1"
-    callback_port: int = 8001
-    send_timeout: timedelta = timedelta(seconds=2)
-    total_processing_timeout: timedelta = timedelta(seconds=10)
-    max_in_flight: int = 4
+    data_root: Path = Path("/var/lib/factory-horde")
+    dispatch_enabled: bool = False
+
+    @model_validator(mode="after")
+    def _dispatch_not_implemented(self) -> Self:
+        if self.dispatch_enabled:
+            raise ValueError("FactoryHorde dispatch is not implemented yet")
+        return self
 
 
 class Validator(NexusValidator):
-    """Demo validator wiring: subnet clock → ping payload → miner router → HTTP communicator → logger."""
+    """Containerized Nexus runtime observing Pylon's chain clock without creating jobs."""
 
     def __init__(self, settings: Settings) -> None:
         super().__init__(settings)
-
-        payload_creator = PingPayloadCreator("ping-payload-creator")
-        router = RoundRobinNeuronRouter[PingInput](
-            "miner-router",
-            netuid=settings.netuid,
-            neuron_filter=miners_only,
-        )
-        communicator = AsyncHttpNeuronCommunicator[PingInput, PongOutput](
-            "miner-communicator",
-            target_path="/task",
-            send_timeout=settings.send_timeout,
-            total_processing_timeout=settings.total_processing_timeout,
-            max_in_flight=settings.max_in_flight,
-            callback_bind_ip=IPv4Address("0.0.0.0"),
-            callback_port=Port(settings.callback_port),
-            callback_path="/callback",
-            callback_base_url=f"http://{settings.callback_host}:{settings.callback_port}",
-            input_model=PingInput,
-            output_model=PongOutput,
-        )
-        response_logger = ResponseLoggerNode("response-logger")
-        error_logger = ErrorLoggerNode("error-logger")
-
-        self.connect(self.subnet_clock.source, payload_creator.input)
-        self.connect(payload_creator.created_payload, router.input)
-        self.connect(router.routed, communicator.input)
-        self.connect(communicator.processed, response_logger.sink)
-        self.connect(payload_creator.error, error_logger.sink)
-        self.connect(router.error, error_logger.sink)
-        self.connect(communicator.error, error_logger.sink)
+        observer = ChainObserverNode(settings.data_root, settings.mechanism_id)
+        errors = ErrorLoggerNode("factory-horde-errors")
+        observed = MessageLoggerNode[ChainObservation]("factory-horde-observed")
+        self.connect(self.subnet_clock.source, observer.sink)
+        self.connect(observer.error, errors.sink)
+        self.connect(observer.ok, observed.sink)
 
 
 def _setup_sentry() -> None:
@@ -84,13 +63,6 @@ def _setup_sentry() -> None:
     dsn = os.environ.get("SENTRY_DSN")
     if not dsn:
         return
-
-    # Only load the Sentry libs if we actually need them
-    import sentry_sdk
-    from sentry_sdk.integrations.httpx import HttpxIntegration
-    from sentry_sdk.integrations.litestar import LitestarIntegration
-    from sentry_sdk.integrations.logging import LoggingIntegration
-    from sentry_sdk.integrations.threading import ThreadingIntegration
 
     sentry_sdk.init(
         dsn=dsn,

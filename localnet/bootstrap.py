@@ -1,50 +1,38 @@
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#     "bittensor",
-#     "bittensor-wallet",
-#     "python-dotenv",
-# ]
-# ///
 """
-Localnet bootstrap script.
+Bootstrap only FactoryHorde's isolated local chain using the miner project's lock.
 
 Sets up the local subnet infrastructure:
 - Transfers TAO from Alice (pre-funded devnet account) to owner and validator wallets
 - Creates and activates subnet (netuid 2, since netuid 1 is owned by zero-key and is unusable)
-- Registers and stakes validator neuron
+- Registers and stakes validator and registers five distinct miner identities
 
 register_subnet has no netuid parameter — the chain auto-assigns the next free slot. We
 assume it matches NETUID from localnet/.env and abort if not, so pylon/validator/monitor
 don't end up pointed at a different subnet than the one we configured.
 
-Prerequisites: subtensor must be running (cd localnet && docker compose up).
+Prerequisites: localnet/prepare.sh; localnet/compose.sh up -d --wait subtensor.
 
-Usage: uv run localnet/bootstrap.py
+Usage: uv run --project miner python localnet/bootstrap.py
 """
 
 from __future__ import annotations
 
-import os
+import json
 import sys
 import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import bittensor as bt
-from bittensor.core.extrinsics.pallets import Sudo
 from bittensor.utils.balance import Balance
 from bittensor_wallet import Keypair, Wallet
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
-load_dotenv(Path(__file__).parent / ".env")
-
-WALLETS_DIR = Path(__file__).parent / "wallets"
-SUBTENSOR_NETWORK = "ws://127.0.0.1:9944"
+LOCALNET_ROOT = Path(__file__).resolve().parent
+WALLETS_DIR = LOCALNET_ROOT / "wallets"
 VALIDATOR_STAKE_TAO = 1000.0
 FUND_AMOUNT_TAO = 10_000.0
-
-EXPECTED_NETUID = int(os.environ["NETUID"])
-SUBNET_TEMPO = int(os.environ["SUBNET_TEMPO"])
+EXPECTED_NETUID = 2
 
 # Disabled until we have support for fast blocks in pylon
 SUBNET_COMMIT_REVEAL_ENABLED = False
@@ -83,7 +71,14 @@ def get_alice_wallet() -> Wallet:
 def get_or_create_wallet(name: str) -> Wallet:
     """Create a wallet if it doesn't exist, using localnet wallets directory."""
     wallet = Wallet(name=name, path=str(WALLETS_DIR))
-    wallet.create_if_non_existent(coldkey_use_password=False, hotkey_use_password=False)
+    # The SDK prints secret recovery words when creating keys; local disposable keys
+    # are written directly so bootstrap logs never contain them.
+    if not wallet.coldkey_file.exists_on_device():
+        key = Keypair.create_from_mnemonic(Keypair.generate_mnemonic())
+        wallet.set_coldkey(keypair=key, encrypt=False)
+        wallet.set_coldkeypub(keypair=key)
+    if not wallet.hotkey_file.exists_on_device():
+        wallet.set_hotkey(keypair=Keypair.create_from_mnemonic(Keypair.generate_mnemonic()), encrypt=False)
     return wallet
 
 
@@ -111,12 +106,15 @@ def fund_wallet(subtensor: bt.Subtensor, alice: Wallet, target: Wallet) -> None:
 def get_subnet_owner_coldkey(subtensor: bt.Subtensor, netuid: int) -> str | None:
     """Return owner coldkey of an existing subnet, or None if it doesn't exist.
 
-    Avoids `subtensor.all_subnets()`, which currently raises ZeroDivisionError on freshly
-    created subnets when alpha_in is 0 (bittensor 10.3.1 bug).
+    Raises:
+        RuntimeError: The subnet exists but its owner cannot be read.
     """
     if not subtensor.subnet_exists(netuid=netuid):
         return None
-    return subtensor.subnet(netuid=netuid).owner_coldkey
+    subnet = subtensor.subnet(netuid=netuid)
+    if subnet is None:
+        raise RuntimeError("Existing subnet has no readable owner")
+    return subnet.owner_coldkey
 
 
 def create_subnet(subtensor: bt.Subtensor, owner: Wallet) -> int:
@@ -129,8 +127,7 @@ def create_subnet(subtensor: bt.Subtensor, owner: Wallet) -> int:
         print(
             f"Subnet {EXPECTED_NETUID} already exists but is owned by {existing_owner}, "
             f"not our owner ({owner.coldkey.ss58_address}). "
-            f"Reset localnet (`cd localnet && docker compose down -v && rm -rf wallets/*/`) "
-            f"or update NETUID in localnet/.env."
+            "Refusing to modify a subnet belonging to another wallet."
         )
         sys.exit(1)
 
@@ -152,7 +149,7 @@ def create_subnet(subtensor: bt.Subtensor, owner: Wallet) -> int:
         print(
             f"Subnet at netuid {EXPECTED_NETUID} is owned by {new_owner}, expected {owner.coldkey.ss58_address}. "
             f"Chain may have assigned a different netuid. "
-            f"Reset localnet (`cd localnet && docker compose down -v && rm -rf wallets/*/`) or update NETUID."
+            "Refusing to continue with a different subnet."
         )
         sys.exit(1)
     print(f"Subnet created with netuid {EXPECTED_NETUID}")
@@ -198,7 +195,7 @@ def set_admin_freeze_window(subtensor: bt.Subtensor, sudo: Wallet, window: int) 
         call_params={"window": window},
     )
     response = subtensor.sign_and_send_extrinsic(
-        call=Sudo(subtensor).sudo(inner),
+        call=subtensor.compose_call(call_module="Sudo", call_function="sudo", call_params={"call": inner}),
         wallet=sudo,
         wait_for_inclusion=True,
         wait_for_finalization=True,
@@ -215,7 +212,7 @@ def set_admin_freeze_window(subtensor: bt.Subtensor, sudo: Wallet, window: int) 
 
 def set_subnet_tempo(subtensor: bt.Subtensor, sudo: Wallet, netuid: int, tempo: int) -> None:
     """Set subnet tempo via Sudo. Requires the root key — not callable by subnet owners. Idempotent."""
-    current = int(subtensor.get_hyperparameter("Tempo", netuid=netuid))
+    current = subtensor.tempo(netuid)
     if current == tempo:
         print(f"  tempo already {tempo}")
         return
@@ -226,7 +223,7 @@ def set_subnet_tempo(subtensor: bt.Subtensor, sudo: Wallet, netuid: int, tempo: 
         call_params={"netuid": netuid, "tempo": tempo},
     )
     response = subtensor.sign_and_send_extrinsic(
-        call=Sudo(subtensor).sudo(inner),
+        call=subtensor.compose_call(call_module="Sudo", call_function="sudo", call_params={"call": inner}),
         wallet=sudo,
         wait_for_inclusion=True,
         wait_for_finalization=True,
@@ -234,7 +231,7 @@ def set_subnet_tempo(subtensor: bt.Subtensor, sudo: Wallet, netuid: int, tempo: 
     if not response.success:
         print(f"  set_tempo failed: {response.message}")
         sys.exit(1)
-    new_val = int(subtensor.get_hyperparameter("Tempo", netuid=netuid))
+    new_val = subtensor.tempo(netuid)
     if new_val != tempo:
         print(f"  set_tempo failed: on-chain value is {new_val}, expected {tempo}")
         sys.exit(1)
@@ -299,12 +296,13 @@ def stake_validator(subtensor: bt.Subtensor, wallet: Wallet, netuid: int) -> Non
         hotkey_ss58=wallet.hotkey.ss58_address,
         netuid=netuid,
     )
-    target_stake = Balance.from_tao(VALIDATOR_STAKE_TAO, netuid=netuid)
-    if current_stake >= target_stake:
+    if current_stake > Balance.from_tao(0, netuid=netuid):
         print(f"  {wallet.name} already staked (stake: {current_stake})")
         return
 
-    amount_to_add = Balance.from_tao(target_stake.tao - current_stake.tao)
+    # Local alpha's price changes. Once funded, repeated bootstrap must not keep
+    # spending TAO to chase a nominal alpha target.
+    amount_to_add = Balance.from_tao(VALIDATOR_STAKE_TAO)
     print(f"  Staking {amount_to_add} for {wallet.name}...")
     response = subtensor.add_stake(
         wallet=wallet,
@@ -321,8 +319,109 @@ def stake_validator(subtensor: bt.Subtensor, wallet: Wallet, netuid: int) -> Non
     print(f"  {wallet.name} staked")
 
 
+def ensure_mechanism(subtensor: bt.Subtensor, alice: Wallet, netuid: int, mechanism: int) -> None:
+    """Enable the requested mechanism on this local subnet and read back its count.
+
+    Raises:
+        RuntimeError: Mechanism creation or independent read-back fails.
+    """
+    if subtensor.get_mechanism_count(netuid) > mechanism:
+        return
+    # The selected runtime bounds UID capacity across all mechanisms; match
+    # Pylon's local-chain integration fixture before enabling a second mechanism.
+    capacity = subtensor.compose_call(
+        call_module="AdminUtils",
+        call_function="sudo_set_max_allowed_uids",
+        call_params={"netuid": netuid, "max_allowed_uids": 64},
+    )
+    capacity_response = subtensor.sign_and_send_extrinsic(
+        call=subtensor.compose_call(call_module="Sudo", call_function="sudo", call_params={"call": capacity}),
+        wallet=alice,
+        wait_for_inclusion=True,
+        wait_for_finalization=True,
+    )
+    if not capacity_response.success or subtensor.get_hyperparameter("MaxAllowedUids", netuid) != 64:
+        raise RuntimeError("Local mechanism UID capacity configuration failed")
+    inner = subtensor.compose_call(
+        call_module="AdminUtils",
+        call_function="sudo_set_mechanism_count",
+        call_params={"netuid": netuid, "mechanism_count": mechanism + 1},
+    )
+    response = subtensor.sign_and_send_extrinsic(
+        call=subtensor.compose_call(call_module="Sudo", call_function="sudo", call_params={"call": inner}),
+        wallet=alice,
+        wait_for_inclusion=True,
+        wait_for_finalization=True,
+    )
+    if not response.success or subtensor.get_mechanism_count(netuid) <= mechanism:
+        raise RuntimeError(f"Local mechanism configuration failed: {response.message}")
+
+
+@dataclass(frozen=True)
+class Registration:
+    """Public identity evidence, never wallet secrets or API tokens."""
+
+    identity: str
+    uid: int
+    hotkey: str
+    coldkey: str
+
+
+def verify_registrations(network: str, wallets: list[Wallet], mechanism: int) -> None:
+    """Independently read a block-aligned registration snapshot directly from Subtensor.
+
+    Raises:
+        RuntimeError: An identity is missing, mismatched or shares a UID.
+    """
+    with bt.Subtensor(network=network) as chain:
+        block = chain.get_current_block()
+        registrations: list[Registration] = []
+        neurons = {neuron.hotkey: neuron for neuron in chain.neurons_lite(EXPECTED_NETUID, block=block)}
+        for wallet in wallets:
+            hotkey = wallet.hotkey.ss58_address
+            neuron = neurons.get(hotkey)
+            if neuron is None or neuron.coldkey != wallet.coldkeypub.ss58_address:
+                raise RuntimeError(f"Independent registration check failed for {wallet.name}")
+            registrations.append(Registration(wallet.name, neuron.uid, hotkey, neuron.coldkey))
+        if len({entry.uid for entry in registrations}) != len(wallets):
+            raise RuntimeError("Identity UIDs are not distinct")
+        evidence = {
+            "netuid": EXPECTED_NETUID,
+            "mechanism_id": mechanism,
+            "mechanism_count": chain.get_mechanism_count(EXPECTED_NETUID, block=block),
+            "block": block,
+            "block_hash": chain.get_block_hash(block),
+            "registrations": [asdict(entry) for entry in registrations],
+        }
+    destination = LOCALNET_ROOT / "state" / "registrations.json"
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text(json.dumps(evidence, indent=2) + "\n")
+    temporary.replace(destination)
+    print(f"Verified {len(registrations)} registrations directly at block {block}; evidence: {destination}")
+
+
 def main() -> None:
-    subtensor = wait_for_subtensor(SUBTENSOR_NETWORK)
+    """Prepare local identities sequentially to avoid transaction nonce collisions.
+
+    Raises:
+        ValueError: Configuration does not describe the isolated localnet.
+    """
+    config = dotenv_values(LOCALNET_ROOT / ".env")
+    if (
+        config.get("ENVIRONMENT") != "localnet"
+        or config.get("NETUID") != "2"
+        or config.get("BITTENSOR_NETWORK") != "ws://subtensor:9944"
+        or config.get("HOST_WALLET_DIR") != str(WALLETS_DIR)
+    ):
+        raise ValueError("Run localnet/prepare.sh; bootstrap accepts only the isolated localnet configuration")
+    port = int(config.get("SUBTENSOR_HOST_PORT") or "9944")
+    if not 1024 <= port <= 65535:
+        raise ValueError("Invalid local Subtensor port")
+    network = f"ws://127.0.0.1:{port}"
+    mechanism = int(config.get("MECHANISM_ID") or "0")
+    if mechanism not in (0, 1):
+        raise ValueError("Local bootstrap supports mechanism 0 or 1")
+    subtensor = wait_for_subtensor(network)
     alice = get_alice_wallet()
 
     alice_balance = subtensor.get_balance(alice.coldkey.ss58_address)
@@ -340,8 +439,9 @@ def main() -> None:
     set_admin_freeze_window(subtensor, alice, ADMIN_FREEZE_WINDOW)
 
     print("\n--- Configuring subnet hyperparameters ---")
-    set_subnet_tempo(subtensor, alice, netuid, SUBNET_TEMPO)
+    set_subnet_tempo(subtensor, alice, netuid, int(config.get("SUBNET_TEMPO") or "360"))
     set_commit_reveal_enabled(subtensor, owner, netuid, SUBNET_COMMIT_REVEAL_ENABLED)
+    ensure_mechanism(subtensor, alice, netuid, mechanism)
 
     print("\n--- Activating subnet ---")
     activate_subnet(subtensor, owner, netuid)
@@ -352,14 +452,14 @@ def main() -> None:
     fund_wallet(subtensor, alice, validator)
     register_neuron(subtensor, validator, netuid)
     stake_validator(subtensor, validator, netuid)
-
-    print("\n--- Bootstrap complete ---")
-    print(f"Subnet:    {netuid}")
-    print(f"Owner:     {owner.coldkey.ss58_address}")
-    print(f"Validator: {validator.hotkey.ss58_address}")
-    print(
-        "\nNext: start the miner (cd miner && uv run miner) or a localnet fixture (uv run localnet/miners/<profile>.py)"
-    )
+    wallets = [owner, validator]
+    for index in range(1, 6):
+        miner = get_or_create_wallet(f"miner{index}")
+        fund_wallet(subtensor, alice, miner)
+        register_neuron(subtensor, miner, netuid)
+        wallets.append(miner)
+    subtensor.close()
+    verify_registrations(network, wallets, mechanism)
 
 
 if __name__ == "__main__":

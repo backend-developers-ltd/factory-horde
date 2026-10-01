@@ -2,6 +2,7 @@
 
 from collections.abc import Generator, Mapping
 from datetime import timedelta
+from pathlib import Path
 from typing import override
 
 import httpx
@@ -220,11 +221,12 @@ def test_mechanism_reaches_status_and_write(monkeypatch: pytest.MonkeyPatch, mec
     assert requests[-1].content == b'{"weights":{"miner":1.0}}'
 
 
-def test_scaffold_settings_and_graph_import() -> None:
+def test_scaffold_settings_and_graph_import(tmp_path: Path) -> None:
     settings = Settings.model_validate(
         {
             "NETUID": 2,
             "MECHANISM_ID": 1,
+            "data_root": tmp_path,
             "pylon_service_address": "http://pylon.test",
             "pylon_open_access_token": "test",
         }

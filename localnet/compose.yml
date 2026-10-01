@@ -1,34 +1,49 @@
+# Use only with envs/deployed/docker-compose.yml through localnet/compose.sh.
 services:
   subtensor:
     image: ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f
+    platform: linux/amd64
+    command: ["True", "--no-purge"]
     ports:
-      - "9944:9944"
-      - "9933:9933"
+      - "127.0.0.1:${SUBTENSOR_HOST_PORT:-9944}:9944"
+    volumes:
+      - chain-data:/tmp
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9944'"]
+      test: [CMD-SHELL, "bash -c 'echo > /dev/tcp/localhost/9944'"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 30
 
   pylon:
-    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5
-    ports:
-      - "8000:8000"
     environment:
-      PYLON_BITTENSOR_NETWORK: "ws://subtensor:9944"
-      PYLON_OPEN_ACCESS_TOKEN: "${VALIDATOR_PYLON_OPEN_ACCESS_TOKEN:?}"
-      PYLON_IDENTITIES: '["${VALIDATOR_PYLON_IDENTITY_NAME:?}"]'
-      PYLON_BITTENSOR_WALLET_PATH: "/wallets"
-      PYLON_TEMPO: "${SUBNET_TEMPO:?}"
-      # Identity: maps identity name to the validator wallet created by bootstrap
-      PYLON_ID_VALIDATOR_WALLET_NAME: "${VALIDATOR_PYLON_IDENTITY_NAME:?}"
-      PYLON_ID_VALIDATOR_HOTKEY_NAME: "default"
-      PYLON_ID_VALIDATOR_NETUID: "${NETUID:?}"
-      PYLON_ID_VALIDATOR_TOKEN: "${VALIDATOR_PYLON_IDENTITY_TOKEN:?}"
-      # Sync pylon's notion of block duration with subtensor-localnet fast-blocks (~250 ms).
-      PYLON_BLOCK_DURATION_SECONDS: "0.25"
-    volumes:
-      - ./wallets:/wallets:ro
+      PYLON_BITTENSOR_NETWORK: ws://subtensor:9944
+      PYLON_BITTENSOR_ARCHIVE_NETWORK: ws://subtensor:9944
+      PYLON_EVM_RPC_URL: http://subtensor:9944
+      PYLON_EVM_ARCHIVE_RPC_URL: http://subtensor:9944
+      PYLON_IDENTITIES: '["validator", "miner1", "miner2", "miner3", "miner4", "miner5"]'
+      PYLON_ID_MINER1_WALLET_NAME: miner1
+      PYLON_ID_MINER1_HOTKEY_NAME: default
+      PYLON_ID_MINER1_NETUID: "2"
+      PYLON_ID_MINER1_TOKEN: "${MINER1_PYLON_TOKEN:?}"
+      PYLON_ID_MINER2_WALLET_NAME: miner2
+      PYLON_ID_MINER2_HOTKEY_NAME: default
+      PYLON_ID_MINER2_NETUID: "2"
+      PYLON_ID_MINER2_TOKEN: "${MINER2_PYLON_TOKEN:?}"
+      PYLON_ID_MINER3_WALLET_NAME: miner3
+      PYLON_ID_MINER3_HOTKEY_NAME: default
+      PYLON_ID_MINER3_NETUID: "2"
+      PYLON_ID_MINER3_TOKEN: "${MINER3_PYLON_TOKEN:?}"
+      PYLON_ID_MINER4_WALLET_NAME: miner4
+      PYLON_ID_MINER4_HOTKEY_NAME: default
+      PYLON_ID_MINER4_NETUID: "2"
+      PYLON_ID_MINER4_TOKEN: "${MINER4_PYLON_TOKEN:?}"
+      PYLON_ID_MINER5_WALLET_NAME: miner5
+      PYLON_ID_MINER5_HOTKEY_NAME: default
+      PYLON_ID_MINER5_NETUID: "2"
+      PYLON_ID_MINER5_TOKEN: "${MINER5_PYLON_TOKEN:?}"
     depends_on:
       subtensor:
         condition: service_healthy
+
+volumes:
+  chain-data:

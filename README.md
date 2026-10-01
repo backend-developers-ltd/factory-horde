@@ -18,15 +18,16 @@ The repository is a rendered scaffold being adapted to the
 The [sequential task list](spec/FactoryHorde-v2-sequential-implementation-tasks.md)
 records completion; the [file protocol](spec/file-protocol.md) documents the
 implemented record/publication layer, and the [working design](subnet_design.md) records the selected
-implementation shape and defaults. Existing HTTP ping examples and deployment
-scripts are scaffold code, not an accepted FactoryHorde implementation.
+implementation shape and defaults. The validator now observes the local chain
+through Nexus/Pylon with dispatch disabled. The miner entry point and public
+installer are still scaffold code pending their implementation tasks.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,
-actual Docker execution and independently verified chain weights. Localnet will
+actual Docker execution and independently verified chain weights. Localnet now
 use the same application Compose services and host systemd executor as deployment,
 with isolated wallets, local Subtensor and bootstrap added. The current
-[localnet guide](localnet/README.md) describes the inherited HTTP/tmux setup; the
-FactoryHorde Compose/systemd setup is pending task 4. Public deployment, subnet-12
+[localnet guide](localnet/README.md) provides the verified Compose/bootstrap setup;
+the systemd executor is installed in task 7. Public deployment, subnet-12
 changes and emissions changes are outside this prototype.
 
 ## Repository

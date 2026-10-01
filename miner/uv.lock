@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-05-01T19:49:44.405496226Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -604,6 +604,7 @@ dependencies = [
     { name = "httpx" },
     { name = "litestar", extra = ["standard"] },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "uvicorn" },
 ]
 
@@ -622,6 +623,7 @@ requires-dist = [
     { name = "httpx" },
     { name = "litestar", extras = ["standard"] },
     { name = "pydantic", specifier = ">=2.13.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "uvicorn" },
 ]
 
