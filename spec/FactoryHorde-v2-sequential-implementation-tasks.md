@@ -46,7 +46,7 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 
 **Verified 1 October 2026.** Rendered checklist passed: no tracked `.jinja` files or root `copier.yml`; all six expected rendered files exist. Added `subnet_design.md` with component placement, stage/score/default choices and explicit clean-exit eligibility. Updated README and agent instructions to FactoryHorde identity. Runtime implementation and integrated acceptance remain pending. Validator `uv sync` succeeds with Python 3.14.6; task 2 will reconcile the installed dependency versions.
 
-### 2. Consume the upstream compatibility and mechanism fixes — integration gate
+### 2. [DONE] Consume the upstream compatibility and mechanism fixes — integration gate
 
 **Objective and scope.** Obtain the separately planned dependency/mechanism changes, select the compatible Nexus revision, Pylon client/API version, Pylon service digest and local Subtensor runtime/image, and update the FactoryHorde dependency/deployment selections. Verify that mechanism selection reaches both weight-status gating and actual writes. Preserve dependency-age constraints in the project configuration.
 
@@ -57,6 +57,8 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 **Deliverables.** Reproducible version selection with upstream PR/commit references, project lock updates, pinned service/chain images, and a small selected-version API integration check. Explicitly compare lock, installed package, service image and sibling sources.
 
 **Completion — Linux.** Project-local `uv sync` and public-import/wiring checks pass against the selected dependencies. `NexusTask`, communicator/actor/producer types, result-store injection, selected routing and flow wiring actually exist. Selected mechanism ID is accepted and forwarded consistently by beat/status and setter/write paths, with upstream regression evidence identified. A real mechanism-specific chain proof remains task 12; a signature check is not that proof. Do not repair missing support with private imports or a parallel weight setter.
+
+**Verified 1 October 2026.** Selected the user-requested Nexus `mechanism-id` branch at `e7f4cc1a261dabd52f9cb66bcdfb351cfed53b7b`, published client 2.3.0, Pylon service 2.3.3 and an immutable local-chain image. Both project environments synchronize; validator Ruff/basedpyright and four public-API checks pass, as do six upstream mechanism regressions against installed dependencies. Registry pulls, service source checks and direct live chain metadata establish the selected interfaces. See [dependency selection](dependency-selection.md) for exact digests, old/installed/sibling comparison, commands and evidence limits. Actual mechanism weights and non-interference remain task 12.
 
 ## Phase B — establish contracts and the early submission slice
 

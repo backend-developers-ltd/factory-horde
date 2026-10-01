@@ -1,6 +1,9 @@
 # Localnet
 
-Run a complete local subnet for development and testing.
+The instructions below are the inherited HTTP/tmux scaffold. FactoryHorde's common
+Compose/systemd topology is implemented in task 4; this guide is not yet the V2
+acceptance procedure. Pylon and Subtensor image digests are now pinned as recorded
+in [dependency selection](../spec/dependency-selection.md).
 
 ## Prerequisites
 

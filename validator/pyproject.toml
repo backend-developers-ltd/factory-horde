@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 dependencies = [
     "attrs>=26.1.0", # previously this was required for Nexus (litestar needed it) #TODO: See if this is still the case
     "bittensor-nexus-library",
+    "bittensor-pylon-client==2.3.0",
     "click>=8.3.2",
     "opentelemetry-api~=1.41",
     "opentelemetry-exporter-otlp-proto-http~=1.41",
@@ -31,7 +32,8 @@ build-backend = "hatchling.build"
 exclude-newer = "11 days"
 
 [tool.uv.sources]
-bittensor-nexus-library = { git = "https://github.com/bittensor-church/bittensor-nexus-library.git" }
+# origin/mechanism-id: public API compatibility and mechanism-aware status/writes.
+bittensor-nexus-library = { git = "https://github.com/bittensor-church/bittensor-nexus-library.git", rev = "e7f4cc1a261dabd52f9cb66bcdfb351cfed53b7b" }
 
 [dependency-groups]
 dev = [

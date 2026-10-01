@@ -2,6 +2,12 @@
 
 Validator node for the FactoryHorde Bittensor subnet.
 
+Implementation is in progress. The entry point currently contains the inherited
+HTTP ping graph; the deployment still has a placeholder validator image digest.
+The pinned Nexus `mechanism-id` revision, Pylon versions and verified API checks are
+documented in [dependency selection](../spec/dependency-selection.md). This is not
+yet an installable accepted FactoryHorde candidate.
+
 ## What this is
 
 A `docker compose` stack whose core containers are:
@@ -9,15 +15,16 @@ A `docker compose` stack whose core containers are:
 - **pylon** — sidecar that proxies all Bittensor / subtensor communication for the
   validator (handles wallet, weight setting, metagraph reads).
 - **validator** — the FactoryHorde validator process built from this repo.
-- **alloy** — Grafana Alloy sidecar that collects the validator's OpenTelemetry traces and forwards
-  them to the configured OTLP upstream — the observability proxy or a Tempo backend.
+
+The optional **alloy** trace sidecar is commented out in the rendered Compose file.
 
 alongside a Prometheus-based metrics stack (see [`installer/README.md`](../installer/README.md)).
 
 ## Observability
 
-The validator ships structured JSON logs (`structlog`) and OpenTelemetry traces. The traces
-upstream is configured via `TRACES_UPSTREAM_URL` / `TRACES_UPSTREAM_USER` / `TRACES_UPSTREAM_PASSWORD`.
+The validator ships structured JSON logs (`structlog`). OpenTelemetry export is disabled
+unless an OTLP endpoint is configured. If Alloy is deliberately enabled, its upstream
+requires `TRACES_UPSTREAM_URL` / `TRACES_UPSTREAM_USER` / `TRACES_UPSTREAM_PASSWORD`.
 
 ## Running a validator
 

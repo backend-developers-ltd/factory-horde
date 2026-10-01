@@ -1,7 +1,7 @@
 services:
   pylon:
-    # backenddevelopersltd/bittensor-pylon:2.0.0 - bump via knowledge/validator.deploy.md (Procedure 3).
-    image: backenddevelopersltd/bittensor-pylon@sha256:5e614a173c0cba3b33fbd15436105b362050bff876018e6bfd2dc6afee187acf
+    # Pylon service 2.3.3; selected alongside client 2.3.0 (spec/dependency-selection.md).
+    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5
     restart: unless-stopped
     env_file: ./.env
     environment:

@@ -1,6 +1,6 @@
 services:
   subtensor:
-    image: ghcr.io/opentensor/subtensor-localnet:devnet-ready
+    image: ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f
     ports:
       - "9944:9944"
       - "9933:9933"
@@ -11,7 +11,7 @@ services:
       retries: 10
 
   pylon:
-    image: backenddevelopersltd/bittensor-pylon:2.1.0
+    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5
     ports:
       - "8000:8000"
     environment:
