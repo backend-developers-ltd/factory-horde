@@ -1,0 +1,14 @@
+{
+  "protocol_version": 1,
+  "round_id": "44444444-4444-4444-8444-444444444444",
+  "job_id": "22222222-2222-4222-8222-222222222222",
+  "miner_hotkey": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+  "kind": "judge",
+  "factory_job_id": "11111111-1111-4111-8111-111111111111",
+  "checked_files": [
+    "main.py",
+    "README.md"
+  ],
+  "score": 0.0,
+  "failure": null
+}

@@ -1,0 +1,8 @@
+{
+  "factory_job_id": "11111111-1111-4111-8111-111111111111",
+  "judge_job_id": "22222222-2222-4222-8222-222222222222",
+  "miner_hotkey": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+  "protocol_version": 1,
+  "round_id": "33333333-3333-4333-8333-333333333333",
+  "specification_sha256": "fa6871ff90e4a1eb5b9d2cf29a34d6e9b59fa581b2e51d73ceb3372a25488696"
+}

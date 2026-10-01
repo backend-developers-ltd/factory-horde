@@ -16,7 +16,8 @@ requests and outcomes with the validator through a shared directory.
 The repository is a rendered scaffold being adapted to the
 [V2 specification](spec/FactoryHorde-initial-prototype-specification-v2.md).
 The [sequential task list](spec/FactoryHorde-v2-sequential-implementation-tasks.md)
-records completion; the [working design](subnet_design.md) records the selected
+records completion; the [file protocol](spec/file-protocol.md) documents the
+implemented record/publication layer, and the [working design](subnet_design.md) records the selected
 implementation shape and defaults. Existing HTTP ping examples and deployment
 scripts are scaffold code, not an accepted FactoryHorde implementation.
 

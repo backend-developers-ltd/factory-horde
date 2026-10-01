@@ -62,7 +62,7 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 
 ## Phase B — establish contracts and the early submission slice
 
-### 3. Define the versioned file protocol and canonical round/job records
+### 3. [DONE] Define the versioned file protocol and canonical round/job records
 
 **Objective and scope.** Implement the small typed validator-side record layer and fixtures that the executor can consume using only the standard library. Persist round/cohort/deadlines and durable unique factory/judge IDs before side effects. Define immutable requests/stops, executor-owned current statuses, untrusted judge reports, accepted results and stable result-projection identity. Choose serialization and thread-safe atomic writes for shared records; use same-directory temporary files, ignore incomplete temporary files, and specify crash-durability handling on the selected filesystem.
 
@@ -73,6 +73,8 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 **Deliverables.** Versioned request/status/stop/report/round contracts and representative valid/invalid JSON fixtures. Specify job kind, hotkey, round/job identity, digest/platform, relative paths, fixed mount/command contract, timestamps/deadlines/grace, Docker identity, exit/termination facts, and concise failure reasons. Establish one host data root and a separately configured validator mount path; paths sent to the executor are relative to its host root.
 
 **Completion — Linux tests.** Round IDs cannot collide solely because timestamps coincide. Identical immutable publication is idempotent; conflicting reuse fails. Readers never treat temporary/partial writes as committed records. Tests reject path traversal, absolute-path escape, symlink escape, unsupported versions and mismatched identities. Terminal/failed/cancelled status, confirmed stop, application success, and unresolved observation remain distinct. Input files become complete before a request becomes visible; final evidence is retained.
+
+**Verified 1 October 2026.** Added strict versioned models, canonical round discovery and input/request publication, independent status/report attribution checks, stable result identities and valid/invalid JSON fixtures. Linux descriptor-relative no-follow I/O uses same-directory atomic publication, file/directory fsync and immutable conflict detection. Ruff, basedpyright and all 48 current validator tests pass, including concurrency, missing/partial inputs, symlinks, restart and injected durability failures. [Protocol documentation](file-protocol.md) specifies fixed image executables/mounts, ownership and filesystem assumptions. Docker execution, acceptance of scores and stage gates remain their later tasks.
 
 ### 4. Establish the shared application deployment and isolated Linux localnet
 

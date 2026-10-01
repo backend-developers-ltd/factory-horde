@@ -8,6 +8,10 @@ The pinned Nexus `mechanism-id` revision, Pylon versions and verified API checks
 documented in [dependency selection](../spec/dependency-selection.md). This is not
 yet an installable accepted FactoryHorde candidate.
 
+The [shared-file protocol](../spec/file-protocol.md) implements typed round/job
+records, atomic publication and recovery primitives. Executor integration and
+application task wiring remain later steps in the sequential plan.
+
 ## What this is
 
 A `docker compose` stack whose core containers are:
