@@ -34,7 +34,7 @@ The document distinguishes **agreed product behavior**, **existing framework cap
 ### Included
 
 - Containerized validator, baseline factory, judge, and short-lived miner submission tooling.
-- Publicly retrievable factory images on Docker Hub or GitHub Container Registry, identified by registry digest.
+- Publicly retrievable factory images on GitHub Container Registry, identified by registry digest.
 - On-chain image-reference commitments and discovery through Pylon.
 - A single-file, standard-library-only Python executor running directly on a Linux host under systemd.
 - File-based requests, cancellation, and status exchange between validator and executor.
@@ -106,10 +106,9 @@ The first judge only checks the presence and readability of the expected dummy-p
 
 ### 4.1 Supported registries and immutable references
 
-The supported factory registries are Docker Hub and GitHub Container Registry. A factory submission contains a complete registry/repository reference with a SHA-256 registry manifest digest:
+The supported factory registry is GitHub Container Registry (GHCR only, selected by the user on 1 October 2026). A factory submission contains a complete registry/repository reference with a SHA-256 registry manifest digest:
 
 ```text
-docker.io/<owner>/<image>@sha256:<64 hexadecimal characters>
 ghcr.io/<owner>/<image>@sha256:<64 hexadecimal characters>
 ```
 

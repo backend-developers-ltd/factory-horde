@@ -1,0 +1,27 @@
+{
+  "uid": 2,
+  "coldkey": "5bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "hotkey": "5aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "active": false,
+  "axon_info": {
+    "ip": "0.0.0.0",
+    "port": 0,
+    "protocol": 0
+  },
+  "stake": 0.0,
+  "rank": 0.0,
+  "emission": 0.0,
+  "incentive": 0.0,
+  "consensus": 0.0,
+  "trust": 0.0,
+  "validator_trust": 0.0,
+  "dividends": 0.0,
+  "last_update": 749,
+  "validator_permit": true,
+  "pruning_score": 65535,
+  "stakes": {
+    "alpha": 0.0,
+    "tao": 0.0,
+    "total": 0.0
+  }
+}

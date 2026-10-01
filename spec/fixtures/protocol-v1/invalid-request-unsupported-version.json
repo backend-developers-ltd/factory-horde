@@ -5,7 +5,7 @@
   "miner_hotkey": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
   "kind": "factory",
   "factory_job_id": "11111111-1111-4111-8111-111111111111",
-  "image": "docker.io/example/factory@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "image": "ghcr.io/example/factory@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "platform": "linux/amd64",
   "contract": "factory-v1",
   "input_dir": "rounds/2026-10-01/round-1-12-00-00-33333333-3333-4333-8333-333333333333/5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY/input",

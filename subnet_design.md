@@ -24,6 +24,8 @@ These are placement decisions; absent paths are created by their implementation
 tasks. Keep the two independent uv projects. Judge and executor add no general
 platform package or root workspace. The validator operator owns the judge selection
 and execution host; miners supply factory software, not persistent HTTP servers.
+The prototype publishes and accepts GHCR references only, as selected by the user.
+The selected Pylon writer permits 128 UTF-8 bytes per complete digest reference.
 Factory and judge containers receive neither wallets nor control-root access.
 
 ## Nexus composition

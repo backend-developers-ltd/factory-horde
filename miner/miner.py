@@ -1,229 +1,208 @@
-"""
-Bittensor subnet miner.
+"""Publish one public GHCR manifest reference through the miner's own Pylon identity."""
 
-Accepts work from a validator via an HTTP POST request, then POSTs the result back
-to the validator via a callback URL.
-
-Usage: uv run miner [-n NUM_INSTANCES]
-"""
-
-from __future__ import annotations
-
-import multiprocessing
-import random
-import socket
-import sys
+import json
+import os
+import re
 import time
-from pathlib import Path
-from typing import Any
+from dataclasses import asdict, dataclass
+from typing import Literal, Protocol
 
-import bittensor as bt
 import click
-import httpx
-import uvicorn
-from bittensor.utils.balance import Balance
-from bittensor_wallet import Keypair, Wallet
-from litestar import Litestar, post
-from pydantic import BaseModel
+from prometheus_client import Counter, Histogram
+from pylon_client.artanis import (
+    BasePylonException,
+    BlockNumber,
+    CommitmentDataBytes,
+    Config,
+    IdentityName,
+    NetUid,
+    PylonAuthToken,
+    PylonBadGateway,
+    PylonClient,
+    PylonNotFound,
+    PylonRequestException,
+    PylonTimeout,
+)
+from pylon_client.artanis.v1 import GetCommitmentResponse, GetNeuronsResponse, SetCommitmentResponse
+from tenacity import Retrying, stop_after_attempt
 
-MINER_NAME = "honest"
-PORT_RANGE = (10000, 65000)
-
-# Must match the validator's AsyncHttpNeuronCommunicator target_path
-TARGET_PATH = "/task"
-
-WALLETS_DIR = Path(__file__).resolve().parent.parent / "localnet" / "wallets"
-SUBTENSOR_NETWORK = "ws://127.0.0.1:9944"
-NETUID = 2
-FUND_AMOUNT_TAO = 1000.0
-
-
-# ---------------------------------------------------------------------------
-# Async callback protocol (matches nexus envelope types)
-# ---------------------------------------------------------------------------
-
-
-class RequestEnvelope(BaseModel):
-    request_id: str
-    callback_url: str
-    input: dict[str, Any]
+# The selected Pylon 2.3.3 writer uses RawN, whose supported maximum is Raw128.
+COMMITMENT_MAX_BYTES = 128
+IMAGE_PATTERN = r"ghcr\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[0-9a-f]{64}"
+_events = Counter("factory_horde_submissions_total", "One-shot submission outcomes", ("outcome",))
+_latency = Histogram("factory_horde_submission_seconds", "Submission and read-back duration")
 
 
-class ResponseEnvelope(BaseModel):
-    request_id: str
-    output: dict[str, Any] | None = None
-    error: str | None = None
+class SubmissionError(RuntimeError):
+    """Publication is invalid, misconfigured or still unconfirmed; never claim success."""
 
 
-# ---------------------------------------------------------------------------
-# CUSTOMIZE THIS: subnet-specific request handling
-# ---------------------------------------------------------------------------
+class SubmissionApi(Protocol):
+    """The version-one identity API used by the one-shot submitter."""
+
+    @property
+    def netuid(self) -> NetUid: ...
+
+    def get_latest_neurons(self) -> GetNeuronsResponse: ...
+    def get_neurons(self, block_number: BlockNumber) -> GetNeuronsResponse: ...
+    def get_own_commitment(self) -> GetCommitmentResponse: ...
+    def set_commitment(self, commitment: CommitmentDataBytes) -> SetCommitmentResponse: ...
 
 
-def handle_request(input_data: dict[str, Any]) -> dict[str, Any]:
-    """Transform validator input into miner output.
+@dataclass(frozen=True)
+class Publication:
+    """Evidence from an exact read-back, including the original commitment block."""
 
-    Override this with your subnet's logic:
-    - If the task is cheap: implement it for real
-    - If the task needs external APIs: proxy to a real service
-    - If the task needs heavy compute: return plausible mock data
+    outcome: Literal["published", "unchanged", "recovered"]
+    netuid: int
+    hotkey: str
+    image: str
+    commitment_block: int
+    observed_block: int
+    observed_block_hash: str
 
-    The input_data dict contains the serialized InputModel from the validator.
-    Return a dict matching the validator's expected OutputModel.
+
+def validate_reference(image: str) -> str:
+    """Accept a complete GHCR digest that fits the selected writer's byte bound.
+
+    Raises:
+        ValueError: The registry, digest syntax or encoded length is unsupported.
     """
-    return input_data
+    if re.fullmatch(IMAGE_PATTERN, image) is None:
+        raise ValueError("Expected ghcr.io/owner/image@sha256:<64 lowercase hexadecimal characters>")
+    if len(image.encode("utf-8")) > COMMITMENT_MAX_BYTES:
+        raise ValueError(f"The selected Pylon writer accepts at most {COMMITMENT_MAX_BYTES} UTF-8 bytes")
+    return image
 
 
-# ---------------------------------------------------------------------------
-# HTTP endpoint
-# ---------------------------------------------------------------------------
+def decode_reference(value: str) -> str:
+    """Decode only unambiguous v1 hexadecimal UTF-8 commitments.
+
+    Raises:
+        ValueError: Hexadecimal, UTF-8 or reference validation fails.
+    """
+    if re.fullmatch(r"(?:0x)?(?:[0-9a-fA-F]{2})+", value) is None:
+        raise ValueError("Malformed hexadecimal commitment")
+    return validate_reference(CommitmentDataBytes.fromhex(value).decode("utf-8"))
 
 
-@post(TARGET_PATH)
-async def handle_task(data: RequestEnvelope) -> None:
-    """Receive a task from the validator, process it, POST result back."""
-    print(f"[miner] Received request {data.request_id}")
-
+def _read(api: SubmissionApi) -> GetCommitmentResponse | None:
     try:
-        output = handle_request(data.input)
-        response = ResponseEnvelope(request_id=data.request_id, output=output)
-    except Exception as exc:
-        response = ResponseEnvelope(request_id=data.request_id, error=str(exc))
-
-    async with httpx.AsyncClient() as client:
-        try:
-            await client.post(str(data.callback_url), json=response.model_dump())
-            print(f"[miner] Responded to {data.request_id}")
-        except Exception as exc:
-            print(f"[miner] Failed to callback for {data.request_id}: {exc}")
+        return api.get_own_commitment()
+    except PylonNotFound:
+        return None
 
 
-# ---------------------------------------------------------------------------
-# Self-registration and serving
-# ---------------------------------------------------------------------------
+def _matches(response: GetCommitmentResponse | None, image: str) -> bool:
+    if response is None:
+        return False
+    try:
+        return decode_reference(response.commitment) == image
+    except ValueError:
+        # An invalid old commitment must not prevent a miner from correcting it.
+        return False
 
 
-def connect_subtensor() -> bt.Subtensor:
-    for attempt in range(20):
-        try:
-            subtensor = bt.Subtensor(network=SUBTENSOR_NETWORK)
-            subtensor.get_current_block()
-            return subtensor
-        except Exception:
-            print(f"[miner] Waiting for subtensor... ({attempt + 1}/20)")
-            time.sleep(2)
-    print("[miner] Could not connect to subtensor")
-    sys.exit(1)
-
-
-def get_alice_wallet() -> Wallet:
-    """Create a wallet backed by Alice's well-known devnet keypair."""
-    alice_kp = Keypair.create_from_uri("//Alice")
-    wallet = Wallet(name="alice", path=str(WALLETS_DIR))
-    wallet.set_coldkey(keypair=alice_kp, encrypt=False, overwrite=True)
-    wallet.set_coldkeypub(keypair=alice_kp, overwrite=True)
-    wallet.set_hotkey(keypair=alice_kp, encrypt=False, overwrite=True)
-    return wallet
-
-
-def find_free_port() -> int:
-    """Find a free port by trying random ports in the range."""
-    lo, hi = PORT_RANGE
-    while True:
-        port = random.randint(lo, hi)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", port)) != 0:
-                return port
-
-
-def setup_and_serve(instance_name: str) -> None:
-    """Idempotent setup then serve. Runs in its own process."""
-    port = find_free_port()
-    print(f"[{instance_name}] Starting on port {port}...")
-    subtensor = connect_subtensor()
-
-    wallet = Wallet(name=instance_name, path=str(WALLETS_DIR))
-    wallet.create_if_non_existent(coldkey_use_password=False, hotkey_use_password=False)
-
-    # Fund from Alice if needed (retry — concurrent transfers from Alice get temporarily banned)
-    balance = subtensor.get_balance(wallet.coldkey.ss58_address)
-    if balance < Balance.from_tao(10.0):
-        alice = get_alice_wallet()
-        for attempt in range(5):
-            print(f"[{instance_name}] Funding from Alice... (attempt {attempt + 1}/5)")
-            response = subtensor.transfer(
-                wallet=alice,
-                destination_ss58=wallet.coldkey.ss58_address,
-                amount=Balance.from_tao(FUND_AMOUNT_TAO),
-                wait_for_inclusion=True,
-                wait_for_finalization=True,
-                mev_protection=False,
-            )
-            if response.success:
-                break
-            print(f"[{instance_name}] Funding failed: {response.message}, retrying...")
-            time.sleep(3 + attempt * 2)
-        else:
-            print(f"[{instance_name}] Funding failed after 5 attempts")
-            sys.exit(1)
-
-    # Register on subnet (retry — same nonce contention can happen here)
-    if not subtensor.is_hotkey_registered(wallet.hotkey.ss58_address, NETUID):
-        for attempt in range(5):
-            print(f"[{instance_name}] Registering on subnet {NETUID}... (attempt {attempt + 1}/5)")
-            response = subtensor.burned_register(
-                wallet=wallet,
-                netuid=NETUID,
-                wait_for_inclusion=True,
-                wait_for_finalization=True,
-                mev_protection=False,
-            )
-            if response.success:
-                break
-            print(f"[{instance_name}] Registration failed: {response.message}, retrying...")
-            time.sleep(3 + attempt * 2)
-        else:
-            print(f"[{instance_name}] Registration failed after 5 attempts")
-            sys.exit(1)
-    else:
-        print(f"[{instance_name}] Already registered")
-
-    print(f"[{instance_name}] Setting axon info: 127.0.0.1:{port}")
-    subtensor.serve_axon(
-        netuid=NETUID,
-        axon=bt.Axon(wallet=wallet, port=port, ip="127.0.0.2", external_ip="127.0.0.2"),
+def _evidence(
+    api: SubmissionApi,
+    response: GetCommitmentResponse,
+    image: str,
+    netuid: int,
+    outcome: Literal["published", "unchanged", "recovered"],
+) -> Publication:
+    membership = api.get_neurons(response.block.number)
+    if api.netuid != netuid or membership.block != response.block or response.hotkey not in membership.neurons:
+        raise SubmissionError("Read-back is not attributable to a registered identity at the observed block")
+    return Publication(
+        outcome,
+        netuid,
+        response.hotkey,
+        image,
+        response.commitment_block_number,
+        response.block.number,
+        response.block.hash,
     )
 
-    print(f"[{instance_name}] Serving on 0.0.0.0:{port}{TARGET_PATH}")
-    app = Litestar(route_handlers=[handle_task])
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+def submit(api: SubmissionApi, image: str, netuid: int, *, confirm_seconds: float = 150) -> Publication:
+    """Read first, write at most once, then require exact registered read-back.
+
+    HTTP timeouts can leave the service's shielded write running. Recovery polls
+    reads only; automatic HTTP write retries must be disabled in the client config.
+
+    Raises:
+        SubmissionError: Configuration changes or exact confirmation never arrives.
+        ValueError: The reference or confirmation period is invalid.
+    """
+    validate_reference(image)
+    if confirm_seconds <= 0:
+        raise ValueError("Confirmation period must be positive")
+    with _latency.time():
+        try:
+            api.get_latest_neurons()  # Resolves identity-scoped netuid before any mutation.
+            if api.netuid != netuid:
+                raise SubmissionError("Configured Pylon identity belongs to a different subnet")
+            previous = _read(api)
+            if previous is not None and _matches(previous, image):
+                result = _evidence(api, previous, image, netuid, "unchanged")
+            else:
+                outcome: Literal["published", "recovered"] = "published"
+                try:
+                    api.set_commitment(CommitmentDataBytes(image.encode("utf-8")))
+                except PylonRequestException, PylonBadGateway:
+                    outcome = "recovered"
+                deadline = time.monotonic() + confirm_seconds
+                while True:
+                    try:
+                        response = _read(api)
+                    except PylonRequestException:
+                        response = None
+                    if response is not None and _matches(response, image):
+                        result = _evidence(api, response, image, netuid, outcome)
+                        break
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise SubmissionError("Publication remains unconfirmed; read before resubmitting")
+                    time.sleep(min(2, remaining))
+        except Exception:
+            _events.labels("error").inc()
+            raise
+        _events.labels(result.outcome).inc()
+        return result
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
+@click.command(help="Publish IMAGE once and confirm its chain value. Supply PYLON_IDENTITY_TOKEN in the environment.")
+@click.argument("image")
+@click.option("--pylon-address", envvar="PYLON_ADDRESS", required=True)
+@click.option("--identity", envvar="PYLON_IDENTITY", required=True)
+@click.option("--netuid", type=click.IntRange(min=0), envvar="NETUID", required=True)
+@click.option("--confirm-seconds", type=click.FloatRange(min=1, max=600), default=150, show_default=True)
+def main(image: str, pylon_address: str, identity: str, netuid: int, confirm_seconds: float) -> None:
+    """Publish IMAGE once and exit after exact chain-facing confirmation.
 
+    Supply PYLON_IDENTITY_TOKEN through the environment, never as a command argument.
 
-@click.command()
-@click.option("-n", "count", default=1, help="Number of instances to spawn.")
-def main(count: int) -> None:
-    if count == 1:
-        setup_and_serve(f"{MINER_NAME}-1")
-        return
-
-    processes: list[multiprocessing.Process] = []
-    for i in range(count):
-        instance_name = f"{MINER_NAME}-{i + 1}"
-        proc = multiprocessing.Process(target=setup_and_serve, args=(instance_name,))
-        proc.start()
-        processes.append(proc)
-
+    Raises:
+        click.ClickException: Configuration, publication or read-back fails.
+    """
+    started = time.monotonic()
     try:
-        for proc in processes:
-            proc.join()
-    except KeyboardInterrupt:
-        for proc in processes:
-            proc.terminate()
+        validate_reference(image)
+        token = os.environ.get("PYLON_IDENTITY_TOKEN")
+        if not token:
+            raise click.ClickException("Set PYLON_IDENTITY_TOKEN in the environment")
+        config = Config(
+            address=pylon_address,
+            identity_name=IdentityName(identity),
+            identity_token=PylonAuthToken(token),
+            retry=Retrying(stop=stop_after_attempt(1), reraise=True),
+            timeout=PylonTimeout(read=confirm_seconds),
+        )
+        with PylonClient(config) as client:
+            result = submit(client.v1.identity, image, netuid, confirm_seconds=confirm_seconds)
+    except (BasePylonException, SubmissionError, ValueError) as error:
+        raise click.ClickException(str(error)) from error
+    click.echo(json.dumps({**asdict(result), "elapsed_seconds": time.monotonic() - started}))
 
 
 if __name__ == "__main__":

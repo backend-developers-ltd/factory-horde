@@ -12,7 +12,7 @@ don't end up pointed at a different subnet than the one we configured.
 
 Prerequisites: localnet/prepare.sh; localnet/compose.sh up -d --wait subtensor.
 
-Usage: uv run --project miner python localnet/bootstrap.py
+Usage: uv run --project miner --group bootstrap python localnet/bootstrap.py
 """
 
 from __future__ import annotations

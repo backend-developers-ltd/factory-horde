@@ -36,7 +36,7 @@ type BlockHash = Annotated[str, StringConstraints(pattern=r"^0x[0-9a-f]{64}$")]
 type ImageReference = Annotated[
     str,
     StringConstraints(
-        pattern=r"^(docker\.io|ghcr\.io)/[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[0-9a-f]{64}$",
+        pattern=r"^ghcr\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[0-9a-f]{64}\z",
         max_length=1024,
     ),
 ]

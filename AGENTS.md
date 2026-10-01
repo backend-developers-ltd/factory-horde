@@ -18,7 +18,7 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `validator/` — Nexus-based subnet validator (own `pyproject.toml`, `uv.lock`, `.venv`); also holds the
   production `Dockerfile`
 - `miner/` — submission tooling and baseline factory assets (own `pyproject.toml`, `uv.lock`, `.venv`);
-  the inherited HTTP example is replaced in task 6
+  `miner` is a one-shot Pylon submitter; the `bootstrap` dependency group holds the local-chain SDK
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
 - `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);

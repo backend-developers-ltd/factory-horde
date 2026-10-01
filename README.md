@@ -19,8 +19,9 @@ The [sequential task list](spec/FactoryHorde-v2-sequential-implementation-tasks.
 records completion; the [file protocol](spec/file-protocol.md) documents the
 implemented record/publication layer, and the [working design](subnet_design.md) records the selected
 implementation shape and defaults. The validator now observes the local chain
-through Nexus/Pylon with dispatch disabled. The miner entry point and public
-installer are still scaffold code pending their implementation tasks.
+through Nexus/Pylon with dispatch disabled. The [miner submitter](miner/README.md)
+and frozen commitment discovery are implemented and verified on localnet. The public installer is still scaffold code
+pending its implementation task.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,
 actual Docker execution and independently verified chain weights. Localnet now

@@ -4,7 +4,8 @@ This is the task-4 application foundation, with factory dispatch disabled. It ru
 the common validator, Pylon and monitoring services plus a local Subtensor overlay.
 Factory/judge source-build checks now run through `localnet/build-baselines.sh`.
 Public baseline images are available on GHCR; see [image evidence](../spec/evidence/task5-published-images.json).
-Submission, the host systemd executor and complete rounds remain incomplete; successful startup alone is not V2 acceptance.
+Containerized submissions and frozen discovery are implemented; the host systemd
+executor and complete rounds remain incomplete; successful startup alone is not V2 acceptance.
 
 ## Prerequisites
 
@@ -15,12 +16,12 @@ path without shell metacharacters or spaces for the generated `.env` file.
 Run these commands from the repository root:
 
 ```sh
-env -u UV_EXCLUDE_NEWER uv sync --project miner
+env -u UV_EXCLUDE_NEWER uv sync --project miner --group bootstrap
 env -u UV_EXCLUDE_NEWER uv sync --project validator
 localnet/prepare.sh
 localnet/build-validator.sh
 localnet/compose.sh up -d --wait subtensor
-env -u UV_EXCLUDE_NEWER uv run --project miner python localnet/bootstrap.py
+env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python localnet/bootstrap.py
 localnet/compose.sh up -d --wait pylon validator node-exporter prometheus
 env -u UV_EXCLUDE_NEWER uv run --project validator python localnet/check.py
 ```
@@ -66,7 +67,7 @@ with `--no-purge`. These commands preserve chain identity and registrations:
 ```sh
 localnet/compose.sh restart subtensor
 localnet/compose.sh up -d --wait subtensor
-env -u UV_EXCLUDE_NEWER uv run --project miner python localnet/bootstrap.py
+env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python localnet/bootstrap.py
 localnet/compose.sh logs --tail 20 validator
 localnet/compose.sh down
 ```
@@ -104,3 +105,29 @@ CPU/filesystem data. Node-exporter uses the host PID/root views but the Compose
 network namespace. Both monitoring images are pinned. No remote-write, Alloy or
 upstream credentials are required. Validator/executor metrics and full readiness
 are added in task 14.
+
+## Public image submissions and discovery
+
+After the startup/check commands above and task-5 image verification:
+
+```sh
+localnet/build-submitter.sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_submissions
+```
+
+The check launches a short-lived submitter container for each of the five miner
+identities. Each receives only its own Pylon token through the environment, with no
+wallet or Docker socket mount. It confirms exact read-back, skips an unchanged
+submission, rejects a token used for another identity and freezes block-aligned
+validator discovery. It temporarily changes miner5's commitment to the published
+judge reference to prove snapshot immutability, then restores the factory reference.
+Factory dispatch remains disabled, so this update does not execute a workload.
+Evidence is written under `state/`; public task evidence is in
+[task6-submissions.json](../spec/evidence/task6-submissions.json).
+
+The selected Pylon 2.3.3 writer supports at most 128 UTF-8 bytes through `RawN`;
+the baseline factory reference is 124 bytes. The local runtime uses a 3,100-byte
+per-epoch space allowance, with a minimum charge of 100 bytes per commitment.
+Rapid updates seven blocks apart succeeded. Unregistered writes and an atomic
+4,096-byte batch failed with the expected chain errors. These observations replace
+the older generic 100-block interval guidance for this selected local runtime.
