@@ -13,9 +13,15 @@ import click
 import sentry_sdk
 from dotenv import load_dotenv
 from nexus.v1 import (
+    BlockCount,
     MechanismId,
+    NetUid,
     NexusValidator,
     PylonClientSettingsMixin,
+    SetWeightsBeatNode,
+    Tempo,
+    WeightSetterNode,
+    WeightSettingSuccess,
 )
 from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,10 +42,12 @@ from validator.result_repository import ResultRepository
 from validator.round_actor import RoundCoordinatorNode
 from validator.round_repository import RoundRepository
 from validator.tasks import FileTasks
+from validator.weighing import Weigher, read_membership
+from validator.weight_gate import WeightGate
 
 
 class Settings(PylonClientSettingsMixin, BaseSettings):
-    """Explicit dispatch configuration; chain weight writes are added separately."""
+    """Explicit independent configuration for round dispatch and chain weight writes."""
 
     model_config = SettingsConfigDict(env_prefix="VALIDATOR_", extra="ignore")
 
@@ -54,6 +62,10 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     evaluation_window: timedelta = timedelta(minutes=55)
     judge_stop_reserve: timedelta = timedelta(minutes=5)
     stop_grace_seconds: int = Field(default=60, ge=0, le=60)
+    weights_enabled: bool = False
+    weight_temperature: float = Field(default=0.1, gt=0, allow_inf_nan=False)
+    weight_tempo: int = Field(default=360, gt=0)
+    weight_epoch_offset: int = Field(default=0, ge=0)
 
     @field_validator("validator_hotkey", "judge_image", mode="before")
     @classmethod
@@ -86,7 +98,20 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
             self.validator_hotkey and self.judge_image and self.pylon_identity_name and self.pylon_identity_token
         ):
             raise ValueError("Dispatch requires validator hotkey, judge digest and Pylon identity credentials")
+        if self.weights_enabled and not (self.pylon_identity_name and self.pylon_identity_token):
+            raise ValueError("Weight setting requires Pylon identity credentials")
+        if self.weight_epoch_offset > self.weight_tempo:
+            raise ValueError("Weight epoch offset must fit within the configured tempo")
         return self
+
+    def pylon_config(self) -> Config:
+        """Build public-client configuration without exposing wallet material to the validator."""
+        return Config(
+            address=self.pylon_service_address,
+            identity_name=IdentityName(self.pylon_identity_name) if self.pylon_identity_name is not None else None,
+            identity_token=PylonAuthToken(self.pylon_identity_token) if self.pylon_identity_token is not None else None,
+            open_access_token=PylonAuthToken(self.pylon_open_access_token),
+        )
 
 
 class Validator(NexusValidator):
@@ -107,12 +132,7 @@ class Validator(NexusValidator):
             discovery = partial(
                 freeze_via_pylon,
                 self.results.files,
-                Config(
-                    address=settings.pylon_service_address,
-                    identity_name=IdentityName(settings.pylon_identity_name or ""),
-                    identity_token=PylonAuthToken(settings.pylon_identity_token or ""),
-                    open_access_token=PylonAuthToken(settings.pylon_open_access_token),
-                ),
+                settings.pylon_config(),
                 settings.netuid,
                 settings.validator_hotkey,
             )
@@ -125,6 +145,34 @@ class Validator(NexusValidator):
             self.connect(coordinator.evaluation, self.tasks.evaluation.input)
             self.connect(coordinator.error, errors.sink)
             self.connect(coordinator.ok, taps=(MessageLoggerNode[RoundTick]("factory-horde-rounds").sink,))
+        if settings.weights_enabled:
+            weigher = Weigher(
+                self.tasks.store_provider.get_task_result_store(),
+                partial(read_membership, settings.pylon_config(), settings.netuid),
+                settings.weight_temperature,
+            )
+            opportunity = SetWeightsBeatNode(
+                "factory-horde-weight-opportunities",
+                netuid=NetUid(settings.netuid),
+                epoch_start_offset=BlockCount(settings.weight_epoch_offset),
+                mechanism_id=settings.mechanism_id,
+                tempo=Tempo(settings.weight_tempo),
+            )
+            gate = WeightGate(weigher)
+            setter = WeightSetterNode(
+                "factory-horde-weight-setter",
+                weighing_func=weigher.calculate,
+                mechanism_id=settings.mechanism_id,
+                task_result_store_provider=self.tasks.store_provider,
+            )
+            self.connect(self.subnet_clock.source, taps=(opportunity.block_beat,))
+            self.connect(opportunity.source, gate.sink)
+            self.connect(gate.ok, setter.sink)
+            self.connect(gate.error, errors.sink)
+            self.connect(setter.error, errors.sink)
+            self.connect(
+                setter.ok, taps=(MessageLoggerNode[WeightSettingSuccess]("factory-horde-weight-requests").sink,)
+            )
 
 
 def _setup_sentry() -> None:

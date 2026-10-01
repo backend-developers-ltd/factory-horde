@@ -48,9 +48,26 @@ A successful score of zero is eligible; failed, forced, nonzero, malformed or
 unconfirmed outcomes carry no accepted score. Missing final reports become retained
 failures. Accepted decisions survive loss of their raw report without redrawing a
 score. Nexus routing targets are observation metadata; miner attribution comes from
-the frozen business request. Future weighing must read accepted hotkeys, not the
-router-based count helpers. Queries use the latest completed round with scores,
+the frozen business request. Weighing reads accepted hotkeys, not the router-based
+count helpers. Queries use the latest completed round with scores,
 independently of epoch ranges used for framework queries.
+
+Weight writes are separately enabled with `VALIDATOR_WEIGHTS_ENABLED=true` and
+Pylon identity credentials. Both Nexus weight opportunity and setter nodes use
+`MECHANISM_ID`; the setter shares the factory/evaluation store provider. The gate
+skips opportunities without usable registered scores. Empty rounds retain the
+latest nonempty completed round; chain epoch boundaries do not expire its scores.
+Successful zeros remain eligible and failures are excluded. Weighing uses
+`exp((score - maximum) / temperature)`, normalized over currently registered
+accepted hotkeys, with finite positive `VALIDATOR_WEIGHT_TEMPERATURE` default `0.1`.
+Membership is read again after calculation; a detected change aborts that attempt.
+
+`VALIDATOR_WEIGHT_TEMPO` defaults to 360 blocks and must match the subnet;
+`VALIDATOR_WEIGHT_EPOCH_OFFSET` defaults to zero. These opportunities do not control
+round timing. `control/weight-calculation.json` records the latest calculated
+request, not chain inclusion. The [independent localnet check](../localnet/README.md)
+reads actual Subtensor weights at a fixed block and accounts for integer encoding.
+These weights do not establish final emission percentages.
 
 Use the [localnet guide](../localnet/README.md) to build the validator, bootstrap
 isolated identities and start the application. The common Compose file still has

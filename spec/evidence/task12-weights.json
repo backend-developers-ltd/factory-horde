@@ -1,0 +1,187 @@
+{
+  "checked_at": "2026-10-01T22:15:30.894333+00:00",
+  "image_id": "sha256:e43a125e90d8013ef86c7151a609b958d918de442a30aa5dff08202fbc247f69",
+  "netuid": 2,
+  "mechanism_id": 1,
+  "before": {
+    "block": 25883,
+    "block_hash": "0x6d05115db1f8efda1e9233b251e6a328249c783971f8d9bce97fa5ed336a7e28",
+    "validator_hotkey": "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu",
+    "validator_uid": 1,
+    "mapping": {
+      "5FhZmS2rdx45T7Se3wYoouJGWVUfPBB6UsPvxq8kqxHXdSqR": 0,
+      "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu": 1,
+      "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 2,
+      "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 3,
+      "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 4,
+      "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 5,
+      "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 6
+    },
+    "mechanism_zero": [],
+    "mechanism_one": [],
+    "last_update": 728,
+    "tempo": 360,
+    "min_allowed_weights": 1,
+    "max_weight_limit": 1.0,
+    "weights_rate_limit": 100
+  },
+  "after": [
+    {
+      "block": 25895,
+      "block_hash": "0x006afb28083f17ca94a2f5f56372208c4f1f504853aa0099ad455cb924acae61",
+      "validator_hotkey": "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu",
+      "validator_uid": 1,
+      "mapping": {
+        "5FhZmS2rdx45T7Se3wYoouJGWVUfPBB6UsPvxq8kqxHXdSqR": 0,
+        "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu": 1,
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 2,
+        "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 3,
+        "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 4,
+        "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 5,
+        "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 6
+      },
+      "mechanism_zero": [],
+      "mechanism_one": [
+        [
+          1,
+          [
+            [
+              5,
+              7511
+            ],
+            [
+              3,
+              65535
+            ],
+            [
+              2,
+              521
+            ],
+            [
+              6,
+              11447
+            ],
+            [
+              4,
+              23084
+            ]
+          ]
+        ]
+      ],
+      "last_update": 25895,
+      "tempo": 360,
+      "min_allowed_weights": 1,
+      "max_weight_limit": 1.0,
+      "weights_rate_limit": 100
+    },
+    {
+      "block": 25998,
+      "block_hash": "0xebbb69ce0b568ea4baf413715d84b2d6a64a2c77f443ce48f8f6801479ff7f29",
+      "validator_hotkey": "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu",
+      "validator_uid": 1,
+      "mapping": {
+        "5FhZmS2rdx45T7Se3wYoouJGWVUfPBB6UsPvxq8kqxHXdSqR": 0,
+        "5EL1oBBmxPesQxjMLwMwFNMkGL9KfndSHBDzD1y4oVBdo6eu": 1,
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 2,
+        "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 3,
+        "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 4,
+        "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 5,
+        "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 6
+      },
+      "mechanism_zero": [],
+      "mechanism_one": [
+        [
+          1,
+          [
+            [
+              5,
+              7511
+            ],
+            [
+              3,
+              65535
+            ],
+            [
+              2,
+              521
+            ],
+            [
+              6,
+              11447
+            ],
+            [
+              4,
+              23084
+            ]
+          ]
+        ]
+      ],
+      "last_update": 25996,
+      "tempo": 360,
+      "min_allowed_weights": 1,
+      "max_weight_limit": 1.0,
+      "weights_rate_limit": 100
+    }
+  ],
+  "calculations": [
+    {
+      "round_id": "6335cda2-6331-4efb-ab9a-26d5adb44903",
+      "calculated_at": "2026-10-01T22:14:56.767644Z",
+      "temperature": 0.1,
+      "uids": {
+        "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 5,
+        "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 3,
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 2,
+        "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 6,
+        "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 4
+      },
+      "weights": {
+        "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 0.06948643401388004,
+        "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 0.6062487207199211,
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 0.004820673708678653,
+        "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 0.10589642763534098,
+        "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 0.21354774392217932
+      }
+    },
+    {
+      "round_id": "6335cda2-6331-4efb-ab9a-26d5adb44903",
+      "calculated_at": "2026-10-01T22:15:27.071307Z",
+      "temperature": 0.1,
+      "uids": {
+        "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 5,
+        "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 3,
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 2,
+        "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 6,
+        "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 4
+      },
+      "weights": {
+        "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 0.06948643401388004,
+        "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 0.6062487207199211,
+        "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 0.004820673708678653,
+        "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 0.10589642763534098,
+        "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 0.21354774392217932
+      }
+    }
+  ],
+  "independently_calculated_weights": {
+    "5DtAzzmLYRuC2e83YaX9hH9FrLgJRC1znrbgCmu5eim2BVk3": 0.06948643401388004,
+    "5F41hTj8wbr3ASgEffxBCPjS45i7hX3tcW6ozevziZ55kc18": 0.6062487207199211,
+    "5FBkiCFgeoLhZRJR3wWuay34LCThXHiK1dDvzuHTkEzzPg98": 0.004820673708678653,
+    "5G8o87DfsAqyvuoBdNwGFLHZq3vpXuXx1XnjABvgw969fL1t": 0.10589642763534098,
+    "5GpwYsRm8LRix1mFFb2sJHdzm3dWqt3nGUZzQ3h1mckQizyp": 0.21354774392217932
+  },
+  "mechanism_zero_unchanged": true,
+  "validator_restarted_between_updates": true,
+  "encoding": "Compared normalized Subtensor u16 vector with independent stable softmax; absolute tolerance 2 * recipients / 65535.",
+  "maximum_encoding_errors": [
+    6.714163240495452e-06,
+    6.714163240495452e-06
+  ],
+  "qa": {
+    "validator_tests_passed": 151,
+    "focused_weighing_tests_passed": 24,
+    "unchanged_image_tests_skipped": 9,
+    "ruff": "passed",
+    "basedpyright": "0 errors, 0 warnings, 0 notes; includes independent checker under miner bootstrap environment"
+  }
+}

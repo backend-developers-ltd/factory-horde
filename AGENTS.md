@@ -44,6 +44,11 @@ and accepted scores; `result_store.py` supplies public Nexus projections with re
 `file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
 `coordinator.py` and `round_actor.py` persist admission, enforce stage/stop gates and recover the same
 jobs/deadlines without relying on task callbacks. Unresolved old workloads hold new round slots.
+`weighing.py` selects the latest usable completed round, filters current registration and revalidates
+membership before returning stable softmax weights. `weight_gate.py` suppresses empty opportunities;
+both Nexus weight nodes receive `Settings.mechanism_id` and use the tasks' shared store provider.
+Weight writes are independently opt-in. `localnet/check_weights.py` uses the miner bootstrap SDK to
+verify the actual chain vector and mechanism-0 non-interference without relying on Pylon acknowledgements.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

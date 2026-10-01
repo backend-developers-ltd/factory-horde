@@ -200,6 +200,36 @@ the default two-hour timing. Only one coordinator may write a data root. Keep
 existing files across restart; unresolved old jobs hold future slots. Disabling
 dispatch pauses the coordinator; existing executor requests retain their deadlines.
 
+## Independently verify chain weights
+
+After a completed five-miner coordinator run and a current validator image build:
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python localnet/check_weights.py
+```
+
+The checker runs the production validator with weight writes enabled and round
+admission disabled, using the existing accepted scores. The Nexus opportunity node,
+result gate and setter handle submission through Pylon. The checker itself uses
+the bootstrap SDK to read Subtensor directly: subnet 2, both mechanisms, the
+validator's UID/hotkey, current recipient mapping, constraints and integer weight
+vector at the same block. It independently recomputes softmax and accounts for
+u16 quantization, restarts the validator between two actual updates, verifies
+identical score-derived weights and unchanged mechanism 0, then restores the
+ordinary validator. Raw evidence is in `state/task12-weights.json` and
+`state/task12-validator.log`; public evidence is
+[task12-weights.json](../spec/evidence/task12-weights.json).
+
+The verified chain uses tempo 360, minimum one weight, maximum weight limit 1.0
+and a 100-block write rate limit. Two updates appeared at blocks 25,895 and 25,996;
+their normalized integer vectors differ from the requested softmax by at most
+`0.00000672`. Weight vectors are not final emission percentages.
+
+For continuous writes, set `VALIDATOR_WEIGHTS_ENABLED=true` in `localnet/.env`
+and recreate the validator. It is independent of `VALIDATOR_DISPATCH_ENABLED`.
+`WEIGHT_TEMPERATURE` defaults to `0.1`; `SUBNET_TEMPO` and `WEIGHT_EPOCH_OFFSET`
+configure Nexus weight opportunities. No usable registered scores means no write.
+
 ## Monitoring
 
 Pylon listens on loopback port 8000, Subtensor on 9944 and Prometheus on 9090.

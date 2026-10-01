@@ -30,6 +30,7 @@ control/
   executor-metrics.json          # atomic process heartbeat/counters/latency buckets
   projections/<result-id>.json   # immutable Nexus routing metadata and business-result pointer
   skipped-evaluations/<job-id>.json # immutable reason an intended judge was never authorized
+  weight-calculation.json         # latest derived request; not proof of chain inclusion
 rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
   specification.md
@@ -166,6 +167,14 @@ Pylon routing models are copied to preserve thread-safe cached observations.
 other jobs remain unresolved. This query supplies score history; it does not grant
 permission to start another round. Synthetic routing identities never attribute
 scores: use `AcceptedResult.miner_hotkey`, not Nexus routed-neuron count helpers.
+The weight gate and setter read this same provider/repository. They filter accepted
+hotkeys against current registration, apply stable softmax at the configured positive
+temperature and recheck registration after calculation. A detected membership change
+aborts that attempt. `WeightCalculation` records the source round, membership block,
+epoch, UID mapping, temperature and derived weights without copying accepted scores.
+Absent usable history/recipients suppresses the opportunity before the setter;
+an empty mapping is never used as a skip signal. Only an independent Subtensor read
+proves the resulting mechanism-specific chain vector.
 Counters and latency histograms use `factory_horde_result_operations_total` and
 `factory_horde_result_operation_seconds` with bounded operation/outcome labels.
 
