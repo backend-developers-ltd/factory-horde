@@ -4,8 +4,9 @@ This prototype measures whether a submitted software factory completes the local
 orchestration contract. Its random scores deliberately measure no application
 quality. The [V2 specification](spec/FactoryHorde-initial-prototype-specification-v2.md)
 is authoritative; the [task list](spec/FactoryHorde-v2-sequential-implementation-tasks.md)
-tracks implementation and evidence. This document selects defaults, not claims of
-working components. The existing rendered scaffold must not be rendered again.
+tracks implementation and evidence. This document records the implemented shape and defaults;
+[acceptance evidence](spec/evidence/task17-acceptance.json) states what was exercised.
+The existing rendered scaffold must not be rendered again.
 
 ## Roles and placement
 
@@ -20,8 +21,7 @@ working components. The existing rendered scaffold must not be rendered again.
 | Protocol fixtures | Versioned valid/invalid JSON examples shared by component tests | `spec/fixtures/protocol-v1/` |
 | Acceptance/fault tools | Local-chain bootstrap, approximately five miner identities, actual execution and independent read-back | `localnet/` |
 
-These are placement decisions; absent paths are created by their implementation
-tasks. Keep the two independent uv projects. Judge and executor add no general
+These components are implemented. Keep the two independent uv projects. Judge and executor add no general
 platform package or root workspace. The validator operator owns the judge selection
 and execution host; miners supply factory software, not persistent HTTP servers.
 The prototype publishes and accepts GHCR references only, as selected by the user.
@@ -75,15 +75,15 @@ Use protocol-versioned JSON and the V2 illustrated filenames, in UTC:
     <miner-hotkey>/result.json
 ```
 
-The installer defaults the absolute host root to the operator home's
-`factory-horde/data`, with a separately configured validator mount at
+The installer defaults the absolute host root to `<installation>/data`; choosing
+`<operator-home>/factory-horde` gives `<operator-home>/factory-horde/data`. The validator mount is
 `/var/lib/factory-horde`. Localnet chooses an isolated absolute root. Requests carry
 relative locations resolved only against the executor's host root; traversal,
 absolute paths and symlink escape fail validation. Docker receives only per-job
 input read-only/output writable, or judge specification/submission read-only and
 report writable. A job-kind-specific fixed command/mount contract replaces arbitrary
 shell commands. Operator configuration supplies target platform, resources and
-UID/GID; Linux mount and ownership checks must prove the selected values in task 4.
+UID/GID; Linux mount and ownership evidence is recorded in tasks 4, 7 and 17.
 
 Persist unique round/factory/judge IDs, cohort, deadlines and complete inputs before
 request publication. Validator owns immutable requests/stops, round state and
@@ -156,7 +156,9 @@ event and latency metrics plus useful structured failures. Executor stays file-o
 
 Task 12 demonstrates local-chain weights independently of Nexus/Pylon success
 logging. Tasks 13–17 establish failures, restart/update behavior and reproducibility
-from an immutable candidate on clean Linux. Record exact dependencies, digest
+from an immutable candidate on the existing user-selected Linux VM, using a separate
+localnet installation. The user prohibited preparing another VM; no clean-OS proof
+is claimed. Record exact dependencies, digest
 references, protocol records, outputs, scores and direct chain evidence outside
 source commits. Executor updates serialize, verify checksum/protocol, replace
 atomically and restart without rerunning detached jobs; no automatic rollback.

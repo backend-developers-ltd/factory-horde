@@ -8,8 +8,8 @@ Origin: the Copier-rendered Nexus subnet template.
 Follow `spec/FactoryHorde-v2-sequential-implementation-tasks.md` in order and use `subnet_design.md` for the
 selected implementation shape. V2 overrides generic HTTP-miner, validator-only and host-tmux recipes. Mark a
 task `[DONE]` only when its required evidence exists, then commit it with a short title and no body. The
-repository is already rendered: do not rerun Copier. New component locations in the design are planned until
-their implementation tasks complete.
+repository is already rendered: do not rerun Copier. The V2 components are implemented; use the retained
+evidence and `docs/implementation-handoff.md` for the accepted scope and selected revisions.
 
 ## Repository layout
 
@@ -22,8 +22,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
 - `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);
-  the rendered repo is promoted on the `deploy-config-production` branch, with this compose file and the
-  installer scripts as the operator-critical files
+  operator promotion would use `deploy-config-production`, with this compose file and the installer
+  scripts as the operator-critical files; no production configuration branch has been promoted
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change

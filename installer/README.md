@@ -2,8 +2,10 @@
 
 The installer and updater use the common Compose application and one host systemd
 executor. The accepted topology is localnet only; the [immutable candidate](../envs/candidate/README.md)
-supplies published images and configuration. End-to-end acceptance on the user-selected existing VM passed task 17. No subnet-12 or production configuration is
-promoted by these instructions.
+supplies published images and configuration. [End-to-end acceptance](../spec/evidence/task17-acceptance.json)
+passed in a separate installation on the existing user-selected VM. Follow the
+[packaged reproduction sequence](../localnet/README.md#packaged-candidate-acceptance-on-this-vm).
+No subnet-12 or production configuration is promoted by these instructions.
 
 ## Requirements and ownership
 

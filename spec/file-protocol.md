@@ -1,7 +1,7 @@
 # FactoryHorde shared-file protocol v1
 
-Implemented validator types are in `validator/records.py`, with atomic I/O in
-`validator/record_files.py` and round/job publication in `validator/round_repository.py`.
+Implemented validator types are in `validator/src/validator/records.py`, with atomic I/O in
+`validator/src/validator/record_files.py` and round/job publication in `validator/src/validator/round_repository.py`.
 The standalone executor implements the same wire contract without importing those modules.
 Concurrent cancellation and fault-recovery evidence are recorded under task 8. JSON fixtures are in [fixtures/protocol-v1](fixtures/protocol-v1/README.md).
 This contract defines records and publication. Docker observations are implemented;
@@ -9,8 +9,9 @@ report acceptance and automated task/stage scheduling are implemented.
 
 ## Roots, identity and ownership
 
-The installer-selected absolute host root defaults to `<operator-home>/factory-horde/data`;
-the validator mount defaults to `/var/lib/factory-horde`. They refer to the same
+The installer-selected absolute host root defaults to `<installation>/data`;
+choosing `<operator-home>/factory-horde` gives `<operator-home>/factory-horde/data`.
+The validator mount defaults to `/var/lib/factory-horde`. They refer to the same
 tree. Repository constructors take the local absolute mount path. Every request
 path is relative to that tree, never a validator-container absolute path passed to
 host Docker. Root and relative path components must not be symlinks.

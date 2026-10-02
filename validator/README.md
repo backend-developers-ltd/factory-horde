@@ -73,7 +73,9 @@ These weights do not establish final emission percentages.
 Use the [localnet guide](../localnet/README.md) to build the validator, bootstrap
 isolated identities and start the application. The common Compose file selects the
 published [immutable candidate](../envs/candidate/README.md); the developer helper
-can instead supply a local image ID. End-to-end acceptance on the user-selected existing VM passed task 17.
+can instead supply a local image ID. [Task-17 acceptance](../spec/evidence/task17-acceptance.json)
+passed on the existing user-selected VM; the [handoff](../docs/implementation-handoff.md)
+links exact revisions and reproduction instructions.
 
 The validator uses structured JSON logs. Common Compose disables trace export and
 starts pinned Prometheus/node-exporter services with authenticated Pylon scraping.
@@ -116,6 +118,56 @@ Independently verified effects remain the direct-chain evidence from
 
 Use the [monitoring check](../localnet/README.md#monitoring) to verify executor
 staleness, result-store write failure and repair on an idle localnet.
+
+## Observe and restart the accepted installation
+
+Run from the repository root after the packaged acceptance setup. These commands
+select that installation's common Compose files and isolated project:
+
+```sh
+TASK_INSTALL="$PWD/localnet/state/acceptance"
+TASK_COMPOSE=(docker compose --project-name factory-horde-acceptance
+  --env-file "$TASK_INSTALL/.env"
+  -f "$TASK_INSTALL/envs/deployed/docker-compose.yml"
+  -f "$TASK_INSTALL/localnet/compose.yml")
+"${TASK_COMPOSE[@]}" ps
+"${TASK_COMPOSE[@]}" logs --tail 20 validator
+"${TASK_COMPOSE[@]}" exec -T validator /opt/venv/bin/python -c \
+  "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:9101/readyz').read().decode())"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m json.tool \
+  "$TASK_INSTALL/data/control/schedule.json"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m json.tool \
+  "$TASK_INSTALL/data/control/weight-calculation.json"
+rg --files "$TASK_INSTALL/data/rounds" | rg '(round|factory-result|result|report)\.json$'
+```
+
+Round JSON records the frozen deadlines, cohort, stage and unresolved IDs. Requests,
+permanent stops and executor statuses live under `data/control/`; each miner's
+round directory holds generated files, judge report and immutable accepted decision.
+The weight-calculation file is a request; use the independent chain checker for
+inclusion proof. The same host tree is mounted at `/var/lib/factory-horde` inside
+the validator. Keep tokens and wallets out of logs and evidence exports.
+
+To resume observation after a service interruption, keep the same data root,
+wallets and chain volume, repair Docker/path permissions if necessary, then run:
+
+```sh
+sudo systemctl restart factory-horde-acceptance-executor
+"${TASK_COMPOSE[@]}" restart validator
+"${TASK_COMPOSE[@]}" up -d --no-deps --wait --wait-timeout 180 validator
+```
+
+Stopping/restarting the executor leaves detached work intact. Reconciliation reads
+its retained Docker identities and terminal ledger. If an expected execution is
+missing or its start remains ambiguous, preserve that unresolved record and stop
+new admission while diagnosing it. Do not delete a request, permanent stop,
+container or result to force progress. There is no operator command that invents
+terminal evidence or authorizes a replacement execution.
+
+To apply the installation's selected compatible revision, use
+`"$TASK_INSTALL/installer/update_compose.sh" "$TASK_INSTALL"`. See the
+[installer guide](../installer/README.md#release-assets-and-update-behavior) for
+checksum publication, exact-unit permissions and repair after unhealthy updates.
 
 For development, run the QA gates from `validator/`:
 

@@ -2,7 +2,7 @@
 
 Dispatch and weight writes default to disabled. Localnet runs
 the common validator, Pylon and monitoring services plus a local Subtensor overlay.
-Factory/judge source-build checks now run through `localnet/build-baselines.sh`.
+Factory/judge source-build checks run through `localnet/build-baselines.sh`.
 Public baseline images are available on GHCR; see [image evidence](../spec/evidence/task5-published-images.json).
 Containerized submissions and frozen discovery are implemented; the host systemd
 executor runs concurrent factory/judge jobs. Automated rounds, recovery and independent
@@ -97,8 +97,12 @@ new output filename. Raw evidence is retained on failure.
 ## Prerequisites
 
 Linux amd64, Docker with Compose, systemd, Python 3.14, uv, Bash, OpenSSL and GNU
-coreutils. The operator account must have Docker access. Use a canonical checkout
+coreutils. Full installer checks also require sudo and cron; downloading published
+fixture metadata uses the authenticated GitHub CLI (`gh`). The operator account
+must have Docker access. Use a canonical checkout
 path without shell metacharacters or spaces for the generated `.env` file.
+
+## Source-build development
 
 Run these commands from the repository root:
 

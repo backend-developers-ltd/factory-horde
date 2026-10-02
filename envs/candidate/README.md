@@ -12,11 +12,12 @@ All eight selected images passed anonymous pulls. Installation from Git revision
 monitoring checks on the prepared Linux host; see [task-16 evidence](../../spec/evidence/task16-candidate.json).
 This isolated localnet candidate passed [task-17 end-to-end acceptance](../../spec/evidence/task17-acceptance.json).
 The user selected the existing VM and prohibited preparing another VM; no clean-OS claim is made.
-No production configuration branch has been promoted.
+No production configuration branch has been promoted. The complete reproduction
+sequence and retained evidence are linked from the [handoff](../../docs/implementation-handoff.md).
 
 ## Install the selected application
 
-Use a clean, published checkout containing this candidate, and satisfy the
+Use the published checkout containing the acceptance tools, and satisfy the
 [installer prerequisites](../../installer/README.md#requirements-and-ownership).
 Run from the repository root as the Docker operator. The example uses ports 19944,
 18000 and 19090; copy/edit `localnet.env` before installation if these are occupied.
@@ -25,7 +26,7 @@ developer localnet. Initial dispatch and weight writes are disabled, with the
 production 60/5/55-minute windows explicitly configured.
 
 ```sh
-TASK_REVISION="$(git rev-parse HEAD)"
+TASK_REVISION=87353ed2e97cf435b6d8210dceb177affe2febfb
 TASK_INSTALL="$PWD/localnet/state/candidate"
 env -u UV_EXCLUDE_NEWER uv sync --project validator
 env -u UV_EXCLUDE_NEWER uv sync --project miner --group bootstrap
