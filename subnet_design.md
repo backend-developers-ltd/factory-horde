@@ -121,7 +121,12 @@ without forced termination or Docker OOM failure) with the required readable out
 may be judged. A graceful deadline stop that produces a clean zero exit may qualify;
 a confirmed nonzero exit, force kill, failed pull/start or cancelled-before-start
 never qualifies, even with partial output. Host/executor uncertainty remains a
-separate unresolved state. Judge acceptance additionally requires confirmed clean
+separate unresolved state. At minute 65 the coordinator persists each factory's
+fixed finish cutoff and pending/timely/late/failed eligibility. A successful Docker
+finish at or before that cutoff may be observed later after restart; a finish after
+the cutoff is permanently excluded. Pending evidence never extends the cutoff and
+unresolved execution still holds future rounds. Judge acceptance also rechecks the
+factory finish cutoff and requires confirmed clean
 zero exit and a valid report linked to the exact judge/factory/round/miner. Forced,
 nonzero, malformed, missing or unconfirmed judge outcomes receive no score.
 

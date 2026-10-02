@@ -32,6 +32,7 @@ control/
   executor-health.json           # atomic heartbeat, Docker probe, initial reconciliation
   projections/<result-id>.json   # immutable Nexus routing metadata and business-result pointer
   skipped-evaluations/<job-id>.json # immutable reason an intended judge was never authorized
+  factory-eligibility/<job-id>.json # fixed finish cutoff and pending/timely/late/failed decision
   weight-calculation.json         # latest derived request; not proof of chain inclusion
 rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
@@ -102,7 +103,14 @@ The single coordinator writer reconciles canonical files on actor-owned ticks.
 Stops are published at the common factory/judge deadlines for unconfirmed work,
 including when a status cannot be parsed. Separate judge authorization requires a
 successful retained factory decision, readable required output, and the evaluation
-window. `SkippedEvaluation` records failed factories, missing output or expired
+window. At the confirmation cutoff (minute 65 by default), `FactoryEligibility`
+persists the frozen cutoff and a pending decision if termination evidence is absent.
+On the first terminal observation it retains the Docker finish time and a final
+timely, late or failed decision. A clean exit at or before the cutoff may qualify,
+even when first observed after restart; an actual later exit never qualifies.
+Missing evidence remains pending and continues to hold new round slots. This gate
+runs even without a chain beat; judging still requires a retained factory result.
+`SkippedEvaluation` records failed or late factories, missing output or expired
 evaluation without claiming that a judge executed. A fully settled round can expose
 its results early during evaluation; the next admission still waits for its frozen
 slot. At round end, partial usable results and unresolved work coexist. Any unresolved
@@ -134,7 +142,8 @@ Reports link the precise judge, factory, miner and round. A successful report ha
 exactly the expected file checks and one finite score in `[0,1]`, including zero;
 a failed report has a reason and no score. Parsing a report is not acceptance:
 `ResultRepository.finalize` additionally checks confirmed clean factory and judge
-termination, complete attribution and execution ordering.
+termination, factory completion by the confirmation cutoff, complete attribution
+and execution ordering.
 Accepted metadata uses a deterministic UUID5 of `factory-horde:v1:<kind>:<job-id>`
 under the standard URL namespace, plus the original completion block/times and
 SHA-256 of the report's canonical JSON encoding. Fresh framework contexts do not

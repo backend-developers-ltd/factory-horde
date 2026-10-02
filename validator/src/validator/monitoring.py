@@ -94,7 +94,15 @@ class HealthSampler:
             "rounds",
             *(
                 f"control/{name}"
-                for name in ("requests", "stops", "projections", "rounds", "discovery", "skipped-evaluations")
+                for name in (
+                    "requests",
+                    "stops",
+                    "projections",
+                    "rounds",
+                    "discovery",
+                    "skipped-evaluations",
+                    "factory-eligibility",
+                )
             ),
         }
         try:

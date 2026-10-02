@@ -3,7 +3,9 @@
 import json
 import os
 import subprocess
+import sys
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -43,7 +45,7 @@ class FakeDocker(Docker):
     """A daemon whose execution survives replacement of the executor process."""
 
     def __init__(self, executor: Executor):
-        super().__init__(executor.settings, executor.files, executor.metrics)
+        super().__init__(executor.settings, executor.files, executor.metrics, executor.shutdown)
         self.container: dict[str, object] | None = None
         self.offline = False
         self.pull_error = False
@@ -369,6 +371,76 @@ def test_pending_pull_has_no_early_cancellation_ack(executor: Executor, job_requ
     replacement.docker = daemon
     replacement.step(job_request)
     assert daemon.started == 0 and daemon.created == 0
+
+
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_sigterm_interrupts_held_pull_before_restart(
+    executor: Executor,
+    job_request: Request,
+    cancelled: bool,
+) -> None:
+    root = executor.settings.root
+    binary = root / "bin"
+    binary.mkdir()
+    marker = root / "pull-held"
+    docker = binary / "docker"
+    docker.write_text(
+        f"#!{sys.executable}\n"
+        "import pathlib, sys, time\n"
+        "command = sys.argv[3]\n"
+        "if command == 'container':\n"
+        "    print('No such container:', file=sys.stderr)\n"
+        "    sys.exit(1)\n"
+        "if command == 'info':\n"
+        "    print('fixture-daemon')\n"
+        "elif command == 'pull':\n"
+        f"    pathlib.Path({str(marker)!r}).write_text('held')\n"
+        "    time.sleep(600)\n"
+        "else:\n"
+        "    sys.exit('Unexpected Docker mutation: ' + command)\n"
+    )
+    docker.chmod(0o755)
+    executor.files.write(f"control/requests/{job_request.job_id}.json", job_request.record)
+    env = {**os.environ, "PATH": str(binary) + os.pathsep + os.defpath, "EXECUTOR_POLL_SECONDS": "0.05"}
+    command = [sys.executable, "-I", str(Path(__file__).with_name("executor.py")), "--root", str(root)]
+    with subprocess.Popen(command, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE) as process:
+        try:
+            deadline = time.monotonic() + 5
+            while not marker.exists() and process.poll() is None and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert marker.exists(), "Executor never entered the held pull"
+            assert not status(executor, job_request).confirmed_stopped
+            if cancelled:
+                cancel(executor, job_request)
+            process.terminate()
+            _, stderr = process.communicate(timeout=3)
+            assert process.returncode == 0, stderr
+            assert marker.read_text() == "held"  # Never release the pull before shutdown.
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate()
+    assert not status(executor, job_request).confirmed_stopped
+    replacement = Executor(executor.settings)
+    daemon = FakeDocker(replacement)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    replacement.step(job_request)
+    assert daemon.created == daemon.started == (0 if cancelled else 1)
+    replacement.step(job_request)
+    assert status(replacement, job_request).execution == ("never_started" if cancelled else "running")
+
+
+def test_signalled_docker_client_cannot_prove_pull_failure(executor: Executor, monkeypatch: pytest.MonkeyPatch) -> None:
+    binary = executor.settings.root / "bin"
+    binary.mkdir()
+    docker = binary / "docker"
+    docker.write_text(f"#!{sys.executable}\nimport os, signal\nos.kill(os.getpid(), signal.SIGTERM)\n")
+    docker.chmod(0o755)
+    monkeypatch.setenv("PATH", str(binary))
+    client = Docker(executor.settings, executor.files, executor.metrics, executor.shutdown)
+    with pytest.raises(DockerError, match="interrupted"):
+        client.call("pull", timeout=3)
 
 
 def test_slow_pull_does_not_block_other_cancelled_jobs(executor: Executor, job_request: Request) -> None:

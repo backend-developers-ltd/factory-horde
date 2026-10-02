@@ -92,8 +92,17 @@ class Schedule(Record):
 class SkippedEvaluation(JobIdentity):
     """An intended judge was never authorized; this is not an executor termination claim."""
 
-    reason: Literal["factory_failed", "missing_output", "invalid_output", "evaluation_expired"]
+    reason: Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"]
     observed_at: UtcTime
+
+
+class FactoryEligibility(JobIdentity):
+    """Persist the fixed finish cutoff; pending evidence cannot extend it after restart."""
+
+    cutoff: UtcTime
+    decision: Literal["pending", "timely", "late", "failed"]
+    observed_at: UtcTime
+    finished_at: UtcTime | None = None
 
 
 @dataclass(frozen=True)
@@ -193,7 +202,45 @@ class RoundCoordinator:
             self.repository.finalize(request, beat)
         return True
 
+    def _factory_eligibility(self, factory: JobRequest, cutoff: datetime, now: datetime) -> FactoryEligibility:
+        relative = f"control/factory-eligibility/{factory.job_id}.json"
+        try:
+            eligibility = self.repository.files.read(relative, FactoryEligibility)
+        except FileNotFoundError:
+            eligibility = FactoryEligibility(
+                **factory.model_dump(include=set(JobIdentity.model_fields)),
+                cutoff=cutoff,
+                decision="pending",
+                observed_at=now,
+            )
+            self.repository.files.replace(relative, eligibility)
+        if not factory.same_job(eligibility) or eligibility.cutoff != cutoff:
+            raise ValueError("Factory eligibility differs from the frozen job/cutoff")
+        if eligibility.decision != "pending":
+            return eligibility
+        result = self.repository.read(factory)
+        status = result.status if result is not None else self.rounds.status(factory)
+        if status is None or not status.confirmed_stopped:
+            return eligibility
+        decision = (
+            "failed"
+            if not status.application_succeeded
+            else "timely"
+            if status.finished_at is not None and status.finished_at <= cutoff
+            else "late"
+        )
+        eligibility = eligibility.model_copy(
+            update={"decision": decision, "observed_at": now, "finished_at": status.finished_at}
+        )
+        self.repository.files.replace(relative, eligibility)
+        _events.labels("factory_" + decision).inc()
+        return eligibility
+
     def _judge_ready(self, factory: JobRequest, judge: JobRequest, now: datetime) -> bool:
+        if now >= judge.created_at:
+            eligibility = self._factory_eligibility(factory, judge.created_at, now)
+        else:
+            eligibility = None
         relative = f"control/skipped-evaluations/{judge.job_id}.json"
         try:
             skipped = self.repository.files.read(relative, SkippedEvaluation)
@@ -204,14 +251,20 @@ class RoundCoordinator:
                 raise ValueError("Skipped evaluation attribution differs")
             return False
         result = self.repository.read(factory)
-        reason: Literal["factory_failed", "missing_output", "invalid_output", "evaluation_expired"] | None = None
+        reason: (
+            Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"] | None
+        ) = None
         if now >= judge.deadline:
             reason = "evaluation_expired"
+        elif eligibility is not None and eligibility.decision == "late":
+            reason = "factory_late"
+        elif eligibility is not None and eligibility.decision == "failed":
+            reason = "factory_failed"
         elif result is None:
             return False
         elif result.failure is not None:
             reason = "factory_failed"
-        elif now < judge.created_at:
+        elif eligibility is None or eligibility.decision != "timely":
             return False
         else:
             try:
@@ -269,7 +322,7 @@ class RoundCoordinator:
                                 unresolved.add(job.job_id)
                                 continue
                         else:
-                            if beat is None or not self._judge_ready(factory, judge, now):
+                            if not self._judge_ready(factory, judge, now) or beat is None:
                                 continue
                         self.rounds.publish_request(plan, job)
                         requests[job.job_id] = job

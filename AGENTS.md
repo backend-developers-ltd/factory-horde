@@ -50,6 +50,9 @@ and accepted scores; `result_store.py` supplies public Nexus projections with re
 `file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
 `coordinator.py` and `round_actor.py` persist admission, enforce stage/stop gates and recover the same
 jobs/deadlines without relying on task callbacks. Unresolved old workloads hold new round slots.
+Factory eligibility retains the minute-65 finish cutoff: late observation of a timely Docker exit
+can qualify, but actual late completion cannot. Executor shutdown interrupts local Docker CLI calls
+so held pulls do not delay restart for their full timeout; interrupted effects remain unresolved.
 `weighing.py` selects the latest usable completed round, filters current registration and revalidates
 membership before returning stable softmax weights. `weight_gate.py` suppresses empty opportunities;
 both Nexus weight nodes receive `Settings.mechanism_id` and use the tasks' shared store provider.

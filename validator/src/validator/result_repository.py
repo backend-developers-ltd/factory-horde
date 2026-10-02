@@ -111,10 +111,11 @@ class ResultRepository:
         factory_status = self._terminal(factory)
         if not factory_status.application_succeeded:
             raise ResultRejected("Factory did not exit successfully")
+        if factory_status.finished_at is None or factory_status.finished_at > plan.deadlines.evaluation_start:
+            raise ResultRejected("Factory finished after the confirmation cutoff")
         if (
             status.started_at is None
             or status.finished_at is None
-            or factory_status.finished_at is None
             or factory_status.finished_at > status.started_at
             or status.started_at < request.created_at
         ):

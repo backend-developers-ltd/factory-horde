@@ -9,7 +9,14 @@ import pytest
 from nexus.v1 import BlockBeat, ContextId, ReceiveEvent, SubnetBuilder
 from pydantic import ValidationError
 
-from validator.coordinator import RoundCoordinator, RoundTick, RoundTiming, Schedule, SkippedEvaluation
+from validator.coordinator import (
+    FactoryEligibility,
+    RoundCoordinator,
+    RoundTick,
+    RoundTiming,
+    Schedule,
+    SkippedEvaluation,
+)
 from validator.discovery import DiscoverySnapshot
 from validator.record_files import RecordFiles
 from validator.records import (
@@ -77,9 +84,18 @@ class Fixture:
         assert len(result.jobs) == self.count and not result.errors
         return self.repository.rounds.rounds()[0].plan
 
-    def status(self, request: JobRequest, *, finished: bool = True, code: int = 0, forced: bool = False) -> None:
+    def status(
+        self,
+        request: JobRequest,
+        *,
+        finished: bool = True,
+        code: int = 0,
+        forced: bool = False,
+        finished_at: datetime | None = None,
+        observed_at: datetime | None = None,
+    ) -> None:
         start = request.created_at + timedelta(seconds=1)
-        finish = start + timedelta(seconds=2)
+        finish = finished_at or start + timedelta(seconds=2)
         status = JobStatus(
             round_id=request.round_id,
             job_id=request.job_id,
@@ -87,7 +103,7 @@ class Fixture:
             kind=request.kind,
             factory_job_id=request.factory_job_id,
             state="finished" if finished and code == 0 and not forced else "failed" if finished else "running",
-            observed_at=finish,
+            observed_at=observed_at or finish,
             execution="exited" if finished else "running",
             startup_forbidden=finished,
             container_id=request.job_id.hex * 2,
@@ -298,6 +314,90 @@ def test_ineligible_factory_never_authorizes_judge(fixture: Fixture, failure: st
             "late": "evaluation_expired",
         }[failure]
     )
+
+
+@pytest.mark.parametrize("offset", [-1, 0, 1, 300])
+@pytest.mark.parametrize("observe_cutoff", [False, True])
+def test_finish_cutoff_survives_late_observation_and_restart(
+    fixture: Fixture,
+    offset: int,
+    observe_cutoff: bool,
+) -> None:
+    fixture.count = 1
+    plan = fixture.start()
+    factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
+    cutoff = plan.deadlines.evaluation_start
+    # Use a point inside the evaluation window, not its judge deadline.
+    finish = cutoff + timedelta(microseconds=offset)
+    observed = cutoff + timedelta(seconds=20)
+    relative = f"control/factory-eligibility/{factory.job_id}.json"
+    if observe_cutoff:
+        result = fixture.coordinator().tick(cutoff, None)
+        assert not result.errors and factory.job_id in result.unresolved
+        pending = fixture.repository.files.read(relative, FactoryEligibility)
+        assert pending.decision == "pending" and pending.cutoff == cutoff
+    fixture.status(factory, finished_at=finish, observed_at=observed)
+    result = fixture.coordinator().tick(observed, BEAT)
+    assert not result.errors
+    eligibility = fixture.repository.files.read(relative, FactoryEligibility)
+    assert eligibility.decision == ("timely" if offset <= 0 else "late")
+    assert eligibility.cutoff == cutoff
+    assert (judge in fixture.repository.rounds.requests()) == (offset <= 0)
+    if offset > 0:
+        skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
+        assert skipped.reason == "factory_late"
+    # A fresh repository/coordinator retains the decision, IDs and original cutoff.
+    fixture.repository = ResultRepository(RoundRepository(fixture.repository.files.root))
+    fixture.coordinator().tick(observed + timedelta(seconds=1), BEAT)
+    assert fixture.repository.files.read(relative, FactoryEligibility) == eligibility
+
+
+def test_factory_finishing_at_minute_70_cannot_enter_minute_65_cohort(fixture: Fixture) -> None:
+    coordinator = RoundCoordinator(fixture.repository, RoundTiming(), JUDGE, fixture.discovery)
+    coordinator.tick(START, BEAT)
+    plan = fixture.repository.rounds.rounds()[0].plan
+    for member in plan.cohort:
+        fixture.status(request_for(plan, member, "factory"), finished_at=START + timedelta(minutes=70))
+    result = coordinator.tick(START + timedelta(minutes=70), BEAT)
+    assert not result.errors and not result.unresolved
+    assert all(request.kind == "factory" for request in fixture.repository.rounds.requests())
+    for member in plan.cohort:
+        skipped = fixture.repository.files.read(
+            f"control/skipped-evaluations/{member.judge_job_id}.json", SkippedEvaluation
+        )
+        assert skipped.reason == "factory_late"
+
+
+@pytest.mark.parametrize("offset", [-1, 1])
+def test_concurrent_result_publication_waits_for_persisted_eligibility(
+    fixture: Fixture,
+    monkeypatch: pytest.MonkeyPatch,
+    offset: int,
+) -> None:
+    fixture.count = 1
+    plan = fixture.start()
+    factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
+    cutoff = plan.deadlines.evaluation_start
+    observed = cutoff + timedelta(seconds=20)
+    relative = f"control/factory-eligibility/{factory.job_id}.json"
+    original = RoundRepository.status
+
+    def arriving_status(rounds: RoundRepository, request: JobRequest) -> JobStatus | None:
+        status = original(rounds, request)
+        if request == factory and status is None and (rounds.files.root / relative).exists():
+            fixture.status(factory, finished_at=cutoff + timedelta(seconds=offset), observed_at=observed)
+            fixture.repository.finalize(factory, BEAT)
+        return status
+
+    monkeypatch.setattr(RoundRepository, "status", arriving_status)
+    result = fixture.coordinator().tick(observed, BEAT)
+    assert not result.errors
+    assert fixture.repository.read(factory) is not None
+    assert fixture.repository.files.read(relative, FactoryEligibility).decision == "pending"
+    assert judge not in fixture.repository.rounds.requests()
+    result = fixture.coordinator().tick(observed, BEAT)
+    assert not result.errors
+    assert (judge in fixture.repository.rounds.requests()) == (offset < 0)
 
 
 def test_fresh_actor_emits_separate_job_contexts_and_resubscribes_same_ids(

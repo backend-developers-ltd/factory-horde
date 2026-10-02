@@ -410,9 +410,10 @@ class Metrics:
 class Docker:
     """Docker is operated only here, using argument arrays and fixed commands."""
 
-    def __init__(self, settings: Settings, files: Files, metrics: Metrics):
+    def __init__(self, settings: Settings, files: Files, metrics: Metrics, shutdown: threading.Event):
         self.settings, self.files = settings, files
         self.metrics = metrics
+        self.shutdown = shutdown
         with files.directory(("control", "executor", "docker-config"), create=True):
             pass
         self.config_dir = files.mount("control/executor/docker-config")
@@ -420,19 +421,49 @@ class Docker:
             raise ProtocolError("Executor Docker configuration must remain empty for anonymous pulls")
 
     def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
-        """Run a bounded Docker CLI operation and emit structured latency evidence."""
+        """Run a bounded, interruptible CLI call; interruption proves nothing about Docker state.
+
+        Raises:
+            DockerError: Executor shutdown interrupted the client operation.
+            subprocess.TimeoutExpired: The operation exceeded its timeout.
+        """
         started = time.monotonic()
         code: int | None = None
         try:
-            result = subprocess.run(
+            if self.shutdown.is_set():
+                raise DockerError("Executor shutting down")
+            with subprocess.Popen(
                 ["docker", "--config", self.config_dir, *args],
                 text=True,
-                capture_output=True,
-                timeout=timeout,
-                check=False,
-            )
-            code = result.returncode
-            return result
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                start_new_session=True,
+            ) as process:
+                try:
+                    while True:
+                        if self.shutdown.is_set():
+                            raise DockerError("Executor shutting down during Docker operation")
+                        remaining = timeout - (time.monotonic() - started)
+                        if remaining <= 0:
+                            raise subprocess.TimeoutExpired(process.args, timeout)
+                        try:
+                            stdout, stderr = process.communicate(timeout=min(0.2, remaining))
+                            break
+                        except subprocess.TimeoutExpired:
+                            continue
+                    code = process.wait()
+                    if self.shutdown.is_set() or code < 0:
+                        raise DockerError("Docker client interrupted; execution requires reconciliation")
+                    return subprocess.CompletedProcess(process.args, code, stdout, stderr)
+                finally:
+                    # Only the local CLI group is killed. Detached workloads belong to dockerd;
+                    # durable create/start/stop intent is reconciled by the next executor.
+                    if code is None:
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                    process.communicate()
         finally:
             seconds = time.monotonic() - started
             self.metrics.observe(args[0], "ok" if code == 0 else "error", seconds)
@@ -544,8 +575,8 @@ class Executor:
         self.settings = settings
         self.files = Files(settings.root)
         self.metrics = Metrics()
-        self.docker = Docker(settings, self.files, self.metrics)
         self.shutdown = threading.Event()
+        self.docker = Docker(settings, self.files, self.metrics, self.shutdown)
         self.active: dict[str, Future[None]] = {}
         self.started_at = now()
         self.observed_jobs: set[str] = set()
@@ -698,6 +729,8 @@ class Executor:
             ProtocolError: Immutable authorization conflicts, or status cannot be persisted.
             DockerError: Missing execution evidence, normally converted to an unresolved status.
         """
+        if self.shutdown.is_set():
+            return
         self.files.write(
             f"control/executor/{request.job_id}.request.json",
             request.record,
@@ -876,7 +909,7 @@ class Executor:
             docker_ok = result.returncode == 0 and bool(result.stdout.strip())
             if not docker_ok:
                 reason = result.stderr.strip()[:512] or "No Docker server response"
-        except (OSError, subprocess.SubprocessError) as error:
+        except (OSError, DockerError, subprocess.SubprocessError) as error:
             reason = str(error)[:512] or type(error).__name__
         self.files.write(
             "control/executor-health.json",
@@ -897,9 +930,13 @@ class Executor:
     def run(self) -> None:
         """Poll concurrently; detached Docker jobs survive service termination and replacement."""
         with ThreadPoolExecutor(max_workers=self.settings.workers, thread_name_prefix="job") as pool:
-            while not self.shutdown.is_set():
-                self.poll(pool)
-                self.shutdown.wait(self.settings.poll_seconds)
+            try:
+                while not self.shutdown.is_set():
+                    self.poll(pool)
+                    self.shutdown.wait(self.settings.poll_seconds)
+            finally:
+                self.shutdown.set()
+                pool.shutdown(wait=True, cancel_futures=True)
 
 
 def main() -> None:

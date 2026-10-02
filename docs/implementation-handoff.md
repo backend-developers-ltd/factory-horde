@@ -70,6 +70,26 @@ optional standalone image tests were skipped. Real published-image coverage is i
 the acceptance evidence. Ruff and strict basedpyright passed, with no typing rules
 relaxed. Packaging/runtime isolation checks also passed after the final harness edits.
 
+## Subsequent restart and cutoff corrections
+
+Current source interrupts in-flight Docker clients during executor shutdown and
+uses a 30-second systemd stop limit with `KillMode=mixed`. Interrupted commands stay
+unresolved for reconciliation. The subprocess regression in `executor/test_executor.py`
+sends SIGTERM while a 600-second pull remains held, requires exit within three
+seconds without releasing it, and checks restart with and without permanent stop
+intent. A signal-killed client cannot become a terminal pull failure.
+
+The coordinator now persists factory eligibility against the frozen confirmation
+cutoff, including pending evidence. Docker finish time decides whether completion
+was timely; observation after restart does not extend the cutoff. Regression tests
+cover both sides of the inclusive boundary, actual minute-70 completion, delayed
+observation, missing chain beats, concurrent result publication, and score rejection
+if an ineligible judge request already exists. Default stage intervals are unchanged.
+
+These are source-level corrections after the packaged acceptance above. Their
+subprocess and coordinator tests do not constitute a new systemd/localnet acceptance
+run or update the selected candidate images/revision.
+
 ## Operating boundaries
 
 Full installation uses `<installation>/data` on the host, mounted into the validator

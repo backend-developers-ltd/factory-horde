@@ -63,6 +63,17 @@ Configuration and updater assets come from the same verified selection. An uncha
 executor is not replaced/restarted. Compatible detached workloads keep running;
 requests, permanent stops, Docker identities and accepted scores remain in place.
 
+Executor shutdown interrupts local Docker CLI process groups, including a pull
+still waiting on the registry, and cancels queued workers. Interrupted calls remain
+unresolved; detached containers keep running and the next executor reconciles the
+same durable create/start/stop intent. The pull's normal timeout remains 600 seconds,
+but shutdown checks it every 0.2 seconds. The system unit allows 30 seconds before
+forced termination, within the default five-minute confirmation reserve. The unit
+uses `KillMode=mixed`: TERM goes to the executor, which interrupts its clients;
+systemd's forced termination still covers the whole service group. Installing
+the changed unit requires installation privileges; ordinary updates do not replace
+system units. The interruptible shutdown also works with an already installed unit.
+
 After replacement, the updater requires a fresh protocol-compatible health record
 from the current systemd PID with a successful Docker probe. Health failure exits
 nonzero, leaves the selected file installed and records the failure in

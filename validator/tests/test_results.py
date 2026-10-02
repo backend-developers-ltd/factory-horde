@@ -191,6 +191,26 @@ def test_missing_final_report_does_not_authorize_rerun(pair: Pair) -> None:
     assert pair.repo.rounds.requests() == before
 
 
+def test_judge_cannot_score_factory_finishing_after_confirmation_cutoff(pair: Pair) -> None:
+    finish = pair.judge.created_at + timedelta(minutes=5)
+    pair.repo.files.replace(
+        f"control/statuses/{pair.factory.job_id}.json",
+        pair.factory_status.model_copy(update={"finished_at": finish, "observed_at": finish}),
+    )
+    pair.repo.files.replace(
+        f"control/statuses/{pair.judge.job_id}.json",
+        pair.judge_status.model_copy(
+            update={
+                "started_at": finish + timedelta(seconds=1),
+                "finished_at": finish + timedelta(seconds=2),
+                "observed_at": finish + timedelta(seconds=2),
+            }
+        ),
+    )
+    result = pair.repo.finalize(pair.judge, BEAT)
+    assert result.accepted is None and result.failure == "Factory finished after the confirmation cutoff"
+
+
 def test_nexus_success_projection_rebuilds_and_ignores_new_context_times(pair: Pair) -> None:
     store = FileTaskResultStore(pair.repo)
     assert FileResultStoreProvider(store).get_task_result_store() is store
