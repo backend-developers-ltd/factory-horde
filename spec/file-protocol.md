@@ -27,7 +27,8 @@ control/
   executor/<job-id>.json          # durable Docker intent, identity, terminal evidence
   executor/service.lock          # host process lock for this root
   executor/docker-config/        # deliberately empty anonymous registry configuration
-  executor-metrics.json          # atomic process heartbeat/counters/latency buckets
+  executor-metrics.json          # atomic process counters/latency buckets
+  executor-health.json           # atomic heartbeat, Docker probe, initial reconciliation
   projections/<result-id>.json   # immutable Nexus routing metadata and business-result pointer
   skipped-evaluations/<job-id>.json # immutable reason an intended judge was never authorized
   weight-calculation.json         # latest derived request; not proof of chain inclusion
@@ -236,7 +237,24 @@ Record I/O emits `factory_horde_record_operations_total{operation,outcome}` and
 `factory_horde_record_operation_seconds{operation}` plus structured failure logs.
 No job IDs appear in metric labels. The installed Nexus version has no reusable
 actor Counter/Histogram registry; these use its installed Prometheus client
-dependency, now explicit in this project. Scrape exposure remains task 14.
+dependency, now explicit in this project. A Nexus-owned validator endpoint exposes
+these and the executor metrics at `/metrics`; there is no executor HTTP server or
+node-exporter textfile path. `executor-health.json` is an executor-owned version-one
+record with UTC `started_at`, `observed_at`, `docker_observed_at`, `pid`, `docker_ok`,
+nullable `docker_error`, `reconciled`, `rejected_requests` and `active_workers`.
+Reconciliation means that this process has observed each current request at least
+once without a rejected request/worker error. It does not imply job termination;
+the validator separately checks active/unresolved jobs and observation freshness.
+The Docker probe has a three-second timeout and runs after each poll's scheduling;
+the job workers continue independently. Failures publish `docker_ok=false`.
+Both health and metrics are replaced atomically and include the executor PID so
+a validator can reject mixed snapshots during a service replacement.
+
+Validator readiness is a disposable in-memory projection, rebuilt on actor polls.
+Hidden `.readiness.json` files probe atomic writes/fsync in validator-owned control
+and result directories; all record discovery ignores these non-identity filenames.
+They contain only the protocol version and never authorize work. Health records,
+metrics and readiness probes must never be used as workload stop evidence.
 
 Run the protocol and dependency checks from `validator/`:
 

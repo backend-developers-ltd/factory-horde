@@ -16,6 +16,7 @@ from pylon_client.artanis import (
     PylonForbidden,
     PylonUnauthorized,
 )
+
 from validator.chain_observer import ChainObservation
 from validator.record_files import RecordFiles
 
@@ -117,8 +118,8 @@ def main() -> None:
     )
     metrics.raise_for_status()
     targets = Targets.model_validate_json(metrics.content).data.activeTargets
-    if {target.labels["job"]: target.health for target in targets} != {"host": "up", "pylon": "up"}:
-        raise RuntimeError("Expected healthy host and Pylon Prometheus targets")
+    if {target.labels["job"]: target.health for target in targets} != {"host": "up", "pylon": "up", "validator": "up"}:
+        raise RuntimeError("Expected healthy host, Pylon and validator Prometheus targets")
     evidence = {
         "checked_at": datetime.now(UTC).isoformat(),
         "validator_observation": observation.model_dump(mode="json"),
@@ -127,7 +128,7 @@ def main() -> None:
         "scrapes": {target.labels["job"]: target.health for target in targets},
     }
     (ROOT / "state/compose-check.json").write_text(json.dumps(evidence, indent=2) + "\n")
-    print("PASS: fresh containerized validator, six Pylon identities, token isolation, both Prometheus targets")
+    print("PASS: fresh containerized validator, six Pylon identities, token isolation, all three Prometheus targets")
 
 
 if __name__ == "__main__":

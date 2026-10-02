@@ -222,7 +222,7 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 
 ## Phase E — make the accepted topology observable and reproducible
 
-### 14. Add minimal operational visibility and readiness
+### 14. [DONE] Add minimal operational visibility and readiness
 
 **Objective and scope.** Extend existing structured logging and monitoring with the state operators need to diagnose blocked rounds. Provide event counters and latency histograms for new subsystems, plus visible phase, active/unresolved jobs, latest usable-round age and executor observation freshness. Preserve the executor's file-only interface.
 
@@ -233,6 +233,8 @@ Recommended choices to concretize in task 1, rather than silently call fixed req
 **Deliverables.** Atomic executor heartbeat/health evidence and one selected metrics path: an actor-owned validator endpoint or explicitly configured node-exporter textfile collection. Do not add both or introduce an executor HTTP server. Use round/job identities in logs/records, not high-cardinality metric labels.
 
 **Completion — Linux.** Operators can distinguish pull/factory failure, executor/host uncertainty, report rejection, score availability, Pylon submission and independently verified chain effects. Tests demonstrate stale executor/Docker observation, blocked-next-round state and result-store failure are visible. Readiness reflects compatible/readable records, writable paths, reconciliation and initial chain connection; liveness alone is insufficient. Current template host/cAdvisor scraping is not mislabeled as new application metrics. Keep disabled tracing explicit unless deliberately configured with valid settings.
+
+**Verified 2 October 2026.** One Nexus-owned validator HTTP server exposes `/metrics`, `/livez` and `/readyz`; its actor starts and joins the server thread. Executor health remains atomic file-only evidence with a bounded Docker probe and initial request reconciliation. The same scrape path forwards bounded executor counters/histograms alongside application events/latencies, phase, active/unresolved jobs, blocked admission, score availability and freshness. Readiness validates records, probes real control/result writes, requires a runtime chain beat and expires independently of live HTTP. Nine added checks cover stale/failed Docker, stale executor/job observations, incompatible records, blocked rounds, real permission failure/repair, zero-score availability and HTTP lifecycle. All 191 validator/executor tests pass (nine existing opt-in image checks skipped); Ruff and strict typing pass. A frozen-dependency container build ran with the real local chain and systemd executor as UID/GID 1000. Stopping the executor produced 503 readiness with 200 liveness; restarting recovered. Denying projection-directory writes also produced 503 and recovered after repair. Host, Pylon and validator Prometheus targets all scraped successfully. Pylon acknowledgement is explicitly separate from independent chain effects; no new weight write was needed for this task. See [task14-monitoring.json](evidence/task14-monitoring.json). Tracing stays disabled.
 
 ### 15. Finish coherent installer and atomic executor updates
 

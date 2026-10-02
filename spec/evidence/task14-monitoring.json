@@ -1,0 +1,281 @@
+{
+  "checked_at": "2026-10-02T10:21:37.693819+00:00",
+  "validator_image": "sha256:78bc3038f98479b6165bbdc50a8a6323862023912842867fa369d4a555805f3f",
+  "executor_sha256": "a0927bbaee01f0f9bb0ad728c2db52ff7665c4998f2d26f3326172da3d9a1acc",
+  "initial": {
+    "ready": true,
+    "checks": {
+      "chain": true,
+      "records": true,
+      "writable_paths": true,
+      "executor": true,
+      "docker": true,
+      "reconciled": true,
+      "job_observations": true,
+      "coordinator": true,
+      "monitor": true
+    },
+    "observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:20:56.047572Z",
+      "checks": {
+        "chain": true,
+        "records": true,
+        "writable_paths": true,
+        "executor": true,
+        "docker": true,
+        "reconciled": true,
+        "job_observations": true,
+        "coordinator": true
+      },
+      "errors": [],
+      "phase": "complete",
+      "active_jobs": 0,
+      "unresolved_jobs": 0,
+      "blocked_next_round": false,
+      "usable_scores": 5,
+      "usable_round_completed_at": "2026-10-01T22:08:24.444880Z",
+      "executor_observed_at": "2026-10-02T10:20:55.112836Z",
+      "docker_observed_at": "2026-10-02T10:20:55.112847Z",
+      "chain_observed_at": "2026-10-02T10:20:52.279173Z",
+      "coordinator_observed_at": null
+    }
+  },
+  "stale_executor": {
+    "ready": false,
+    "checks": {
+      "chain": true,
+      "records": true,
+      "writable_paths": true,
+      "executor": false,
+      "docker": false,
+      "reconciled": true,
+      "job_observations": true,
+      "coordinator": true,
+      "monitor": true
+    },
+    "observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:21:26.051835Z",
+      "checks": {
+        "chain": true,
+        "records": true,
+        "writable_paths": true,
+        "executor": false,
+        "docker": false,
+        "reconciled": true,
+        "job_observations": true,
+        "coordinator": true
+      },
+      "errors": [],
+      "phase": "complete",
+      "active_jobs": 0,
+      "unresolved_jobs": 0,
+      "blocked_next_round": false,
+      "usable_scores": 5,
+      "usable_round_completed_at": "2026-10-01T22:08:24.444880Z",
+      "executor_observed_at": "2026-10-02T10:20:55.112836Z",
+      "docker_observed_at": "2026-10-02T10:20:55.112847Z",
+      "chain_observed_at": "2026-10-02T10:21:24.283043Z",
+      "coordinator_observed_at": null
+    }
+  },
+  "restored": {
+    "ready": true,
+    "checks": {
+      "chain": true,
+      "records": true,
+      "writable_paths": true,
+      "executor": true,
+      "docker": true,
+      "reconciled": true,
+      "job_observations": true,
+      "coordinator": true,
+      "monitor": true
+    },
+    "observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:21:32.053223Z",
+      "checks": {
+        "chain": true,
+        "records": true,
+        "writable_paths": true,
+        "executor": true,
+        "docker": true,
+        "reconciled": true,
+        "job_observations": true,
+        "coordinator": true
+      },
+      "errors": [],
+      "phase": "complete",
+      "active_jobs": 0,
+      "unresolved_jobs": 0,
+      "blocked_next_round": false,
+      "usable_scores": 5,
+      "usable_round_completed_at": "2026-10-01T22:08:24.444880Z",
+      "executor_observed_at": "2026-10-02T10:21:31.500442Z",
+      "docker_observed_at": "2026-10-02T10:21:31.500454Z",
+      "chain_observed_at": "2026-10-02T10:21:28.276833Z",
+      "coordinator_observed_at": null
+    }
+  },
+  "unwritable_results": {
+    "ready": false,
+    "checks": {
+      "chain": true,
+      "records": true,
+      "writable_paths": false,
+      "executor": true,
+      "docker": true,
+      "reconciled": true,
+      "job_observations": true,
+      "coordinator": true,
+      "monitor": true
+    },
+    "observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:21:34.052945Z",
+      "checks": {
+        "chain": true,
+        "records": true,
+        "writable_paths": false,
+        "executor": true,
+        "docker": true,
+        "reconciled": true,
+        "job_observations": true,
+        "coordinator": true
+      },
+      "errors": [
+        "writable_paths: [Errno 13] Permission denied: '..readiness.json.b9d83513-d55f-40b5-bec9-3c04a3e08ef2.tmp'"
+      ],
+      "phase": "complete",
+      "active_jobs": 0,
+      "unresolved_jobs": 0,
+      "blocked_next_round": false,
+      "usable_scores": 5,
+      "usable_round_completed_at": "2026-10-01T22:08:24.444880Z",
+      "executor_observed_at": "2026-10-02T10:21:33.679123Z",
+      "docker_observed_at": "2026-10-02T10:21:33.679134Z",
+      "chain_observed_at": "2026-10-02T10:21:32.278421Z",
+      "coordinator_observed_at": null
+    }
+  },
+  "repaired": {
+    "ready": true,
+    "checks": {
+      "chain": true,
+      "records": true,
+      "writable_paths": true,
+      "executor": true,
+      "docker": true,
+      "reconciled": true,
+      "job_observations": true,
+      "coordinator": true,
+      "monitor": true
+    },
+    "observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:21:36.052968Z",
+      "checks": {
+        "chain": true,
+        "records": true,
+        "writable_paths": true,
+        "executor": true,
+        "docker": true,
+        "reconciled": true,
+        "job_observations": true,
+        "coordinator": true
+      },
+      "errors": [],
+      "phase": "complete",
+      "active_jobs": 0,
+      "unresolved_jobs": 0,
+      "blocked_next_round": false,
+      "usable_scores": 5,
+      "usable_round_completed_at": "2026-10-01T22:08:24.444880Z",
+      "executor_observed_at": "2026-10-02T10:21:35.875828Z",
+      "docker_observed_at": "2026-10-02T10:21:35.875844Z",
+      "chain_observed_at": "2026-10-02T10:21:32.278421Z",
+      "coordinator_observed_at": null
+    }
+  },
+  "executor_health": {
+    "protocol_version": 1,
+    "started_at": "2026-10-02T10:21:27.801025Z",
+    "observed_at": "2026-10-02T10:21:35.875828Z",
+    "pid": 13267,
+    "docker_observed_at": "2026-10-02T10:21:35.875844Z",
+    "docker_ok": true,
+    "docker_error": null,
+    "reconciled": true,
+    "rejected_requests": 0,
+    "active_workers": 0
+  },
+  "required_metrics": [
+    "factory_horde_ready",
+    "factory_horde_executor_operation_seconds_bucket",
+    "factory_horde_executor_operations_total",
+    "factory_horde_record_operations_total",
+    "factory_horde_round_phase",
+    "factory_horde_usable_round_age_seconds"
+  ],
+  "compose_check": {
+    "checked_at": "2026-10-02T10:22:15.842982+00:00",
+    "validator_observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:22:12.067242Z",
+      "block": 34378,
+      "block_hash": "0x56dd65010b279579de005ac474c2ac7a66e7ec3e38b5813bc07dd3c11aba7f9b",
+      "mechanism_id": 1,
+      "dispatch_enabled": false
+    },
+    "authenticated_identity_blocks": {
+      "validator": 34390,
+      "miner1": 34390,
+      "miner2": 34390,
+      "miner3": 34390,
+      "miner4": 34391,
+      "miner5": 34391
+    },
+    "cross_identity_token_rejected": true,
+    "scrapes": {
+      "host": "up",
+      "pylon": "up",
+      "validator": "up"
+    }
+  },
+  "qa": {
+    "passed": 191,
+    "skipped": 9,
+    "skip_reason": "Existing opt-in baseline image checks",
+    "ruff": "passed",
+    "basedpyright": "0 errors, 0 warnings",
+    "compose_config": "passed",
+    "focused_tests": [
+      "stale executor and failed/stale Docker are distinct",
+      "blocked old round and stale job observations",
+      "incompatible and malformed records",
+      "real projection-directory permission failure and repair",
+      "successful zero scores in latest usable round",
+      "current runtime chain connection and coordinator errors",
+      "stalled monitor returns unready while HTTP stays live",
+      "HTTP thread joins on actor stop",
+      "stdlib executor metrics parse into bounded bridge models"
+    ]
+  },
+  "commands": [
+    "localnet/build-validator.sh",
+    "installer/install-executor.sh \"$PWD/localnet/.env\" factory-horde-localnet-executor",
+    "localnet/compose.sh up -d --wait subtensor",
+    "env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python localnet/bootstrap.py",
+    "localnet/compose.sh up -d --wait pylon validator node-exporter prometheus",
+    "env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_monitoring",
+    "env -u UV_EXCLUDE_NEWER uv run --project validator python localnet/check.py"
+  ],
+  "executor_service_user": [
+    "User=ubuntu",
+    "Group=ubuntu"
+  ],
+  "validator_uid_gid": "uid=1000 gid=1000 groups=1000",
+  "scope": "Monitoring acceptance only. Existing accepted scores were observed, not redrawn. No new weight write or independent chain-effect claim. Raw runtime artifacts remain under localnet/state."
+}

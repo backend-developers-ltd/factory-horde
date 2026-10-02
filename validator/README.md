@@ -77,7 +77,45 @@ This is not yet an accepted installable release candidate.
 
 The validator uses structured JSON logs. Common Compose disables trace export and
 starts pinned Prometheus/node-exporter services with authenticated Pylon scraping.
-Validator metrics exposure and full readiness arrive in task 14.
+A Nexus actor owns the validator HTTP thread on port 9101 and joins it on shutdown.
+Prometheus scrapes `/metrics` on the Compose network; no validator HTTP port is
+published to the host. The executor stays file-only. Its atomic
+`control/executor-health.json` records process start/heartbeat, a bounded Docker
+probe and completion of initial job observation. This never substitutes for each
+job's terminal Docker evidence. Executor counters/histograms are forwarded from
+`control/executor-metrics.json` through the same validator endpoint.
+
+`/livez` answers while HTTP runs. `/readyz` returns JSON with individual checks and
+HTTP 200 only when records are compatible/readable, owned control/result paths pass
+an actual atomic write/fsync probe, the executor has reconciled, Docker and job
+observations are current, and this validator runtime has received a chain beat.
+Enabled dispatch additionally requires recent successful coordinator reconciliation.
+HTTP 503 includes failing checks and diagnostic errors. Retained chain files cannot
+satisfy initial connectivity. Checks expire after
+`VALIDATOR_OBSERVATION_MAX_AGE_SECONDS` (default 30), including when actor polling
+stalls but HTTP stays live. Common Compose uses this readiness URL for its health
+check; an unhealthy state is diagnostic and does not itself stop detached jobs.
+
+Metrics include `factory_horde_round_phase{phase}`, `active_jobs`, `unresolved_jobs`,
+`blocked_next_round`, `usable_scores` and `usable_round_age_seconds`, all with the
+`factory_horde_` prefix. Age is measured since the latest scored round completed;
+`-1` means no such round. Scores here are accepted results; current registration
+eligibility is checked separately by the weight gate. Executor/Docker/chain/monitor
+age gauges expose stale observations. Interpret job/score gauges only when the
+`records` readiness check passes. Labels contain bounded operations/outcomes,
+checks and phases; identities stay in records and logs.
+
+`job_terminal` executor logs distinguish pull cancellation/failure from an inspected
+factory/judge exit. `job_unresolved` retains host uncertainty. Validator
+`job_result_finalized` includes a rejection reason or successful acceptance;
+`readiness_changed` explains blocked operation. Result/record operation counters
+and histograms expose storage errors. `pylon_weight_submission_acknowledged` and
+`factory_horde_pylon_submissions_total` mean only that Pylon accepted the request.
+Independently verified effects remain the direct-chain evidence from
+`localnet/check_weights.py`; no application metric claims chain inclusion.
+
+Use the [monitoring check](../localnet/README.md#monitoring) to verify executor
+staleness, result-store write failure and repair on an idle localnet.
 
 For development, run the QA gates from `validator/`:
 

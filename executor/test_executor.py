@@ -11,6 +11,8 @@ from typing import override
 from uuid import uuid4
 
 import pytest
+
+from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 
 from .executor import (
@@ -100,6 +102,30 @@ def executor(tmp_path: Path, job_request: Request) -> Executor:
 
 def status(executor: Executor, job_request: Request) -> JobStatus:
     return JobStatus.model_validate_json(executor.files.read_bytes(f"control/statuses/{job_request.job_id}.json"))
+
+
+def test_health_separates_heartbeat_from_daemon_and_reconciliation(executor: Executor) -> None:
+    executor.health({"unobserved"}, 0)
+    health = ExecutorHealth.model_validate_json(executor.files.read_bytes("control/executor-health.json"))
+    assert health.observed_at >= health.started_at
+    assert not health.docker_ok and not health.reconciled
+    executor.observed_jobs.add("unobserved")
+    executor.health({"unobserved"}, 0)
+    health = ExecutorHealth.model_validate_json(executor.files.read_bytes("control/executor-health.json"))
+    assert health.reconciled and not health.docker_ok
+    executor.health({"unobserved"}, 1)
+    health = ExecutorHealth.model_validate_json(executor.files.read_bytes("control/executor-health.json"))
+    assert not health.reconciled and health.rejected_requests == 1
+
+
+def test_executor_metrics_match_validator_bridge(executor: Executor) -> None:
+    executor.metrics.observe("pull", "ok", 0.75)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        executor.poll(pool)
+    metrics = ExecutorMetrics.model_validate_json(executor.files.read_bytes("control/executor-metrics.json"))
+    assert metrics.factory_horde_executor_operations_total[0].value == 1
+    histogram = metrics.factory_horde_executor_operation_seconds[0]
+    assert histogram.count == 1 and histogram.sum == 0.75 and histogram.buckets[-1] == 1
 
 
 def test_durable_exit_survives_new_executor_without_docker(executor: Executor, job_request: Request) -> None:

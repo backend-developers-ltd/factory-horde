@@ -547,6 +547,8 @@ class Executor:
         self.docker = Docker(settings, self.files, self.metrics)
         self.shutdown = threading.Event()
         self.active: dict[str, Future[None]] = {}
+        self.started_at = now()
+        self.observed_jobs: set[str] = set()
 
     def cancelled(self, request: Request) -> bool:
         """A valid permanent stop or elapsed deadline closes startup.
@@ -595,6 +597,8 @@ class Executor:
             ledger.update(closed=True, terminal=value)
             self.save_ledger(request, ledger)
         self.files.write(f"control/statuses/{request.job_id}.json", value)
+        if value["execution"] in ("exited", "never_started"):
+            print(json.dumps({"event": "job_terminal", **value}), flush=True)
         return value
 
     def observe(self, request: Request, ledger: dict[str, object], container: dict[str, object]) -> None:
@@ -815,6 +819,7 @@ class Executor:
                     {
                         "event": "job_unresolved",
                         "job_id": request.job_id,
+                        "round_id": request.record["round_id"],
                         "reason": str(error)[:512],
                     }
                 ),
@@ -823,16 +828,21 @@ class Executor:
 
     def poll(self, pool: ThreadPoolExecutor) -> None:
         """Schedule at most one worker per job; a pull never acknowledges its own cancellation early."""
+        rejected = 0
         for job_id, future in tuple(self.active.items()):
             if future.done():
                 del self.active[job_id]
                 try:
                     future.result()
+                    self.observed_jobs.add(job_id)
                 except (OSError, ValueError) as error:
+                    self.observed_jobs.discard(job_id)
+                    rejected += 1
                     print(
                         json.dumps({"event": "request_rejected", "job_id": job_id, "reason": str(error)[:512]}),
                         flush=True,
                     )
+        requested: set[str] = set()
         for name in self.files.names("control/requests"):
             if self.shutdown.is_set():
                 break
@@ -840,15 +850,49 @@ class Executor:
                 continue
             try:
                 request = Request.load(self.files.read(f"control/requests/{name}"), name)
+                requested.add(request.job_id)
                 if request.job_id not in self.active:
                     self.active[request.job_id] = pool.submit(self.step, request)
             except (OSError, ValueError) as error:
+                rejected += 1
                 print(
                     json.dumps({"event": "request_rejected", "filename": name, "reason": str(error)[:512]}), flush=True
                 )
         snapshot = self.metrics.snapshot()
         snapshot["active_workers"] = sum(not future.done() for future in self.active.values())
         self.files.write("control/executor-metrics.json", snapshot)
+        self.health(requested, rejected)
+
+    def health(self, requested: set[str], rejected: int) -> None:
+        """Publish bounded daemon evidence even when there are no jobs to inspect.
+
+        This probe never proves that any workload stopped. Job status and the
+        permanent ledger remain the only execution evidence.
+        """
+        docker_ok = False
+        reason: str | None = None
+        try:
+            result = self.docker.call("info", "--format", "{{.ServerVersion}}", timeout=3)
+            docker_ok = result.returncode == 0 and bool(result.stdout.strip())
+            if not docker_ok:
+                reason = result.stderr.strip()[:512] or "No Docker server response"
+        except (OSError, subprocess.SubprocessError) as error:
+            reason = str(error)[:512] or type(error).__name__
+        self.files.write(
+            "control/executor-health.json",
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "started_at": self.started_at,
+                "observed_at": now(),
+                "pid": os.getpid(),
+                "docker_observed_at": now(),
+                "docker_ok": docker_ok,
+                "docker_error": reason,
+                "reconciled": requested <= self.observed_jobs and rejected == 0,
+                "rejected_requests": rejected,
+                "active_workers": sum(not future.done() for future in self.active.values()),
+            },
+        )
 
     def run(self) -> None:
         """Poll concurrently; detached Docker jobs survive service termination and replacement."""

@@ -1,11 +1,12 @@
 # FactoryHorde localnet
 
-This is the task-4 application foundation, with factory dispatch disabled. It runs
+Dispatch and weight writes default to disabled. Localnet runs
 the common validator, Pylon and monitoring services plus a local Subtensor overlay.
 Factory/judge source-build checks now run through `localnet/build-baselines.sh`.
 Public baseline images are available on GHCR; see [image evidence](../spec/evidence/task5-published-images.json).
 Containerized submissions and frozen discovery are implemented; the host systemd
-executor now runs a real factory/judge pair. Automated complete rounds remain incomplete; successful startup alone is not V2 acceptance.
+executor runs concurrent factory/judge jobs. Automated rounds, recovery and independent
+chain weights are verified; packaged clean-host acceptance remains task 17.
 
 ## Prerequisites
 
@@ -20,6 +21,7 @@ env -u UV_EXCLUDE_NEWER uv sync --project miner --group bootstrap
 env -u UV_EXCLUDE_NEWER uv sync --project validator
 localnet/prepare.sh
 localnet/build-validator.sh
+installer/install-executor.sh "$PWD/localnet/.env" factory-horde-localnet-executor
 localnet/compose.sh up -d --wait subtensor
 env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python localnet/bootstrap.py
 localnet/compose.sh up -d --wait pylon validator node-exporter prometheus
@@ -58,7 +60,7 @@ state are gitignored. Bootstrap logs omit generated recovery phrases.
 `state/registrations.json` records UID/hotkey/coldkey mappings read directly from
 Subtensor at one block, independently of Pylon. `check.py` compares Pylon's view,
 checks that a miner token cannot access a different identity, verifies a fresh
-validator observation and both monitoring scrape targets, then writes public
+validator observation and all three monitoring scrape targets, then writes public
 check results to `state/compose-check.json`.
 
 Named volumes retain chain, Pylon database and Prometheus state. Subtensor starts
@@ -279,8 +281,32 @@ Pylon listens on loopback port 8000, Subtensor on 9944 and Prometheus on 9090.
 Prometheus scrapes Pylon with a distinct Bearer token and node-exporter for host
 CPU/filesystem data. Node-exporter uses the host PID/root views but the Compose
 network namespace. Both monitoring images are pinned. No remote-write, Alloy or
-upstream credentials are required. Validator/executor metrics and full readiness
-are added in task 14.
+upstream credentials are required. Prometheus also scrapes the validator at
+`validator:9101/metrics`. A Nexus actor owns this server; executor metrics come
+from atomic files through the same scrape path. Host metrics remain host metrics.
+The validator readiness health check requires the host executor to be installed
+and running, even with dispatch disabled.
+
+After the startup steps, inspect readiness without publishing a host HTTP port:
+
+```sh
+localnet/compose.sh exec -T validator /opt/venv/bin/python -c \
+  "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:9101/readyz').read().decode())"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_monitoring
+```
+
+The check requires dispatch/weight writes disabled and every existing job confirmed
+stopped. It temporarily stops the localnet executor, verifies that `/readyz` becomes
+503 while `/livez` stays 200, and restarts it. It also removes/restores projection
+directory write permission and verifies failure/recovery under the real container
+UID. Service and permissions are restored in `finally` blocks. Evidence is written
+to `state/task14-monitoring.json`; no requests, stops or results are removed.
+Prometheus's `up` metric only proves scraping; `factory_horde_ready` reflects
+application readiness. The [validator guide](../validator/README.md) explains
+individual checks and metric names. Docker health failure, stale job observation,
+blocked-next-round state, incompatible records and monitoring-thread cleanup also
+have focused Linux tests in `validator/tests/test_monitoring.py` and
+`executor/test_executor.py`.
 
 ## Public image submissions and discovery
 

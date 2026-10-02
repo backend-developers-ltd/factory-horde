@@ -61,6 +61,8 @@ services:
       VALIDATOR_WEIGHT_TEMPERATURE: "${WEIGHT_TEMPERATURE:-0.1}"
       VALIDATOR_WEIGHT_TEMPO: "${SUBNET_TEMPO:-360}"
       VALIDATOR_WEIGHT_EPOCH_OFFSET: "${WEIGHT_EPOCH_OFFSET:-0}"
+      VALIDATOR_METRICS_PORT: "9101"
+      VALIDATOR_OBSERVATION_MAX_AGE_SECONDS: "${OBSERVATION_MAX_AGE_SECONDS:-30}"
       VALIDATOR_LOGGING_FORMAT: json
       VALIDATOR_OTEL_SDK_DISABLED: "true"
       VALIDATOR_OTEL_SERVICE_NAMESPACE: factory-horde
@@ -73,6 +75,16 @@ services:
       - /tmp
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9101/readyz', timeout=4).close()"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       pylon:
         condition: service_healthy
@@ -113,6 +125,9 @@ services:
             authorization:
               type: Bearer
               credentials: "$${PYLON_METRICS_TOKEN}"
+          - job_name: validator
+            static_configs:
+              - targets: ['validator:9101']
         EOF
         exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.size=1GB
     depends_on: [pylon, node-exporter]

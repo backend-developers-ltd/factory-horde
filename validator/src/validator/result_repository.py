@@ -177,8 +177,10 @@ class ResultRepository:
             _logger.info(
                 "job_result_finalized",
                 job_id=str(request.job_id),
+                round_id=str(request.round_id),
                 kind=request.kind,
                 outcome="failed" if failure else "successful",
+                reason=failure,
             )
             return result
 

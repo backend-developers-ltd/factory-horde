@@ -34,7 +34,9 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 from validator.chain_observer import ChainObservation, ChainObserverNode
 from validator.coordinator import RoundCoordinator, RoundTick, RoundTiming
 from validator.discovery import freeze_via_pylon
+from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
+from validator.monitoring import MonitoringNode
 from validator.otel import OtelSettings, setup_otel
 from validator.records import ImageReference, MinerHotkey
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
@@ -66,6 +68,9 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     weight_temperature: float = Field(default=0.1, gt=0, allow_inf_nan=False)
     weight_tempo: int = Field(default=360, gt=0)
     weight_epoch_offset: int = Field(default=0, ge=0)
+    metrics_host: str = "0.0.0.0"
+    metrics_port: int = Field(default=9101, ge=1, le=65535)
+    observation_max_age_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
 
     @field_validator("validator_hotkey", "judge_image", mode="before")
     @classmethod
@@ -128,6 +133,17 @@ class Validator(NexusValidator):
         self.results = ResultRepository(RoundRepository(settings.data_root))
         self.tasks = FileTasks(self.results)
         self.tasks.connect(self, errors)
+        monitoring = MonitoringNode(
+            self.results,
+            settings.dispatch_enabled,
+            settings.metrics_host,
+            settings.metrics_port,
+            settings.observation_max_age_seconds,
+        )
+        self.connect(self.tasks.poll_clock.source, taps=(monitoring.sink,))
+        self.connect(self.subnet_clock.source, taps=(monitoring.block,))
+        self.connect(monitoring.error, errors.sink)
+        self.connect(monitoring.ok, MessageLoggerNode[Readiness]("factory-horde-health").sink)
         if settings.dispatch_enabled and settings.validator_hotkey is not None and settings.judge_image is not None:
             discovery = partial(
                 freeze_via_pylon,
@@ -144,6 +160,8 @@ class Validator(NexusValidator):
             self.connect(coordinator.factory, self.tasks.factory.input)
             self.connect(coordinator.evaluation, self.tasks.evaluation.input)
             self.connect(coordinator.error, errors.sink)
+            self.connect(coordinator.error, taps=(monitoring.failure,))
+            self.connect(coordinator.ok, taps=(monitoring.round,))
             self.connect(coordinator.ok, taps=(MessageLoggerNode[RoundTick]("factory-horde-rounds").sink,))
         if settings.weights_enabled:
             weigher = Weigher(
@@ -171,7 +189,11 @@ class Validator(NexusValidator):
             self.connect(gate.error, errors.sink)
             self.connect(setter.error, errors.sink)
             self.connect(
-                setter.ok, taps=(MessageLoggerNode[WeightSettingSuccess]("factory-horde-weight-requests").sink,)
+                setter.ok,
+                taps=(
+                    MessageLoggerNode[WeightSettingSuccess]("factory-horde-weight-requests").sink,
+                    monitoring.submission,
+                ),
             )
 
 

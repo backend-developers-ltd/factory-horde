@@ -133,12 +133,16 @@ Skip for higher level tasks that do not touch the code.
 ### Observability
 
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
-Prometheus scrapes node-exporter and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
+Prometheus scrapes node-exporter, the validator on port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
 Local configuration generates separate identity/open-access/metrics tokens. No remote-write
 or tracing sidecar runs, and no upstream credentials are needed.
 
-The validator has no `/metrics` endpoint yet. Record I/O counters and latency histograms live in
-`validator/src/validator/record_files.py`; scrape exposure is task 14. The selected Nexus revision has no
+`monitoring.py` owns `/metrics`, `/livez` and `/readyz` through a Nexus actor, including server shutdown.
+Readiness requires fresh runtime chain/executor/Docker observations, compatible records, writable paths and
+reconciliation. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
+termination. The same validator scrape path forwards executor counters/histograms. There is no textfile collector
+or executor HTTP server. Record I/O counters and latency histograms live in
+`validator/src/validator/record_files.py`. The selected Nexus revision has no
 reusable actor metrics registry. When you extend the validator (new payload creators, scorers, nodes, weight setters),
 treat metrics as first-class and follow Nexus's own conventions: inspect the
 installed Nexus package (`validator/.venv` after `uv sync`, starting from

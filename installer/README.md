@@ -62,10 +62,17 @@ survive later container deletion. Coherent verified updates remain task 15.
 ## Current monitoring
 
 Common Compose uses pinned official Prometheus and node-exporter images. Prometheus
-scrapes node-exporter and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`. Its UI is
+scrapes node-exporter, validator port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`. Its UI is
 bound to host loopback on port 9090. Pylon's identity, open-access and metrics tokens
-are distinct. The validator currently records I/O/chain counters and histograms but
-does not expose a scrape endpoint; task 14 adds metrics exposure and full readiness.
+are distinct. Validator `/metrics` exposes application counters, latency histograms,
+round/job/score state and executor metrics read from atomic files. The executor
+has no HTTP server. Validator `/readyz` returns HTTP 503 for missing/stale chain,
+executor or Docker observations, unreconciled work, incompatible records and
+unwritable control/result paths. `/livez` is only process liveness. Common Compose
+uses readiness for its container health check. No new host port is required;
+inspect it from the validator container with the image's `/opt/venv/bin/python`.
+See [validator operations](../validator/README.md) for metric names and failure meaning,
+and [localnet monitoring](../localnet/README.md#monitoring) for the verified probe.
 
 Tracing export and remote-write are disabled. No Alloy/proxy service or upstream
 credentials are required for this prototype topology. The inherited Alloy asset is
