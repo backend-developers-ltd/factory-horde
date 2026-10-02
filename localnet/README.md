@@ -8,6 +8,11 @@ Containerized submissions and frozen discovery are implemented; the host systemd
 executor runs concurrent factory/judge jobs. Automated rounds, recovery and independent
 chain weights are verified; packaged clean-host acceptance remains task 17.
 
+For the published image selection and full installer path, use the
+[immutable candidate instructions](../envs/candidate/README.md). The commands below
+remain the source-build development workflow. `check.py --env-file /absolute/installation/.env`
+also verifies an installed candidate against its own bootstrap evidence and ports.
+
 ## Prerequisites
 
 Linux amd64, Docker with Compose, systemd, Python 3.14, uv, Bash, OpenSSL and GNU

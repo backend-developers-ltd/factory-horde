@@ -97,5 +97,5 @@ Commitment publication/discovery will use explicit `v1` APIs and exact byte/hex
 conversion plus read-back. Mechanism status/writes use the selected `_unstable`
 routes. In the selected service, commitments are awaited; weights are scheduled.
 Read-back, chain payload constraints and identity authorization remain task 6.
-The validator release digest is still the scaffold placeholder until task 16;
+The original validator placeholder is replaced by the [task-16 candidate](../envs/candidate/release.json);
 no operator promotion or public-chain operation was performed by this gate.

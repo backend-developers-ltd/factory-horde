@@ -33,7 +33,8 @@ also passes. Application readiness and a single validator metrics endpoint expos
 round/job state and file-only executor health; packaging remains in the task list.
 The installer now validates a coherent checksummed release, installs the systemd
 executor and common Compose settings, and grants the operator's cron only the
-required service restart. An immutable accepted candidate remains pending.
+required service restart. The [immutable candidate](envs/candidate/README.md) selects
+published images and coherent installer assets; clean-host acceptance remains task 17.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,
 actual Docker execution and independently verified chain weights. Localnet now

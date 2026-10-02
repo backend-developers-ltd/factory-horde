@@ -1,8 +1,8 @@
 # FactoryHorde operator installation
 
 The installer and updater use the common Compose application and one host systemd
-executor. The accepted topology is localnet only; an immutable candidate and clean
-host acceptance remain tasks 16–17. No subnet-12 or production configuration is
+executor. The accepted topology is localnet only; the [immutable candidate](../envs/candidate/README.md)
+supplies published images and configuration. Clean-host acceptance remains task 17. No subnet-12 or production configuration is
 promoted by these instructions.
 
 ## Requirements and ownership

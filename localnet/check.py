@@ -1,5 +1,6 @@
 """Check the task-4 Compose runtime; run with the validator project's environment."""
 
+import argparse
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -68,10 +69,13 @@ def main() -> None:
     Raises:
         RuntimeError: Runtime checks fail or configuration is not isolated localnet.
     """
-    config = dotenv_values(ROOT / ".env")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    config_path = parser.parse_args().env_file
+    config = dotenv_values(config_path)
     if config.get("ENVIRONMENT") != "localnet" or config.get("NETUID") != "2":
         raise RuntimeError("This check requires isolated localnet configuration")
-    expected = Registrations.model_validate_json((ROOT / "state/registrations.json").read_bytes())
+    expected = Registrations.model_validate_json((config_path.parent / "state/registrations.json").read_bytes())
     files = RecordFiles(Path(config["FACTORY_HORDE_DATA_ROOT"] or ""))
     observation = files.read("control/chain-observation.json", ChainObservation)
     if (
@@ -127,7 +131,7 @@ def main() -> None:
         "cross_identity_token_rejected": True,
         "scrapes": {target.labels["job"]: target.health for target in targets},
     }
-    (ROOT / "state/compose-check.json").write_text(json.dumps(evidence, indent=2) + "\n")
+    (config_path.parent / "state/compose-check.json").write_text(json.dumps(evidence, indent=2) + "\n")
     print("PASS: fresh containerized validator, six Pylon identities, token isolation, all three Prometheus targets")
 
 
