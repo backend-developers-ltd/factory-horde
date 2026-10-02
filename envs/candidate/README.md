@@ -10,8 +10,9 @@ judge and submitter references. There are no mutable runtime image selections.
 All eight selected images passed anonymous pulls. Installation from Git revision
 `87353ed2e97cf435b6d8210dceb177affe2febfb` passed application readiness, identity and
 monitoring checks on the prepared Linux host; see [task-16 evidence](../../spec/evidence/task16-candidate.json).
-This is an isolated localnet candidate. Task 17's clean Linux acceptance is still
-required. No production configuration branch has been promoted.
+This isolated localnet candidate passed [task-17 end-to-end acceptance](../../spec/evidence/task17-acceptance.json).
+The user selected the existing VM and prohibited preparing another VM; no clean-OS claim is made.
+No production configuration branch has been promoted.
 
 ## Install the selected application
 

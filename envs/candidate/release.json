@@ -6,7 +6,7 @@
     3,
     14
   ],
-  "scope": "Localnet candidate only; clean Linux end-to-end acceptance is task 17. No operator promotion.",
+  "scope": "Localnet candidate only; task 17 uses a separate installation on the existing user-selected VM. No clean-OS claim or operator promotion.",
   "images": {
     "validator": {
       "kind": "validator",

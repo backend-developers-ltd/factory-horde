@@ -10,7 +10,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
-from dotenv import dotenv_values
 from nexus.v1 import Hotkey
 from pydantic import BaseModel
 from pylon_client.artanis import (
@@ -29,6 +28,7 @@ from validator.weighing import Weigher, read_membership, softmax
 
 from .check_executor import inspect
 from .check_executor_recovery import Check, docker, until
+from .runtime import Runtime
 
 ROOT = Path(__file__).resolve().parent
 
@@ -46,8 +46,9 @@ class PublishedProfile(BaseModel):
 class Adversarial(Check):
     """One isolated root and real application runtime; never manufacture executor statuses."""
 
-    def __init__(self, metadata: Path):
-        self.config = dotenv_values(ROOT / ".env")
+    def __init__(self, metadata: Path, env_file: Path = ROOT / ".env"):
+        runtime = Runtime.load(env_file)
+        self.config = runtime.config
         if (self.config.get("VALIDATOR_DISPATCH_ENABLED") or "false").lower() != "false":
             raise RuntimeError("Pause ordinary dispatch before changing localnet commitments")
         self.profiles = {
@@ -60,15 +61,24 @@ class Adversarial(Check):
         with TemporaryDirectory(prefix="factory-horde-anonymous-") as anonymous:
             for profile in self.profiles.values():
                 subprocess.run(
-                    ["docker", "--config", anonymous, "pull", "--platform", "linux/amd64", profile.image],
+                    [
+                        "docker",
+                        "--config",
+                        anonymous,
+                        "pull",
+                        "--platform",
+                        "linux/amd64",
+                        profile.image,
+                    ],
                     check=True,
                     capture_output=True,
                 )
         self.name = f"factory-horde-adversarial-{uuid4()}"
         super().__init__(
             self.profiles["lifecycle"].image,
-            service="factory-horde-adversarial-executor",
-            base=ROOT / "state" / self.name,
+            service=f"{self.name}-executor",
+            base=runtime.state / self.name,
+            runtime=runtime,
         )
         self.results = ResultRepository(self.repository)
         self.miners = [row for row in self.registrations.registrations if row.identity.startswith("miner")]
@@ -79,7 +89,7 @@ class Adversarial(Check):
                 "profiles": {name: value.model_dump() for name, value in self.profiles.items()},
                 "anonymous_pulls": len(self.profiles),
                 "data_root": str(self.root),
-                "validator_image": (ROOT / "state/validator-image.id").read_text().strip(),
+                "validator_image": self.runtime.image("validator"),
             }
         )
 
@@ -87,7 +97,7 @@ class Adversarial(Check):
         """Use only the explicitly configured local Pylon identity, with no write retries."""
         key = "VALIDATOR_PYLON_IDENTITY_TOKEN" if identity == "validator" else f"{identity.upper()}_PYLON_TOKEN"
         return Config(
-            address="http://127.0.0.1:8000",
+            address=self.runtime.pylon_address,
             identity_name=IdentityName(identity),
             identity_token=PylonAuthToken(self.config[key] or ""),
             retry=Retrying(stop=stop_after_attempt(1), reraise=True),
@@ -125,7 +135,7 @@ class Adversarial(Check):
     def start_validator(self, judge: str, *, disconnected: bool = False) -> None:
         """Run the common Compose service with its production entrypoint on this separate root."""
         command = [
-            str(ROOT / "compose.sh"),
+            *self.runtime.command,
             "run",
             "--detach",
             "--no-deps",
@@ -218,11 +228,17 @@ class Adversarial(Check):
             if result.accepted is not None:
                 accepted += 1
             decisions.append(
-                {"decision": result.model_dump(mode="json"), "docker": None if actual is None else actual.model_dump()}
+                {
+                    "decision": result.model_dump(mode="json"),
+                    "docker": None if actual is None else actual.model_dump(),
+                }
             )
         if accepted != expected_scores:
             raise RuntimeError(f"Expected {expected_scores} accepted scores, observed {accepted}")
-        return {"round": self.record(plan).model_dump(mode="json"), "outcomes": decisions}
+        return {
+            "round": self.record(plan).model_dump(mode="json"),
+            "outcomes": decisions,
+        }
 
     def missing_chain(self) -> None:
         """Prove initial connection failure cannot authorize a new request.
@@ -244,7 +260,15 @@ class Adversarial(Check):
         Raises:
             RuntimeError: Restart, discovery isolation or failure exclusion is incorrect.
         """
-        self.commitments(["factory-valid", "factory-missing", "factory-nonzero", "factory-hang", "factory-symlink"])
+        self.commitments(
+            [
+                "factory-valid",
+                "factory-missing",
+                "factory-nonzero",
+                "factory-hang",
+                "factory-symlink",
+            ]
+        )
         self.start_validator("judge-valid")
         plan = self.admitted(0)
         retained = {
@@ -297,9 +321,12 @@ class Adversarial(Check):
         missing = "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:" + "0" * 64
         self.publish_bytes(self.miners[0].identity, missing.encode())
         self.publish_bytes(self.miners[1].identity, b"\xff")
-        self.publish_bytes(self.miners[2].identity, b"ghcr.io/backend-developers-ltd/factory-horde-fixture:latest")
+        self.publish_bytes(
+            self.miners[2].identity,
+            b"ghcr.io/backend-developers-ltd/factory-horde-fixture:latest",
+        )
         overlong = "ghcr.io/a/" + "x" * 60 + "@sha256:" + "0" * 64
-        submitter = (ROOT / "state/submitter-image.id").read_text().strip()
+        submitter = self.runtime.image("submitter")
         with PylonClient(self.client_config(self.miners[3].identity)) as client:
             before = client.v1.identity.get_own_commitment()
             rejected = subprocess.run(
@@ -353,7 +380,10 @@ class Adversarial(Check):
             "chain_commitment_unchanged": True,
         }
         self.evidence["commitment_and_pull_failures"] = evidence
-        print("PASS: malformed/tag-only/overlong commitment and actual failed image pull", flush=True)
+        print(
+            "PASS: malformed/tag-only/overlong commitment and actual failed image pull",
+            flush=True,
+        )
 
     def delayed_results(self) -> None:
         """Hold a real pull across cancellation, deny projection writes and kill after acceptance.
@@ -362,7 +392,7 @@ class Adversarial(Check):
             RuntimeError: Startup, durable acceptance, admission or result-store recovery is incorrect.
         """
         self.commitments(["factory-valid"] * 5)
-        baseline = dotenv_values(ROOT / "state/published-images.env")["GHCR_FACTORY_IMAGE"] or ""
+        baseline = self.runtime.image("factory")
         self.publish_bytes(self.miners[0].identity, baseline.encode())
         self.arm("pull", baseline)
         projections = self.root / "control/projections"
@@ -374,7 +404,9 @@ class Adversarial(Check):
             plan = self.admitted(previous)
             self.entered()
             delayed = request_for(
-                plan, next(m for m in plan.cohort if m.miner_hotkey == self.miners[0].hotkey), "factory"
+                plan,
+                next(m for m in plan.cohort if m.miner_hotkey == self.miners[0].hotkey),
+                "factory",
             )
             judges = [request_for(plan, m, "judge") for m in plan.cohort if m.miner_hotkey != delayed.miner_hotkey]
             until(
@@ -424,7 +456,11 @@ class Adversarial(Check):
                 for job in judges
             ):
                 raise RuntimeError("Restart redrew or replaced an already accepted score")
-            absent = subprocess.run(["docker", "inspect", delayed.container_name], capture_output=True, check=False)
+            absent = subprocess.run(
+                ["docker", "inspect", delayed.container_name],
+                capture_output=True,
+                check=False,
+            )
             if absent.returncode == 0:
                 raise RuntimeError("A permanently cancelled startup created a container")
             evidence = self.verify(plan, 4)
@@ -464,7 +500,7 @@ class Adversarial(Check):
         """Retain incremental evidence even if a later scenario exposes a defect."""
         self.evidence["executor_sha256"] = hashlib.sha256((self.base / "executor/executor.py").read_bytes()).hexdigest()
         (self.base / "evidence.json").write_text(json.dumps(self.evidence, indent=2) + "\n")
-        (ROOT / "state/task13-latest.txt").write_text(str(self.base) + "\n")
+        (self.runtime.state / "task13-latest.txt").write_text(str(self.base) + "\n")
 
     def cleanup(self) -> None:
         """Restore original real commitments and stop only this suite's workloads/services."""
@@ -482,8 +518,9 @@ def main() -> None:
     """Exercise a clean isolated root while retaining all earlier acceptance evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("metadata", type=Path)
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
     args = parser.parse_args()
-    check = Adversarial(Path(args.metadata))
+    check = Adversarial(Path(args.metadata), args.env_file)
     try:
         check.missing_chain()
         check.mixed()

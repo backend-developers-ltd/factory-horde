@@ -1,5 +1,6 @@
 """Run the production coordinator with five real commitments, stages and container restarts."""
 
+import argparse
 import json
 import subprocess
 import time
@@ -8,7 +9,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from dotenv import dotenv_values
 from nexus.v1 import TaskResultId
 from validator.records import RoundPlan, RoundRecord, request_for
 from validator.result_records import JobResult
@@ -18,6 +18,7 @@ from validator.round_repository import RoundRepository
 
 from .check import Registrations
 from .check_executor import inspect
+from .runtime import Runtime
 
 ROOT = Path(__file__).resolve().parent
 
@@ -42,12 +43,16 @@ def main() -> None:
     Raises:
         RuntimeError: Local isolation, business identity, stage or outcome verification fails.
     """
-    config = dotenv_values(ROOT / ".env")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    args = parser.parse_args()
+    runtime = Runtime.load(args.env_file)
+    config = runtime.config
     if config.get("ENVIRONMENT") != "localnet" or config.get("NETUID") != "2":
         raise RuntimeError("Requires isolated localnet subnet 2")
     if (config.get("VALIDATOR_DISPATCH_ENABLED") or "false").lower() != "false":
         raise RuntimeError("Pause ordinary round admission before running this bounded fixture")
-    subprocess.run(["systemctl", "is-active", "--quiet", "factory-horde-localnet-executor"], check=True)
+    subprocess.run(["systemctl", "is-active", "--quiet", runtime.service], check=True)
     root = Path(config["FACTORY_HORDE_DATA_ROOT"] or "")
     rounds = RoundRepository(root)
     results = ResultRepository(rounds)
@@ -58,12 +63,12 @@ def main() -> None:
         raise RuntimeError("An existing round is still active or unresolved; reconcile it first")
     previous_rounds = {r.plan.round_id for r in existing}
     previous_requests = set(rounds.requests())
-    identities = Registrations.model_validate_json((ROOT / "state/registrations.json").read_bytes())
+    identities = Registrations.model_validate_json((runtime.state / "registrations.json").read_bytes())
     own = next(row.hotkey for row in identities.registrations if row.identity == "validator")
-    images = dotenv_values(ROOT / "state/published-images.env")
+    images = {"GHCR_FACTORY_IMAGE": runtime.image("factory"), "GHCR_JUDGE_IMAGE": runtime.image("judge")}
     name = f"factory-horde-round-probe-{uuid4()}"
-    compose = str(ROOT / "compose.sh")
-    command = [compose, "run", "--detach", "--no-deps", "--name", name]
+    compose = runtime.command
+    command = [*compose, "run", "--detach", "--no-deps", "--name", name]
     for key, value in {
         "VALIDATOR_DISPATCH_ENABLED": "true",
         "VALIDATOR_HOTKEY": own,
@@ -75,7 +80,7 @@ def main() -> None:
         "VALIDATOR_STOP_GRACE_SECONDS": "5",
     }.items():
         command.extend(("--env", f"{key}={value}"))
-    subprocess.run([compose, "stop", "validator"], check=True, capture_output=True)
+    subprocess.run([*compose, "stop", "validator"], check=True, capture_output=True)
     complete = False
     try:
         subprocess.run(
@@ -180,10 +185,10 @@ def main() -> None:
         if usable is None or usable[0] != plan or len(usable[1]) != 5:
             raise RuntimeError("Five stable accepted scores are not available")
         logs = subprocess.run(["docker", "logs", name], capture_output=True, text=True, check=True)
-        (ROOT / "state/task11-coordinator.log").write_text(logs.stdout + logs.stderr)
+        (runtime.state / "task11-coordinator.log").write_text(logs.stdout + logs.stderr)
         evidence = {
             "checked_at": datetime.now(UTC).isoformat(),
-            "image_id": (ROOT / "state/validator-image.id").read_text().strip(),
+            "image_id": runtime.image("validator"),
             "missing_initial_block_prevented_dispatch": True,
             "restart_boundaries": ["request_publication", "generation_end", "evaluation_start"],
             "early_factory_completion": early_finished_at.isoformat(),
@@ -191,7 +196,7 @@ def main() -> None:
             "outcomes": [decision.model_dump(mode="json") for decision in outcomes],
             "result_store_reconstructed": True,
         }
-        (ROOT / "state/task11-rounds.json").write_text(json.dumps(evidence, indent=2) + "\n")
+        (runtime.state / "task11-rounds.json").write_text(json.dumps(evidence, indent=2) + "\n")
         complete = True
         print(
             "PASS: production coordinator froze, ran and scored five miners through every stage with stable restarts",
@@ -202,7 +207,11 @@ def main() -> None:
         subprocess.run(["docker", "stop", "--time", "1", name], check=False, capture_output=True)
         if complete:
             subprocess.run(["docker", "rm", name], check=True, capture_output=True)
-        subprocess.run([compose, "up", "-d", "--no-deps", "validator"], check=True, capture_output=True)
+        subprocess.run(
+            [*compose, "up", "-d", "--no-deps", "--wait", "--wait-timeout", "180", "validator"],
+            check=True,
+            capture_output=True,
+        )
 
 
 if __name__ == "__main__":

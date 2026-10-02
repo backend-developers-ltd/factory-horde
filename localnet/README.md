@@ -6,12 +6,93 @@ Factory/judge source-build checks now run through `localnet/build-baselines.sh`.
 Public baseline images are available on GHCR; see [image evidence](../spec/evidence/task5-published-images.json).
 Containerized submissions and frozen discovery are implemented; the host systemd
 executor runs concurrent factory/judge jobs. Automated rounds, recovery and independent
-chain weights are verified; packaged clean-host acceptance remains task 17.
+chain weights and packaged end-to-end acceptance are verified in
+[task-17 evidence](../spec/evidence/task17-acceptance.json).
 
 For the published image selection and full installer path, use the
 [immutable candidate instructions](../envs/candidate/README.md). The commands below
 remain the source-build development workflow. `check.py --env-file /absolute/installation/.env`
 also verifies an installed candidate against its own bootstrap evidence and ports.
+
+## Packaged candidate acceptance on this VM
+
+The user selected the existing Linux VM for task 17 and prohibited preparing another
+VM. Use a new isolated installation here; this proves reproducibility of application
+installation on this host, without claiming a fresh operating-system installation.
+The selected candidate assets are Git revision
+`87353ed2e97cf435b6d8210dceb177affe2febfb`; all runtime images are registry digests.
+Install and bootstrap from the repository root after satisfying the
+[candidate prerequisites](../envs/candidate/README.md#install-the-selected-application):
+
+```sh
+TASK_INSTALL="$PWD/localnet/state/acceptance"
+TASK_REVISION=87353ed2e97cf435b6d8210dceb177affe2febfb
+env -u UV_EXCLUDE_NEWER uv sync --project validator
+env -u UV_EXCLUDE_NEWER uv sync --project miner --group bootstrap
+installer/install.sh "$TASK_INSTALL" --env-file "$PWD/envs/candidate/localnet.env" \
+  --ref "$TASK_REVISION" --service factory-horde-acceptance-executor \
+  --project factory-horde-acceptance --localnet --prepare-only
+docker compose --project-name factory-horde-acceptance --env-file "$TASK_INSTALL/.env" \
+  -f "$TASK_INSTALL/envs/deployed/docker-compose.yml" \
+  -f "$TASK_INSTALL/localnet/compose.yml" up -d --wait subtensor
+env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap \
+  python localnet/bootstrap.py --env-file "$TASK_INSTALL/.env"
+"$TASK_INSTALL/installer/update_compose.sh" "$TASK_INSTALL"
+```
+
+After bootstrap/startup, run from the repository root:
+
+```sh
+TASK_ENV="$PWD/localnet/state/acceptance/.env"
+env -u UV_EXCLUDE_NEWER uv run --project validator python localnet/check.py --env-file "$TASK_ENV"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_submissions --env-file "$TASK_ENV"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_rounds --env-file "$TASK_ENV"
+env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python -m localnet.check_weights --env-file "$TASK_ENV"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_monitoring --env-file "$TASK_ENV"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_adversarial \
+  localnet/state/task13-profile-images --env-file "$TASK_ENV"
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_installer \
+  --validator-image ghcr.io/backend-developers-ltd/factory-horde-validator-prototype@sha256:71807ba7181bf544388d2b809d69777adefc5cda89124e2d918c4b5834112eb5
+```
+
+Download the published profile metadata as described under
+[adversarial application acceptance](#adversarial-application-acceptance) before that
+check. The selected environment determines Compose files/project, Pylon port,
+executor service, candidate images and artifact paths. Checks reject public-network
+settings and symlink escapes. Omit `--env-file` to retain the source-checkout workflow.
+The independent chain checker runs as a module from the repository root using the
+miner bootstrap group; no Bittensor SDK enters the validator runtime.
+
+Checks run sequentially on the selected chain: submission checks temporarily change
+commitments, round checks use 100/15/65-second stages, and weight checks independently
+read two actual updates across a validator restart. Adversarial checks also change
+commitments temporarily, retaining their deliberately unresolved workloads in a
+separate data root. The installer check creates another isolated Compose/local-chain
+installation on this same host and verifies an update during active detached work.
+It uses revision-addressed HTTP fault fixtures, including a compatible older executor
+variant, while selecting the published candidate validator image.
+
+Public records and logs remain under the chosen installation's `state/` and `data/`;
+installer checks retain their own `localnet/state/installer-*` directory. Keep wallets,
+`.env` and token files out of evidence bundles. Do not delete an unresolved record to
+make the next check pass.
+
+After all checks pass, collect the public data and an inventory of hashes:
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.package_acceptance \
+  localnet/state/task17-evidence.tar.gz --env-file "$TASK_ENV"
+```
+
+The packager includes the selected candidate, installed release metadata, registration
+and commitment evidence, rounds, requests/stops/statuses, outputs, reports, accepted
+scores, chain readback and adversarial/installer evidence. It also retains Docker logs
+and verifies all five baseline Pi versions and minute-long factory executions. Keep
+those finalized containers until packaging completes. It scans for the configured
+token values and refuses a leaking artifact. Rejected workload symlinks are recorded
+as inventory metadata and are never followed or archived as links. The tarball and
+its JSON inventory remain outside source commits; a second collection requires a
+new output filename. Raw evidence is retained on failure.
 
 ## Prerequisites
 
@@ -166,7 +247,7 @@ env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_exec
 ```
 
 The check installs the same executor/unit as a separate
-`factory-horde-recovery-executor` service, with data under
+`factory-horde-recovery-<root-hash>-executor` service, with data under
 `state/executor-acceptance/data`. A local test-only Docker CLI wrapper holds real
 create/start/pull responses or simulates unavailable observation. The production
 executor contains no fault hooks. All workload containers are real; statuses are
@@ -244,7 +325,7 @@ dispatch pauses the coordinator; existing executor requests retain their deadlin
 After a completed five-miner coordinator run and a current validator image build:
 
 ```sh
-env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python localnet/check_weights.py
+env -u UV_EXCLUDE_NEWER uv run --project miner --group bootstrap python -m localnet.check_weights
 ```
 
 The checker runs the production validator with weight writes enabled and round

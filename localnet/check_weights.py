@@ -1,5 +1,6 @@
 """Independent Subtensor proof of Nexus-written weights; run with the miner bootstrap group."""
 
+import argparse
 import json
 import math
 import subprocess
@@ -11,8 +12,9 @@ from uuid import UUID, uuid4
 
 import bittensor as bt
 from bittensor.utils import get_mechid_storage_index
-from dotenv import dotenv_values
 from pydantic import BaseModel, Field, TypeAdapter
+
+from localnet.runtime import Runtime
 
 ROOT = Path(__file__).resolve().parent
 
@@ -171,8 +173,12 @@ def main() -> None:
     Raises:
         RuntimeError: The host is not isolated localnet or chain proof does not arrive.
     """
-    config = dotenv_values(ROOT / ".env")
-    registrations = Registrations.model_validate_json((ROOT / "state/registrations.json").read_bytes())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    args = parser.parse_args()
+    runtime = Runtime.load(args.env_file)
+    config = runtime.config
+    registrations = Registrations.model_validate_json((runtime.state / "registrations.json").read_bytes())
     if (
         config.get("ENVIRONMENT") != "localnet"
         or config.get("NETUID") != "2"
@@ -182,7 +188,7 @@ def main() -> None:
         raise RuntimeError("Requires the isolated local subnet 2 configured for mechanism 1")
     root = Path(config["FACTORY_HORDE_DATA_ROOT"] or "")
     validator = next(row.hotkey for row in registrations.registrations if row.identity == "validator")
-    compose = str(ROOT / "compose.sh")
+    compose = runtime.command
     name = f"factory-horde-weight-probe-{uuid4()}"
     complete = False
     with bt.Subtensor(network=f"ws://127.0.0.1:{int(config.get('SUBTENSOR_HOST_PORT') or '9944')}") as chain:
@@ -190,12 +196,12 @@ def main() -> None:
         observed: list[ChainSnapshot] = []
         calculations: list[Calculation] = []
         expected: dict[str, float] = {}
-        subprocess.run([compose, "stop", "--timeout", "1", "validator"], check=True, capture_output=True)
+        subprocess.run([*compose, "stop", "--timeout", "1", "validator"], check=True, capture_output=True)
         try:
             started = datetime.now(UTC)
             subprocess.run(
                 [
-                    compose,
+                    *compose,
                     "run",
                     "--detach",
                     "--no-deps",
@@ -241,10 +247,10 @@ def main() -> None:
             ):
                 raise RuntimeError("Repeated opportunities did not reuse the same accepted round and weights")
             logs = subprocess.run(["docker", "logs", name], check=True, capture_output=True, text=True)
-            (ROOT / "state/task12-validator.log").write_text(logs.stdout + logs.stderr)
+            (runtime.state / "task12-validator.log").write_text(logs.stdout + logs.stderr)
             evidence = {
                 "checked_at": datetime.now(UTC).isoformat(),
-                "image_id": (ROOT / "state/validator-image.id").read_text().strip(),
+                "image_id": runtime.image("validator"),
                 "netuid": 2,
                 "mechanism_id": 1,
                 "before": before.model_dump(mode="json"),
@@ -258,13 +264,17 @@ def main() -> None:
                     "absolute tolerance 2 * recipients / 65535."
                 ),
             }
-            (ROOT / "state/task12-weights.json").write_text(json.dumps(evidence, indent=2) + "\n")
+            (runtime.state / "task12-weights.json").write_text(json.dumps(evidence, indent=2) + "\n")
             complete = True
         finally:
             subprocess.run(["docker", "stop", "--time", "1", name], check=False, capture_output=True)
             if complete:
                 subprocess.run(["docker", "rm", name], check=True, capture_output=True)
-            subprocess.run([compose, "up", "-d", "--no-deps", "validator"], check=True, capture_output=True)
+            subprocess.run(
+                [*compose, "up", "-d", "--no-deps", "--wait", "--wait-timeout", "180", "validator"],
+                check=True,
+                capture_output=True,
+            )
 
 
 if __name__ == "__main__":

@@ -73,7 +73,7 @@ These weights do not establish final emission percentages.
 Use the [localnet guide](../localnet/README.md) to build the validator, bootstrap
 isolated identities and start the application. The common Compose file selects the
 published [immutable candidate](../envs/candidate/README.md); the developer helper
-can instead supply a local image ID. Clean-host end-to-end acceptance remains task 17.
+can instead supply a local image ID. End-to-end acceptance on the user-selected existing VM passed task 17.
 
 The validator uses structured JSON logs. Common Compose disables trace export and
 starts pinned Prometheus/node-exporter services with authenticated Pylon scraping.

@@ -1,5 +1,6 @@
 """Real Linux installer/update faults with isolated Compose, systemd and detached Docker jobs."""
 
+import argparse
 import hashlib
 import json
 import shutil
@@ -14,14 +15,13 @@ from pathlib import Path
 from typing import override
 from uuid import uuid4
 
-from dotenv import dotenv_values
-from installer import release
 from nexus.v1 import BlockBeat, BlockHash, BlockNumber, Timestamp
 from pylon_client.artanis import Config, PylonAuthToken, PylonClient
-
 from validator.records import CohortMember, Deadlines, JobRequest, RoundPlan, RoundRecord, StopRequest, request_for
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
+
+from installer import release
 
 from .check import Registrations
 from .check_executor import wait_status
@@ -64,7 +64,7 @@ class Server(ThreadingHTTPServer):
 class Check:
     """Retain each run's files/volumes while removing only its active services and cron job."""
 
-    def __init__(self) -> None:
+    def __init__(self, validator_image: str | None = None) -> None:
         suffix = uuid4().hex[:8]
         self.base = REPO / f"localnet/state/installer-{suffix}"
         self.directory = self.base / "installation"
@@ -73,9 +73,6 @@ class Check:
         self.directory.mkdir()
         self.service = "factory-horde-installer-" + suffix
         self.project = "factory-horde-installer-" + suffix
-        ordinary = dotenv_values(REPO / "localnet/.env")
-        if ordinary.get("NETUID") != "2" or ordinary.get("ENVIRONMENT") != "localnet":
-            raise RuntimeError("Requires isolated localnet configuration")
         self.config = dict(
             ENVIRONMENT="localnet",
             NETUID="2",
@@ -86,7 +83,7 @@ class Check:
             SUBTENSOR_HOST_PORT=str(port()),
             PYLON_HOST_PORT=str(port()),
             PROMETHEUS_HOST_PORT=str(port()),
-            VALIDATOR_IMAGE=(REPO / "localnet/state/validator-image.id").read_text().strip(),
+            VALIDATOR_IMAGE=validator_image or (REPO / "localnet/state/validator-image.id").read_text().strip(),
             VALIDATOR_DISPATCH_ENABLED="false",
             VALIDATOR_WEIGHTS_ENABLED="false",
         )
@@ -545,7 +542,10 @@ class Check:
 
 def main() -> None:
     """Run actual installation, failure and update checks without changing the ordinary localnet."""
-    check = Check()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--validator-image")
+    args = parser.parse_args()
+    check = Check(args.validator_image)
     try:
         check.setup()
         check.overlap()

@@ -11,16 +11,23 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from dotenv import dotenv_values
 from pydantic import BaseModel
-from validator.records import CohortMember, Deadlines, JobRequest, JobStatus, RoundPlan, StopRequest, request_for
+from validator.records import (
+    CohortMember,
+    Deadlines,
+    JobRequest,
+    JobStatus,
+    RoundPlan,
+    StopRequest,
+    request_for,
+)
 from validator.round_repository import RoundRepository
 
 from .check import Registrations
 from .check_executor import inspect, wait_status
+from .runtime import Runtime
 
 ROOT = Path(__file__).resolve().parent
-SERVICE = "factory-horde-recovery-executor"
 
 
 class DockerState(BaseModel):
@@ -62,12 +69,21 @@ def until(check: Callable[[], bool], reason: str, seconds: float = 90) -> None:
 class Check:
     """Separate data root retains deliberate unresolved evidence without blocking normal rounds."""
 
-    def __init__(self, image: str, *, service: str = SERVICE, base: Path | None = None):
-        config = dotenv_values(ROOT / ".env")
+    def __init__(
+        self,
+        image: str,
+        *,
+        service: str | None = None,
+        base: Path | None = None,
+        runtime: Runtime | None = None,
+    ):
+        self.runtime = runtime or Runtime.load()
+        config = self.runtime.config
         if config.get("ENVIRONMENT") != "localnet" or config.get("NETUID") != "2":
             raise RuntimeError("Requires isolated localnet")
-        self.service = service
-        self.base = base or ROOT / "state/executor-acceptance"
+        self.base = base or self.runtime.state / "executor-acceptance"
+        identity = hashlib.sha256(str(self.base).encode()).hexdigest()[:12]
+        self.service = service or f"factory-horde-recovery-{identity}-executor"
         self.root = self.base / "data"
         self.root.mkdir(parents=True, exist_ok=True)
         self.repository = RoundRepository(self.root)
@@ -75,8 +91,11 @@ class Check:
         self.fault_root = self.root / "control/executor-faults"
         self.fault_root.mkdir(parents=True, exist_ok=True)
         self.dropin = Path("/etc/systemd/system") / (self.service + ".service.d") / "faults.conf"
-        self.evidence: dict[str, object] = {"checked_at": datetime.now(UTC).isoformat(), "fixture_image": image}
-        self.registrations = Registrations.model_validate_json((ROOT / "state/registrations.json").read_bytes())
+        self.evidence: dict[str, object] = {
+            "checked_at": datetime.now(UTC).isoformat(),
+            "fixture_image": image,
+        }
+        self.registrations = Registrations.model_validate_json((self.runtime.state / "registrations.json").read_bytes())
         self.plan_by_job: dict[str, RoundPlan] = {}
         self.jobs: list[JobRequest] = []
         selected = {
@@ -97,7 +116,14 @@ class Check:
         env_path = self.base / "executor.env"
         env_path.write_text("".join(f"{key}={value}\n" for key, value in selected.items()))
         env_path.chmod(0o600)
-        subprocess.run([str(ROOT.parent / "installer/install-executor.sh"), str(env_path), self.service], check=True)
+        subprocess.run(
+            [
+                str(ROOT.parent / "installer/install-executor.sh"),
+                str(env_path),
+                self.service,
+            ],
+            check=True,
+        )
         binary = self.base / "fault-bin/docker"
         binary.parent.mkdir(exist_ok=True)
         staged_binary = binary.with_name(f".docker-{uuid4()}.tmp")
@@ -135,7 +161,10 @@ class Check:
 
     def entered(self) -> None:
         """Wait until the real Docker command returned but the executor has not received it."""
-        until(lambda: (self.fault_root / "entered.json").exists(), "Fault boundary not reached")
+        until(
+            lambda: (self.fault_root / "entered.json").exists(),
+            "Fault boundary not reached",
+        )
 
     def crash(self) -> None:
         """Kill the executor and CLI children, leaving detached Docker state intact.
@@ -145,7 +174,14 @@ class Check:
         """
         self.systemctl("stop", "--no-block")
         result = subprocess.run(
-            ["sudo", "systemctl", "kill", "--signal=SIGKILL", "--kill-whom=all", self.service],
+            [
+                "sudo",
+                "systemctl",
+                "kill",
+                "--signal=SIGKILL",
+                "--kill-whom=all",
+                self.service,
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -197,7 +233,14 @@ class Check:
                 job,
                 StopRequest(
                     **job.model_dump(
-                        include={"protocol_version", "round_id", "job_id", "miner_hotkey", "kind", "factory_job_id"}
+                        include={
+                            "protocol_version",
+                            "round_id",
+                            "job_id",
+                            "miner_hotkey",
+                            "kind",
+                            "factory_job_id",
+                        }
                     ),
                     requested_at=datetime.now(UTC),
                     reason="operator",
@@ -225,7 +268,10 @@ class Check:
         jobs = self.make("ignore-term", 5)
         for job in jobs:
             self.publish(job)
-        until(lambda: all(self.running(job) for job in jobs), "Five factories did not run concurrently")
+        until(
+            lambda: all(self.running(job) for job in jobs),
+            "Five factories did not run concurrently",
+        )
         starts = [datetime.fromisoformat(self.actual(job).State.StartedAt.replace("Z", "+00:00")) for job in jobs]
         spread = (max(starts) - min(starts)).total_seconds()
         if spread > 12:
@@ -257,7 +303,8 @@ class Check:
             "statuses": [s.model_dump(mode="json") for s in statuses],
         }
         print(
-            "PASS: five concurrent TERM-resistant jobs, durable grace across restart, inspected KILL exits", flush=True
+            "PASS: five concurrent TERM-resistant jobs, durable grace across restart, inspected KILL exits",
+            flush=True,
         )
 
     def crash_recovery(self, operation: str, mode: str) -> None:
@@ -266,7 +313,10 @@ class Check:
         self.publish(job)
         self.entered()
         if operation == "start" and mode == "exit":
-            until(lambda: self.actual(job).State.Status == "exited", "Fixture did not exit before executor restart")
+            until(
+                lambda: self.actual(job).State.Status == "exited",
+                "Fixture did not exit before executor restart",
+            )
         before = self.actual(job)
         self.crash()
         if operation == "create" and before.State.Status != "created":
@@ -293,12 +343,13 @@ class Check:
             "before": before.model_dump(mode="json"),
             "status": observed.model_dump(mode="json"),
         }
-        print(f"PASS: crash after {operation}, {mode}, duplicate/restart/finalized deletion without rerun", flush=True)
+        print(
+            f"PASS: crash after {operation}, {mode}, duplicate/restart/finalized deletion without rerun",
+            flush=True,
+        )
 
     def pending_pull(self) -> None:
-        baseline = dotenv_values(ROOT / "state/published-images.env")["GHCR_FACTORY_IMAGE"]
-        if baseline is None:
-            raise RuntimeError("Missing verified baseline image")
+        baseline = self.runtime.image("factory")
         (slow,) = self.make("unused", image=baseline)
         self.arm("pull", baseline)
         self.publish(slow)
@@ -317,7 +368,11 @@ class Check:
             raise RuntimeError("Cancelled pull created a workload")
         self.systemctl("restart")
         time.sleep(3)
-        missing = subprocess.run(["/usr/bin/docker", "inspect", slow.container_name], capture_output=True, check=False)
+        missing = subprocess.run(
+            ["/usr/bin/docker", "inspect", slow.container_name],
+            capture_output=True,
+            check=False,
+        )
         if missing.returncode == 0 or self.repository.status(slow) != cancelled:
             raise RuntimeError("Cancelled pending job later started")
         self.evidence["slow_pull"] = {
@@ -359,7 +414,10 @@ class Check:
             "unavailable": unavailable.model_dump(mode="json"),
             "missing": missing.model_dump(mode="json"),
         }
-        print("PASS: unavailable/deleted expected execution remains unresolved, with no replacement", flush=True)
+        print(
+            "PASS: unavailable/deleted expected execution remains unresolved, with no replacement",
+            flush=True,
+        )
 
     def close(self) -> None:
         """Remove interception, stop every authorized job, then leave deliberate evidence isolated."""
@@ -379,8 +437,9 @@ def main() -> None:
     """Run the focused real execution acceptance and retain inspectable evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("fixture_image")
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
     args = parser.parse_args()
-    check = Check(str(args.fixture_image))
+    check = Check(str(args.fixture_image), runtime=Runtime.load(args.env_file))
     try:
         check.concurrent_stops()
         check.crash_recovery("create", "exit")
@@ -391,7 +450,7 @@ def main() -> None:
         check.evidence["executor_sha256"] = hashlib.sha256(
             (check.base / "executor/executor.py").read_bytes()
         ).hexdigest()
-        (ROOT / "state/task8-recovery.json").write_text(json.dumps(check.evidence, indent=2) + "\n")
+        (check.runtime.state / "task8-recovery.json").write_text(json.dumps(check.evidence, indent=2) + "\n")
     finally:
         check.close()
 

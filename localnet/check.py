@@ -17,7 +17,6 @@ from pylon_client.artanis import (
     PylonForbidden,
     PylonUnauthorized,
 )
-
 from validator.chain_observer import ChainObservation
 from validator.record_files import RecordFiles
 

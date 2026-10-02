@@ -119,9 +119,7 @@ def main() -> None:
         "reconstructed_nexus_queries_identical": True,
     }
     (ROOT / "state/task9-results.json").write_text(json.dumps(output, indent=2) + "\n")
-    print(
-        "PASS: original real score accepted once; Nexus replay/rebuild retained IDs, times, blocks and evidence"
-    )
+    print("PASS: original real score accepted once; Nexus replay/rebuild retained IDs, times, blocks and evidence")
 
 
 if __name__ == "__main__":

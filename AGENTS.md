@@ -78,6 +78,8 @@ contains workflows for:
 
 Use those workflows within V2's sequential tasks. Build an immutable candidate and verify isolated localnet;
 do not promote configuration to active operators, deploy to subnet 12 or change emissions for this prototype.
+For task 17, the user explicitly selected this existing VM on 2 October 2026: do not create or prepare another
+VM. Use a separate localnet installation here and report that environment scope accurately.
 
 # Knowledge base
 

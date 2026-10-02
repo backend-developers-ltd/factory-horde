@@ -1,0 +1,1150 @@
+{
+  "checked_at": "2026-10-02T11:31:02.486822+00:00",
+  "scope": "Existing user-selected VM, separate localnet installation; no new VM or clean-OS claim.",
+  "configuration_revision": "87353ed2e97cf435b6d8210dceb177affe2febfb",
+  "candidate": {
+    "schema": 1,
+    "platform": "linux/amd64",
+    "protocol": 1,
+    "python_min": [
+      3,
+      14
+    ],
+    "scope": "Localnet candidate only; task 17 uses a separate installation on the existing user-selected VM. No clean-OS claim or operator promotion.",
+    "images": {
+      "validator": {
+        "kind": "validator",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-validator-prototype@sha256:71807ba7181bf544388d2b809d69777adefc5cda89124e2d918c4b5834112eb5",
+        "commit": "f173bfd0c658fa421a540c6caa65a483822eeddd",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36997766725"
+      },
+      "submitter": {
+        "kind": "submitter",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-submitter-prototype@sha256:260ae682875e7dc93797838f42b255bb62a9ad46169fab3eefaccef59090cf29",
+        "commit": "f173bfd0c658fa421a540c6caa65a483822eeddd",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36997766725"
+      },
+      "factory": {
+        "kind": "factory",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commit": "a9d800d83f8560b4d14505f1d84d02ac1aba5a56",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36920750021"
+      },
+      "judge": {
+        "kind": "judge",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+        "commit": "a9d800d83f8560b4d14505f1d84d02ac1aba5a56",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36920750021"
+      },
+      "pylon": {
+        "image": "docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5",
+        "platform": "linux/amd64"
+      },
+      "node-exporter": {
+        "image": "docker.io/prom/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
+        "platform": "linux/amd64"
+      },
+      "prometheus": {
+        "image": "docker.io/prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996",
+        "platform": "linux/amd64"
+      },
+      "subtensor": {
+        "image": "ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f",
+        "platform": "linux/amd64"
+      }
+    },
+    "executor_sha256": "50402bb9c86bef25b03f5cdeea8d06ae2eaf286293a8422ce66394e4064f1177",
+    "nexus_revision": "e7f4cc1a261dabd52f9cb66bcdfb351cfed53b7b",
+    "pylon_client": "2.3.0",
+    "pylon_service": "2.3.3",
+    "build_inputs": {
+      "python": "docker.io/library/python@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d",
+      "uv": "ghcr.io/astral-sh/uv@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7"
+    },
+    "locks_sha256": {
+      "validator/uv.lock": "c80cb0bad442de6ff5262c4ac83137ebcd7f083f22a8138715f0d1976f8cf16a",
+      "miner/uv.lock": "11f91e32d2c2ca6a000647c6794edd690e75f26fed77922b785435f2c209f9af"
+    },
+    "asset_manifest_sha256": "47af4684d151fd5ef1f4944f31aa2e2ac0cc95ef20f0c66c424bbf9744178f4a",
+    "localnet_config_sha256": "2197d9070f5b18be0c78f0f1090f75c751895fcd293d93fdb607f11d1de1450d"
+  },
+  "host": {
+    "checked_at": "2026-10-02T11:31:01.824893+00:00",
+    "scope": "Existing user-selected VM, separate localnet installation; no new VM or clean-OS claim.",
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "python": "3.14.8",
+    "docker": "29.8.2",
+    "compose": "5.5.1",
+    "systemd": "systemd 255 (255.4-1ubuntu8.17)",
+    "base_revision": "8ab064d8d5c816fabee9f517a700629c28f65720",
+    "configuration": {
+      "ENVIRONMENT": "localnet",
+      "NETUID": "2",
+      "MECHANISM_ID": "1",
+      "FACTORY_HORDE_DATA_ROOT": "/home/ubuntu/repo/factory-horde/localnet/state/acceptance/data",
+      "CONTAINER_UID": "1000",
+      "CONTAINER_GID": "1000",
+      "EXECUTOR_PYTHON": "/usr/bin/python3.14",
+      "EXECUTOR_USER": "ubuntu",
+      "EXECUTOR_GROUP": "ubuntu",
+      "GENERATION_SECONDS": "3600",
+      "CONFIRMATION_SECONDS": "300",
+      "EVALUATION_SECONDS": "3300",
+      "JUDGE_STOP_RESERVE_SECONDS": "300",
+      "STOP_GRACE_SECONDS": "60",
+      "VALIDATOR_DISPATCH_ENABLED": "false",
+      "VALIDATOR_WEIGHTS_ENABLED": "false"
+    },
+    "source_files": {
+      "localnet/__init__.py": "0319b1f1cadc9c164021db47abfca12003f91c94842f3c513eba0aa88bb5e599",
+      "localnet/bootstrap.py": "eac516345e156e9d9e93bbe0e96ddb023f3bff3acb9afdb7b75041c5e11fa5f7",
+      "localnet/check.py": "b376691fddd651aeb5ffeac2152817b38086609f8ab06c6821b94ccaf0e47b70",
+      "localnet/check_adversarial.py": "670ff8f914edd2320c75d128a09ff54837c9a759210c7bd0dc2b1e921aa43a9d",
+      "localnet/check_executor.py": "cce481477169242e2da1eba4d4804d7e7e779829149cd060406471e17baba733",
+      "localnet/check_executor_recovery.py": "5a489501ff7aa4ce3a3b0a431e270a3ea64050f8f67664fcf7e5ef5cd0d50f10",
+      "localnet/check_installer.py": "5b8f0f9c9f4c0504b18871979ef93f0aee57c46b2d170acc432c642a0d753798",
+      "localnet/check_monitoring.py": "6cad423b526176a29d985e0b353f09235e7f934c12ef7de3fd7f4df68acd7453",
+      "localnet/check_results.py": "c8514e6318f54ee3d413bd4b3b252a47c9334d5f67e2524f4d77c7fbb2f3450e",
+      "localnet/check_rounds.py": "d530f548c2390c6516ab3d54ed5623b3adcbf239ca06f6d11a72e12d8547ad6f",
+      "localnet/check_submissions.py": "8ee89bb90d30925e1f326b165cd8ca85072b292ac09f5e87c868b3f5d86d4cd7",
+      "localnet/check_tasks.py": "3f44b3714624b752ce7855cf6a7349dedd4cdba9fc76a4a17c27d6a8c0feeee4",
+      "localnet/check_weights.py": "12fabe0386f77afcdf2a093807f65d4838e0d858d8732fe46b87641c31c99c1d",
+      "localnet/executor_faults.py": "52cbbf221ded7ffe5d5ea482edf039c25a7f612c175aca2314293453056e1b3f",
+      "localnet/package_acceptance.py": "80b3285380ae918f5099883a287aa8658c8fcfdd167fa6f0248c73abaf5b9c82",
+      "localnet/runtime.py": "0deb86af94697bbea0daf554bfcbd8c23d00ed89ae9a47aae832bbd4d6351d99",
+      "localnet/task_probe.py": "47c8e691ea6acac3899c0c148e7d226ed14e58a91d8862503288efeff5c819ad",
+      "localnet/test_package_acceptance.py": "d4cde3bc5b870344081ccf8627c7ef42477eb70266894347f86d072c942ac030",
+      "localnet/test_runtime.py": "eebfd18faca962138f9ccf736c97d23f01fe6fdd4e57d67563cf59a50e044235"
+    }
+  },
+  "reproduction": "localnet/README.md#packaged-candidate-acceptance-on-this-vm",
+  "installation": "/home/ubuntu/repo/factory-horde/localnet/state/acceptance",
+  "submissions": {
+    "checked_at": "2026-10-02T11:06:08.633481+00:00",
+    "submitter_local_image_id": "ghcr.io/backend-developers-ltd/factory-horde-submitter-prototype@sha256:260ae682875e7dc93797838f42b255bb62a9ad46169fab3eefaccef59090cf29",
+    "publications": [
+      {
+        "outcome": "published",
+        "netuid": 2,
+        "hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commitment_block": 320,
+        "observed_block": 324,
+        "observed_block_hash": "0x37cae4543a543241d41ecd7390842c8c87090b2ade3e18e5cd1d6c2f56271bec",
+        "elapsed_seconds": 1.9594431059999806
+      },
+      {
+        "outcome": "published",
+        "netuid": 2,
+        "hotkey": "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commitment_block": 332,
+        "observed_block": 337,
+        "observed_block_hash": "0xa8ea3d7ef51f943919a7830acca5a5e561483a49d9f72749380c304c5566db45",
+        "elapsed_seconds": 2.2039989199997763
+      },
+      {
+        "outcome": "published",
+        "netuid": 2,
+        "hotkey": "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commitment_block": 345,
+        "observed_block": 350,
+        "observed_block_hash": "0x73c63094767235143ccfd2b24bd7dafdb845a966f8d616410debc797c3db1a56",
+        "elapsed_seconds": 2.172147369999948
+      },
+      {
+        "outcome": "published",
+        "netuid": 2,
+        "hotkey": "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commitment_block": 358,
+        "observed_block": 363,
+        "observed_block_hash": "0xe25679d632d949447140626632cf2c75f314888adc2f17a98c55f89aa9668aff",
+        "elapsed_seconds": 2.185748772000352
+      },
+      {
+        "outcome": "published",
+        "netuid": 2,
+        "hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commitment_block": 371,
+        "observed_block": 376,
+        "observed_block_hash": "0x6cc3b3af6180641714d4970efbc36fc17e44b550694a1e6a80fb842efddbaf1e",
+        "elapsed_seconds": 2.1499645379999492
+      }
+    ],
+    "repeat": {
+      "outcome": "unchanged",
+      "netuid": 2,
+      "hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+      "commitment_block": 320,
+      "observed_block": 383,
+      "observed_block_hash": "0xec44fac0d3c2c47eb550a0895fcf2415f90e1f76df625e76aaa70859b602a46d",
+      "elapsed_seconds": 0.13032251599997835
+    },
+    "cross_identity_write_rejected": true,
+    "frozen": {
+      "protocol_version": 1,
+      "netuid": 2,
+      "block": 389,
+      "block_hash": "0xc1462d72f73630925586ece4b7c62d33fe9e5bec864db708395db2ca7ae67ba3",
+      "observed_at": "2026-10-02T11:06:00.513772Z",
+      "validator_hotkey": "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E",
+      "allowed_hotkeys": null,
+      "cohort": [
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "uid": 2,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "643f6f53-b73a-4a48-b966-b88d390ab163",
+          "judge_job_id": "f1bf2527-6e66-4e23-8e40-2eeb3d245101"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF",
+          "uid": 3,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "cf2a2f54-dff7-41cb-ad90-5ea367e9ee01",
+          "judge_job_id": "fbd1a697-b3d7-4cf7-9efa-1df3be28978a"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd",
+          "uid": 4,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "bed607ff-6c75-4988-8b0d-ae297b51b8b7",
+          "judge_job_id": "089e5b48-d9f9-45a6-88d4-386f2126f93d"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD",
+          "uid": 5,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "7936e280-ea24-45f0-a906-812c6a94b864",
+          "judge_job_id": "1c023ab9-d974-4892-a350-1c107fcba5b5"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+          "uid": 6,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "ee9896f6-7e13-4ad7-b34e-2be369fcb4c9",
+          "judge_job_id": "8f725407-1204-4cc8-bada-b925d3b473a5"
+        }
+      ],
+      "rejected": []
+    },
+    "updated": {
+      "outcome": "published",
+      "netuid": 2,
+      "hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+      "commitment_block": 396,
+      "observed_block": 402,
+      "observed_block_hash": "0xafe8e73a226bf4321eceab3b79c58f2a9b8a3c7de53c6915e6682bf4bf6ae054",
+      "elapsed_seconds": 2.3139510890000565
+    },
+    "after_update": {
+      "protocol_version": 1,
+      "netuid": 2,
+      "block": 403,
+      "block_hash": "0x818ab45417d32d24ade6b74b2f3d42cf9166e608786c2c8145b8bee57196a9b2",
+      "observed_at": "2026-10-02T11:06:04.654453Z",
+      "validator_hotkey": "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E",
+      "allowed_hotkeys": null,
+      "cohort": [
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "uid": 2,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "4fab1aa6-0025-41ec-8f3f-53418fb822e8",
+          "judge_job_id": "a55215f5-e8a0-4869-8bee-7d55eec4b0da"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF",
+          "uid": 3,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "9f9d3877-5d4e-4be0-a563-f6e73c089895",
+          "judge_job_id": "06c64fc1-5d91-457c-b071-b57dc94bf868"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd",
+          "uid": 4,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "84f66c13-2ff8-413b-920b-72495be56f20",
+          "judge_job_id": "5b03e5bd-fafc-46ef-ba32-8c84e4cafbde"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD",
+          "uid": 5,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "16bfbd4f-0e39-4abc-8234-11e213e30af2",
+          "judge_job_id": "50f8cf21-805e-4bfa-bd45-c25e82650839"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+          "uid": 6,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+          "factory_job_id": "f247ed19-6342-463a-9b90-07319194eaaa",
+          "judge_job_id": "65b9b8f2-2742-43b3-82f9-68e8b688bd0e"
+        }
+      ],
+      "rejected": []
+    },
+    "frozen_unchanged": true,
+    "restored": {
+      "protocol_version": 1,
+      "netuid": 2,
+      "block": 416,
+      "block_hash": "0x66642feb477af7dabd9bd9b2fbc4395ce5f2abf0da2d7c8713a1a5292b7c12c5",
+      "observed_at": "2026-10-02T11:06:08.625880Z",
+      "validator_hotkey": "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E",
+      "allowed_hotkeys": null,
+      "cohort": [
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "uid": 2,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "b3d40a5f-487b-45b7-a762-122b7fbb0c7a",
+          "judge_job_id": "c3bc127d-43fb-42c9-9ec0-e10a6dbec09e"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF",
+          "uid": 3,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "5f60fbed-76d4-4a06-a185-e44dffe1ec95",
+          "judge_job_id": "f337687f-2aab-4bc6-a08b-d9fc2016cfe2"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd",
+          "uid": 4,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "90826492-1211-4ff4-9b73-5772b45093eb",
+          "judge_job_id": "ef570f81-e568-4219-ae3f-89acaabc0edb"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD",
+          "uid": 5,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "eab7a42e-54c8-4df4-a4ef-d6fa8eb63895",
+          "judge_job_id": "17c52656-0d5e-4aee-826b-23515ffdaade"
+        },
+        {
+          "protocol_version": 1,
+          "miner_hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+          "uid": 6,
+          "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+          "factory_job_id": "849f64a5-9ea1-4c9a-8b95-44fd53aa73bd",
+          "judge_job_id": "bdecb0b6-5673-4d56-b2e4-88c06e91a61a"
+        }
+      ],
+      "rejected": []
+    }
+  },
+  "baseline": {
+    "round": {
+      "protocol_version": 1,
+      "plan": {
+        "protocol_version": 1,
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "sequence": 1,
+        "deadlines": {
+          "protocol_version": 1,
+          "start": "2026-10-02T11:06:39.156081Z",
+          "generation_end": "2026-10-02T11:08:19.156081Z",
+          "evaluation_start": "2026-10-02T11:08:34.156081Z",
+          "judge_end": "2026-10-02T11:09:29.156081Z",
+          "round_end": "2026-10-02T11:09:39.156081Z"
+        },
+        "discovery_block": 515,
+        "discovery_block_hash": "0x75e7ab1cf3b583d9087c738cdbda4f4e903dfd25d3db9e520323603a8b3430cf",
+        "membership_snapshot": "commitment_block",
+        "cohort": [
+          {
+            "protocol_version": 1,
+            "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+            "uid": 2,
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+            "factory_job_id": "bd55d903-e927-4ccc-b2ac-5589b42083ee",
+            "judge_job_id": "2a220118-ff04-41c4-96b1-7448194e6491"
+          },
+          {
+            "protocol_version": 1,
+            "miner_hotkey": "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF",
+            "uid": 3,
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+            "factory_job_id": "d6a0423f-a4bf-439b-b391-0e8d791b9f01",
+            "judge_job_id": "292edd05-81df-498b-b852-0b4678c01ec4"
+          },
+          {
+            "protocol_version": 1,
+            "miner_hotkey": "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd",
+            "uid": 4,
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+            "factory_job_id": "cd2cdd97-c51f-4790-8f04-1b31535bde8b",
+            "judge_job_id": "14472abf-63ce-48ab-835e-e33797238964"
+          },
+          {
+            "protocol_version": 1,
+            "miner_hotkey": "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD",
+            "uid": 5,
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+            "factory_job_id": "54f741ae-a38f-470c-81ee-b94dc1724594",
+            "judge_job_id": "e459483b-2f8f-45cf-af32-649d8dec37be"
+          },
+          {
+            "protocol_version": 1,
+            "miner_hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+            "uid": 6,
+            "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+            "factory_job_id": "caab8040-0c91-45fd-90a4-2fc98055c412",
+            "judge_job_id": "0b6628b1-2635-4028-acf4-a969f9fde1fd"
+          }
+        ],
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+        "platform": "linux/amd64",
+        "stop_grace_seconds": 5,
+        "specification_sha256": "8268d142d3f83554cd80ed2247dcd25e2150f60829e75e706de2c1bef50994d6"
+      },
+      "stage": "complete",
+      "unresolved_jobs": [],
+      "completed_at": "2026-10-02T11:08:43.095083Z"
+    },
+    "restart_boundaries": [
+      "request_publication",
+      "generation_end",
+      "evaluation_start"
+    ],
+    "missing_initial_block_prevented_dispatch": true,
+    "early_factory_completion": "2026-10-02T11:07:46.446303+00:00",
+    "result_store_reconstructed": true,
+    "pi_and_runtime": {
+      "pi_version": "0.87.1",
+      "inference": false,
+      "elapsed_seconds": {
+        "bd55d903-e927-4ccc-b2ac-5589b42083ee": 60.57765,
+        "d6a0423f-a4bf-439b-b391-0e8d791b9f01": 60.461643,
+        "cd2cdd97-c51f-4790-8f04-1b31535bde8b": 60.533336,
+        "54f741ae-a38f-470c-81ee-b94dc1724594": 60.591216,
+        "caab8040-0c91-45fd-90a4-2fc98055c412": 60.553977
+      }
+    },
+    "accepted": [
+      {
+        "protocol_version": 1,
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "job_id": "2a220118-ff04-41c4-96b1-7448194e6491",
+        "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+        "kind": "judge",
+        "factory_job_id": "bd55d903-e927-4ccc-b2ac-5589b42083ee",
+        "score": 0.859502658354464,
+        "accepted_at": "2026-10-02T11:08:43.100158Z",
+        "report_sha256": "cff1c81c7eba4f3127687525ec9d2a9eee1b5d43374945a81b87b258cc1f5ff3",
+        "result_id": "ce99e593-bbe6-56de-be4a-1eb7ca4c048d",
+        "processing_started": "2026-10-02T11:08:40.679163Z",
+        "processing_finished": "2026-10-02T11:08:40.967966Z",
+        "completion_block": 915,
+        "completion_block_hash": "0xb525571aa10157d7d23ab473b9861693b769d132298598b67edcc698949170b1"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "job_id": "292edd05-81df-498b-b852-0b4678c01ec4",
+        "miner_hotkey": "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF",
+        "kind": "judge",
+        "factory_job_id": "d6a0423f-a4bf-439b-b391-0e8d791b9f01",
+        "score": 0.9056446344039921,
+        "accepted_at": "2026-10-02T11:08:41.103327Z",
+        "report_sha256": "4bd1028eaa8d9aed800ecb80c9993fc3ad7da24ddd54ba51f173e732bb182709",
+        "result_id": "9bb2969f-c790-5e61-8da4-3c24d21d2c7d",
+        "processing_started": "2026-10-02T11:08:38.590145Z",
+        "processing_finished": "2026-10-02T11:08:38.868201Z",
+        "completion_block": 902,
+        "completion_block_hash": "0xd43f4c9a5bca08aea66a435537dcd35050d822d4969fe48f72286348d1950c33"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "job_id": "14472abf-63ce-48ab-835e-e33797238964",
+        "miner_hotkey": "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd",
+        "kind": "judge",
+        "factory_job_id": "cd2cdd97-c51f-4790-8f04-1b31535bde8b",
+        "score": 0.7779773831543376,
+        "accepted_at": "2026-10-02T11:08:41.115472Z",
+        "report_sha256": "9cbe7359b7191dfdd8217681b066edd4331043de5cbb8a223d01e656fc6ca93f",
+        "result_id": "2a7ba521-5b85-556d-b2d4-1c226b760411",
+        "processing_started": "2026-10-02T11:08:38.593995Z",
+        "processing_finished": "2026-10-02T11:08:38.867666Z",
+        "completion_block": 902,
+        "completion_block_hash": "0xd43f4c9a5bca08aea66a435537dcd35050d822d4969fe48f72286348d1950c33"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "job_id": "e459483b-2f8f-45cf-af32-649d8dec37be",
+        "miner_hotkey": "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD",
+        "kind": "judge",
+        "factory_job_id": "54f741ae-a38f-470c-81ee-b94dc1724594",
+        "score": 0.9306134696732058,
+        "accepted_at": "2026-10-02T11:08:41.127286Z",
+        "report_sha256": "44128864922e817406c9876a3624ce3225b1e51ddf0f18a0c3a235b17a27c8ea",
+        "result_id": "a3da85e6-6f7c-5f05-930d-0bbeae15e79b",
+        "processing_started": "2026-10-02T11:08:38.608800Z",
+        "processing_finished": "2026-10-02T11:08:38.907952Z",
+        "completion_block": 902,
+        "completion_block_hash": "0xd43f4c9a5bca08aea66a435537dcd35050d822d4969fe48f72286348d1950c33"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "job_id": "0b6628b1-2635-4028-acf4-a969f9fde1fd",
+        "miner_hotkey": "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo",
+        "kind": "judge",
+        "factory_job_id": "caab8040-0c91-45fd-90a4-2fc98055c412",
+        "score": 0.24515322606464507,
+        "accepted_at": "2026-10-02T11:08:41.137625Z",
+        "report_sha256": "769aedb41f1433fe31e40f9cb35d3751de667d03f224a57847e7747cf5bc3a95",
+        "result_id": "50e89c62-8a8c-5426-9a66-2e57c61a35d3",
+        "processing_started": "2026-10-02T11:08:38.574568Z",
+        "processing_finished": "2026-10-02T11:08:38.852328Z",
+        "completion_block": 902,
+        "completion_block_hash": "0xd43f4c9a5bca08aea66a435537dcd35050d822d4969fe48f72286348d1950c33"
+      }
+    ]
+  },
+  "weights": {
+    "checked_at": "2026-10-02T11:09:37.973169+00:00",
+    "image_id": "ghcr.io/backend-developers-ltd/factory-horde-validator-prototype@sha256:71807ba7181bf544388d2b809d69777adefc5cda89124e2d918c4b5834112eb5",
+    "netuid": 2,
+    "mechanism_id": 1,
+    "before": {
+      "block": 929,
+      "block_hash": "0x7ec73d4dab358af6e00ae26ed3f09e2eea4110bff691f6755ec5d7a7c8b3e4a6",
+      "validator_hotkey": "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E",
+      "validator_uid": 1,
+      "mapping": {
+        "5DjyCfz2ovwDWgM9sDsUKJw2ad2W4vMuyoRjUGMeJhB89kor": 0,
+        "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E": 1,
+        "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 2,
+        "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 3,
+        "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 4,
+        "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 5,
+        "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 6
+      },
+      "mechanism_zero": [],
+      "mechanism_one": [],
+      "last_update": 73,
+      "tempo": 360,
+      "min_allowed_weights": 1,
+      "max_weight_limit": 1.0,
+      "weights_rate_limit": 100
+    },
+    "after": [
+      {
+        "block": 941,
+        "block_hash": "0xbf09955c475713c91502f5eba0c6950ed95a7fec06ca63cf164e450de43355c5",
+        "validator_hotkey": "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E",
+        "validator_uid": 1,
+        "mapping": {
+          "5DjyCfz2ovwDWgM9sDsUKJw2ad2W4vMuyoRjUGMeJhB89kor": 0,
+          "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E": 1,
+          "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 2,
+          "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 3,
+          "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 4,
+          "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 5,
+          "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 6
+        },
+        "mechanism_zero": [],
+        "mechanism_one": [
+          [
+            1,
+            [
+              [
+                4,
+                14242
+              ],
+              [
+                3,
+                51055
+              ],
+              [
+                5,
+                65535
+              ],
+              [
+                6,
+                69
+              ],
+              [
+                2,
+                32184
+              ]
+            ]
+          ]
+        ],
+        "last_update": 941,
+        "tempo": 360,
+        "min_allowed_weights": 1,
+        "max_weight_limit": 1.0,
+        "weights_rate_limit": 100
+      },
+      {
+        "block": 1090,
+        "block_hash": "0xda938c456ccba4cc158f1fc97d7f07a4536d29218ee7bebab8e27827869ae666",
+        "validator_hotkey": "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E",
+        "validator_uid": 1,
+        "mapping": {
+          "5DjyCfz2ovwDWgM9sDsUKJw2ad2W4vMuyoRjUGMeJhB89kor": 0,
+          "5EUFPCzWqP5sjVu5dQsHqC3ofEeVgMyTFNMRZHX8ecqM6U5E": 1,
+          "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 2,
+          "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 3,
+          "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 4,
+          "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 5,
+          "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 6
+        },
+        "mechanism_zero": [],
+        "mechanism_one": [
+          [
+            1,
+            [
+              [
+                4,
+                14242
+              ],
+              [
+                3,
+                51055
+              ],
+              [
+                5,
+                65535
+              ],
+              [
+                6,
+                69
+              ],
+              [
+                2,
+                32184
+              ]
+            ]
+          ]
+        ],
+        "last_update": 1089,
+        "tempo": 360,
+        "min_allowed_weights": 1,
+        "max_weight_limit": 1.0,
+        "weights_rate_limit": 100
+      }
+    ],
+    "calculations": [
+      {
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "calculated_at": "2026-10-02T11:08:49.775218Z",
+        "temperature": 0.1,
+        "uids": {
+          "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 4,
+          "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 3,
+          "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 5,
+          "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 6,
+          "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 2
+        },
+        "weights": {
+          "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 0.08733096357805042,
+          "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 0.31305459261104374,
+          "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 0.401844800356773,
+          "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 0.00042378183732704345,
+          "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 0.19734586161680576
+        }
+      },
+      {
+        "round_id": "1eb49634-9c0c-4eb5-9d96-7832f8dde05d",
+        "calculated_at": "2026-10-02T11:09:35.234159Z",
+        "temperature": 0.1,
+        "uids": {
+          "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 4,
+          "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 3,
+          "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 5,
+          "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 6,
+          "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 2
+        },
+        "weights": {
+          "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 0.08733096357805042,
+          "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 0.31305459261104374,
+          "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 0.401844800356773,
+          "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 0.00042378183732704345,
+          "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 0.19734586161680576
+        }
+      }
+    ],
+    "independently_calculated_weights": {
+      "5EJCu3tC7igy7ZBsVv7ziDD6JR93wsiXgCbCeo6gTsS8QPsd": 0.08733096357805042,
+      "5FPL9UR2xZwVMF2b8Gxzo6tNKVwNGw8rYPzJKSa6fwqAbJcF": 0.31305459261104374,
+      "5G4eKvAAUJVHLCHThgw8CQrdTRFt5ax2zqZkpzjCBFKwnrHD": 0.401844800356773,
+      "5H6EbyZ7s9cPTRD4DY9moWZgA6gWiHyfEMNL7XBTmbL88GXo": 0.00042378183732704345,
+      "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU": 0.19734586161680576
+    },
+    "mechanism_zero_unchanged": true,
+    "validator_restarted_between_updates": true,
+    "encoding": "Compared normalized Subtensor u16 vector with independent stable softmax; absolute tolerance 2 * recipients / 65535."
+  },
+  "monitoring": {
+    "initial": true,
+    "stale_executor": false,
+    "restored": true,
+    "unwritable_results": false,
+    "repaired": true
+  },
+  "common_application": {
+    "checked_at": "2026-10-02T11:23:52.888023+00:00",
+    "validator_observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T11:23:51.305779Z",
+      "block": 3871,
+      "block_hash": "0x3efe7cdfec0f2434142e88e90ae4562948494847ef1e3a571ac9ca5874cea39a",
+      "mechanism_id": 1,
+      "dispatch_enabled": false
+    },
+    "authenticated_identity_blocks": {
+      "validator": 3875,
+      "miner1": 3875,
+      "miner2": 3876,
+      "miner3": 3876,
+      "miner4": 3876,
+      "miner5": 3876
+    },
+    "cross_identity_token_rejected": true,
+    "scrapes": {
+      "host": "up",
+      "pylon": "up",
+      "validator": "up"
+    }
+  },
+  "adversarial": {
+    "root": "/home/ubuntu/repo/factory-horde/localnet/state/acceptance/state/factory-horde-adversarial-93c7f7e8-5110-44c9-9783-a9fe87f77105",
+    "anonymous_pulls": 16,
+    "mixed": {
+      "round_id": "00507b5a-eca0-45ee-b5a5-908a69e3bd8c",
+      "stage": "complete",
+      "cohort": 5,
+      "outcomes": 6,
+      "accepted_scores": 0,
+      "unresolved": 0
+    },
+    "next_cohort": {
+      "round_id": "9ca791b6-abd2-4441-b2d5-2a63721ba45a",
+      "stage": "complete",
+      "cohort": 5,
+      "outcomes": 7,
+      "accepted_scores": 0,
+      "unresolved": 0
+    },
+    "commitment_and_pull_failures": {
+      "round_id": "138feb06-012f-47d5-8822-f615439f07d8",
+      "stage": "complete",
+      "cohort": 3,
+      "outcomes": 5,
+      "accepted_scores": 0,
+      "unresolved": 0
+    },
+    "delayed_results_and_cancellation": {
+      "round_id": "ac0dcb6b-c955-482d-95b7-d52b0f8b3b16",
+      "stage": "complete",
+      "cohort": 5,
+      "outcomes": 9,
+      "accepted_scores": 0,
+      "unresolved": 0
+    },
+    "accepted_bytes_unchanged_after_kill": true,
+    "report_profiles": {
+      "judge-hang": {
+        "round_id": "90d6d737-9bc2-4ad8-89f6-d6222aa1298c",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-infinite": {
+        "round_id": "e640a6d3-841f-451c-bd18-e3786d3175a5",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-malformed": {
+        "round_id": "48e986f9-1e65-4451-bd4e-c1b0679bc10b",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-mismatch": {
+        "round_id": "1b7199cf-e659-4a60-9233-eb1f2cd794b3",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-missing": {
+        "round_id": "de9c73db-2cd1-4ed1-8701-0fb2214acb9b",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-nan": {
+        "round_id": "20229839-4f46-49b9-8b9b-eb793625c8d8",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-nonzero": {
+        "round_id": "244de28e-134b-4fce-925d-dbd0fa50eb2e",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-range": {
+        "round_id": "49008026-3395-4ef3-a839-26e7e1170b87",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-symlink": {
+        "round_id": "82ce2ba1-e700-4b20-9454-2af74abba198",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      },
+      "judge-valid": {
+        "round_id": "ff896a4e-e96c-4eed-bb35-92bac06b2ea1",
+        "stage": "complete",
+        "cohort": 5,
+        "outcomes": 10,
+        "accepted_scores": 0,
+        "unresolved": 0
+      }
+    },
+    "recovery": {
+      "crash_create_exit": {
+        "before": {
+          "Id": "189a5cc8cc21957cbfbebef9fdcbea934e3781ef5815918faa63786d7dfb2ba0",
+          "State": {
+            "Status": "created",
+            "Running": false,
+            "ExitCode": 0,
+            "StartedAt": "0001-01-01T00:00:00Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        },
+        "status": {
+          "protocol_version": 1,
+          "round_id": "1714603d-29f5-41fe-8892-ba820b29fc6b",
+          "job_id": "34925d6d-1ee3-4f6f-b4c2-aea0e89c35b7",
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "kind": "factory",
+          "factory_job_id": "34925d6d-1ee3-4f6f-b4c2-aea0e89c35b7",
+          "state": "finished",
+          "observed_at": "2026-10-02T11:29:48.106129Z",
+          "execution": "exited",
+          "startup_forbidden": true,
+          "container_id": "189a5cc8cc21957cbfbebef9fdcbea934e3781ef5815918faa63786d7dfb2ba0",
+          "container_name": "factory-horde-34925d6d-1ee3-4f6f-b4c2-aea0e89c35b7",
+          "started_at": "2026-10-02T11:29:45.399555Z",
+          "finished_at": "2026-10-02T11:29:45.574703Z",
+          "exit_code": 0,
+          "forced": false,
+          "oom_killed": false,
+          "reason": null
+        }
+      },
+      "crash_start_ignore-term": {
+        "before": {
+          "Id": "c87b50c682f332af827ae4a7e2e663e90a0f290a6b34de3fddab8cbdd00e731a",
+          "State": {
+            "Status": "running",
+            "Running": true,
+            "ExitCode": 0,
+            "StartedAt": "2026-10-02T11:30:01.238314309Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        },
+        "status": {
+          "protocol_version": 1,
+          "round_id": "b543bd68-b9b8-4971-ac5b-fa99a154f1cb",
+          "job_id": "95e60598-c4bf-40af-a67f-eed7eed1c978",
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "kind": "factory",
+          "factory_job_id": "95e60598-c4bf-40af-a67f-eed7eed1c978",
+          "state": "failed",
+          "observed_at": "2026-10-02T11:30:10.510553Z",
+          "execution": "exited",
+          "startup_forbidden": true,
+          "container_id": "c87b50c682f332af827ae4a7e2e663e90a0f290a6b34de3fddab8cbdd00e731a",
+          "container_name": "factory-horde-95e60598-c4bf-40af-a67f-eed7eed1c978",
+          "started_at": "2026-10-02T11:30:01.238314Z",
+          "finished_at": "2026-10-02T11:30:10.377543Z",
+          "exit_code": 137,
+          "forced": true,
+          "oom_killed": false,
+          "reason": "Factory/judge did not exit cleanly"
+        }
+      },
+      "unavailable_and_missing": {
+        "actual_before": {
+          "Id": "cba3794d55b7252993b46d384df612256fdb4a2bb28747cfe3e0952a6f7c60a0",
+          "State": {
+            "Status": "running",
+            "Running": true,
+            "ExitCode": 0,
+            "StartedAt": "2026-10-02T11:30:20.945189802Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        },
+        "unavailable": {
+          "protocol_version": 1,
+          "round_id": "3927e8d6-6168-4f46-8f84-67b44f7da8d3",
+          "job_id": "82e67b58-b73d-41d3-92c3-bae4b887513a",
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "kind": "factory",
+          "factory_job_id": "82e67b58-b73d-41d3-92c3-bae4b887513a",
+          "state": "failed",
+          "observed_at": "2026-10-02T11:30:26.324320Z",
+          "execution": "unresolved",
+          "startup_forbidden": false,
+          "container_id": "cba3794d55b7252993b46d384df612256fdb4a2bb28747cfe3e0952a6f7c60a0",
+          "container_name": "factory-horde-82e67b58-b73d-41d3-92c3-bae4b887513a",
+          "started_at": null,
+          "finished_at": null,
+          "exit_code": null,
+          "forced": false,
+          "oom_killed": false,
+          "reason": "Fixture: Docker observation unavailable"
+        },
+        "missing": {
+          "protocol_version": 1,
+          "round_id": "3927e8d6-6168-4f46-8f84-67b44f7da8d3",
+          "job_id": "82e67b58-b73d-41d3-92c3-bae4b887513a",
+          "miner_hotkey": "5Hn7X4hNV4SJarALdTS3b6vqN75wUKEZZH8vkDfYBvbjqVeU",
+          "kind": "factory",
+          "factory_job_id": "82e67b58-b73d-41d3-92c3-bae4b887513a",
+          "state": "failed",
+          "observed_at": "2026-10-02T11:30:29.804147Z",
+          "execution": "unresolved",
+          "startup_forbidden": false,
+          "container_id": "cba3794d55b7252993b46d384df612256fdb4a2bb28747cfe3e0952a6f7c60a0",
+          "container_name": "factory-horde-82e67b58-b73d-41d3-92c3-bae4b887513a",
+          "started_at": null,
+          "finished_at": null,
+          "exit_code": null,
+          "forced": false,
+          "oom_killed": false,
+          "reason": "Expected Docker execution is missing; replacement is forbidden"
+        }
+      }
+    },
+    "commitments_restored": true,
+    "executor_stopped": true,
+    "passed": true
+  },
+  "installer": {
+    "root": "/home/ubuntu/repo/factory-horde/localnet/state/installer-2fa6c1ba",
+    "release_source": "revision-addressed loopback HTTP fixtures",
+    "clean_repeated_no_change_passed": true,
+    "preflight_failures_preserved_executor": [
+      "missing HTTP asset",
+      "bad checksum",
+      "protocol mismatch"
+    ],
+    "overlap": "Second actual updater exited 75 while the first held a live HTTP request; first completed",
+    "active_replacement": {
+      "seconds": 1.6847217969998383,
+      "old_pid": "148616",
+      "new_pid": "170194",
+      "old_inode": 5823224,
+      "new_inode": 5814724,
+      "before": [
+        {
+          "Id": "3fa73c732202b35968a874a28670623d67b4e589486b413aa5c35a93f7011dd7",
+          "State": {
+            "Status": "running",
+            "Running": true,
+            "ExitCode": 0,
+            "StartedAt": "2026-10-02T11:08:40.862071784Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        },
+        {
+          "Id": "75909cfed6cd489eed27cbb4d5068e231ed01c7b03ce3a83c3e8ac0b9f5389d6",
+          "State": {
+            "Status": "running",
+            "Running": true,
+            "ExitCode": 0,
+            "StartedAt": "2026-10-02T11:08:40.8581696Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        }
+      ],
+      "after": [
+        {
+          "Id": "3fa73c732202b35968a874a28670623d67b4e589486b413aa5c35a93f7011dd7",
+          "State": {
+            "Status": "running",
+            "Running": true,
+            "ExitCode": 0,
+            "StartedAt": "2026-10-02T11:08:40.862071784Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        },
+        {
+          "Id": "75909cfed6cd489eed27cbb4d5068e231ed01c7b03ce3a83c3e8ac0b9f5389d6",
+          "State": {
+            "Status": "running",
+            "Running": true,
+            "ExitCode": 0,
+            "StartedAt": "2026-10-02T11:08:40.8581696Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          }
+        }
+      ],
+      "terminal_statuses": [
+        {
+          "protocol_version": 1,
+          "round_id": "060086ca-d2be-4c21-b6e3-30969148b818",
+          "job_id": "a9fa4079-d650-445e-add0-b09b3f64671f",
+          "miner_hotkey": "5DnqqiQZvV9oPF3NKLHR5NFVETeY1TRLwiHAVgk7xSY5SqjD",
+          "kind": "factory",
+          "factory_job_id": "a9fa4079-d650-445e-add0-b09b3f64671f",
+          "state": "failed",
+          "observed_at": "2026-10-02T11:08:50.235817Z",
+          "execution": "exited",
+          "startup_forbidden": true,
+          "container_id": "3fa73c732202b35968a874a28670623d67b4e589486b413aa5c35a93f7011dd7",
+          "container_name": "factory-horde-a9fa4079-d650-445e-add0-b09b3f64671f",
+          "started_at": "2026-10-02T11:08:40.862071Z",
+          "finished_at": "2026-10-02T11:08:50.154856Z",
+          "exit_code": 137,
+          "forced": true,
+          "oom_killed": false,
+          "reason": "Factory/judge did not exit cleanly"
+        },
+        {
+          "protocol_version": 1,
+          "round_id": "060086ca-d2be-4c21-b6e3-30969148b818",
+          "job_id": "4804c3ca-0c21-45bd-9317-992367c4a1fb",
+          "miner_hotkey": "5G9gUUszfCgeLKrU9m6uGpN995SNcMCoaG937QBzLZJ8Bh1e",
+          "kind": "factory",
+          "factory_job_id": "4804c3ca-0c21-45bd-9317-992367c4a1fb",
+          "state": "failed",
+          "observed_at": "2026-10-02T11:08:52.330674Z",
+          "execution": "exited",
+          "startup_forbidden": true,
+          "container_id": "75909cfed6cd489eed27cbb4d5068e231ed01c7b03ce3a83c3e8ac0b9f5389d6",
+          "container_name": "factory-horde-4804c3ca-0c21-45bd-9317-992367c4a1fb",
+          "started_at": "2026-10-02T11:08:40.858169Z",
+          "finished_at": "2026-10-02T11:08:52.235254Z",
+          "exit_code": 137,
+          "forced": true,
+          "oom_killed": false,
+          "reason": "Factory/judge did not exit cleanly"
+        }
+      ],
+      "accepted_score_bytes_preserved": true,
+      "request_stop_bytes_preserved": true
+    },
+    "failed_health": {
+      "applied_at": "2026-10-02T11:08:53.353864+00:00",
+      "config_sha256": "2dd3cb4dc5b1ae171519eb72f1f941848be7ff758758185cf5fcc940190c4e17",
+      "executor_changed": true,
+      "health": "failed; ordinary repair required",
+      "manifest_sha256": "16293bf0380a84183c63956a43f05386b7632cedb6f3cda6559fc5aa8164678f",
+      "revision": "85826072c3d4c3a4be8b8e4f205e19547d3f6fce",
+      "source": "http://127.0.0.1:45289"
+    },
+    "ordinary_repair": {
+      "application_started": true,
+      "applied_at": "2026-10-02T11:09:34.744471+00:00",
+      "config_sha256": "2dd3cb4dc5b1ae171519eb72f1f941848be7ff758758185cf5fcc940190c4e17",
+      "executor_changed": true,
+      "executor_pid": 177348,
+      "health": "healthy",
+      "manifest_sha256": "47af4684d151fd5ef1f4944f31aa2e2ac0cc95ef20f0c66c424bbf9744178f4a",
+      "revision": "97b0560280ed60a5a1eaa1bc45492543c8a986ad",
+      "source": "http://127.0.0.1:45289"
+    },
+    "cron_permissions": {
+      "user": "fhupdate-f135c3bc",
+      "uid": "1001",
+      "gid": "1001",
+      "cron_uid": "1001",
+      "cron_exit": "0",
+      "old_pid": "177815",
+      "new_pid": "181771",
+      "other_unit_restart_denied": true,
+      "sudoers": "fhupdate-f135c3bc ALL=(root) NOPASSWD: /usr/bin/systemctl restart factory-horde-permissions-f135c3bc.service\n",
+      "cron_log": "{\"event\": \"release_applied\", \"revision\": \"97b0560280ed60a5a1eaa1bc45492543c8a986ad\", \"source\": \"http://127.0.0.1:45289\", \"manifest_sha256\": \"47af4684d151fd5ef1f4944f31aa2e2ac0cc95ef20f0c66c424bbf9744178f4a\", \"applied_at\": \"2026-10-02T11:10:02.298007+00:00\", \"executor_changed\": true, \"health\": \"healthy\", \"config_sha256\": \"b337e40014bd17b5264f16d70b6b195b1e9f35dd8fcdaa2468eb283928b43ef8\", \"executor_pid\": 181771, \"application_started\": false}",
+      "retained_home": "/home/fhupdate-f135c3bc"
+    },
+    "standalone_configuration": {
+      "developer_env_access_forbidden": true,
+      "candidate_selected": true,
+      "fixture_root": "/home/ubuntu/repo/factory-horde/localnet/state/installer-0a6a1ba0"
+    }
+  },
+  "qa": {
+    "validator_executor_installer_and_harness_passed": 213,
+    "optional_image_checks_skipped": 9,
+    "miner_passed": 22,
+    "ruff": "passed",
+    "strict_basedpyright": "0 errors, 0 warnings",
+    "packaging_and_runtime_recheck_passed": 8
+  },
+  "evidence_bundle": {
+    "path": "localnet/state/task17-evidence.tar.gz",
+    "sha256": "ced074e7cfc7de3ec0934232a8662d79a1e10047e504dce06c2ca64ea539f2b4",
+    "bytes": 350318,
+    "inventory_entries": 1602,
+    "secrets_excluded": true,
+    "workload_links_recorded_without_following": true
+  },
+  "checker_repairs": [
+    "Round/weight restoration now waits for validator readiness; immediate ready check passed.",
+    "Isolated fault fixtures use their own systemd unit names, avoiding collisions with retained earlier runs.",
+    "Installer fixture config no longer requires the developer environment; setup passed with reads of that file forbidden."
+  ],
+  "limitations": [
+    "Existing Ubuntu VM, not clean-OS provisioning; user prohibited preparing another VM.",
+    "Random fixture scores prove orchestration, not quality, security, economics or final emissions.",
+    "Local subnet 2, mechanism 1 only; no operator promotion, subnet 12 or public-chain changes.",
+    "Fault wrappers and revision-addressed update fixture variants are test-only; candidate application and executor bytes are unchanged."
+  ]
+}
