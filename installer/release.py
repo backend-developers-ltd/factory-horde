@@ -528,7 +528,7 @@ def check_protocol_records(root: Path) -> None:
                 raise ReleaseError(f"Incompatible existing record: {path}")
 
 
-def check_health(root: Path, service: str, since: datetime) -> dict[str, object]:
+def check_health(root: Path, service: str, since: datetime, *, restarted: bool = False) -> dict[str, object]:
     """Verify the current service process published fresh health; never roll back a failed update.
 
     Raises:
@@ -545,6 +545,7 @@ def check_health(root: Path, service: str, since: datetime) -> dict[str, object]
                 and str(health.get("pid")) == pid
                 and pid != "0"
                 and observed >= since
+                and (not restarted or datetime.fromisoformat(string_value(health["started_at"])) >= since)
                 and (datetime.now(UTC) - observed).total_seconds() < 15
                 and health.get("docker_ok") is True
             ):
@@ -591,12 +592,28 @@ def apply_release(
             raise ReleaseError("System unit changed; rerun install.sh with administrator privileges before updating")
         prepare_system_files(stage, directory, config, installation)
         run(["bash", str(stage / "installer/prepare-data-root.sh"), str(root)])
-        executor_changed = atomic_write(
-            directory / "executor/executor.py", (stage / "executor/executor.py").read_bytes(), 0o555
+        activation_path = directory / "executor-activation.json"
+        pending = (
+            activation_path.exists() and object_value(json.loads(activation_path.read_bytes())).get("pending") is True
         )
-        env_changed = atomic_write(
-            directory / "executor/executor.env", environment({key: config[key] for key in EXECUTOR_KEYS}), 0o600
+        executor_bytes = (stage / "executor/executor.py").read_bytes()
+        env_bytes = environment({key: config[key] for key in EXECUTOR_KEYS})
+        activate = (
+            install
+            or pending
+            or any(
+                not path.exists() or path.read_bytes() != content
+                for path, content in (
+                    (directory / "executor/executor.py", executor_bytes),
+                    (directory / "executor/executor.env", env_bytes),
+                )
+            )
         )
+        if activate:
+            # Commit intent before replacing either input. Every retry must finish activation.
+            atomic_write(activation_path, json_bytes({"pending": True, "revision": revision}))
+        executor_changed = atomic_write(directory / "executor/executor.py", executor_bytes, 0o555)
+        env_changed = atomic_write(directory / "executor/executor.env", env_bytes, 0o600)
         application_changed = False
         for name in ASSETS:
             if name == "executor/executor.py":
@@ -633,9 +650,15 @@ def apply_release(
                 ).returncode
                 == 0
             )
-            if executor_changed or env_changed or not active:
+            restarted = activate or executor_changed or env_changed or not active
+            if restarted:
+                atomic_write(activation_path, json_bytes({"pending": True, "revision": revision}))
                 run(["sudo", "-n", "/usr/bin/systemctl", "restart", installation.service + ".service"])
-            health = check_health(root, installation.service, started)
+            health = check_health(root, installation.service, started, restarted=restarted)
+            if restarted:
+                atomic_write(
+                    activation_path, json_bytes({"pending": False, "revision": revision, "pid": health["pid"]})
+                )
             if (
                 application
                 and not prepare_only

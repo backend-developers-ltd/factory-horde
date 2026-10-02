@@ -185,3 +185,107 @@ def test_clean_localnet_configuration_generates_isolated_paths_and_distinct_toke
     path.write_bytes(release.environment(config))
     with pytest.raises(release.ReleaseError, match="Localnet requires"):
         release.configuration(path, tmp_path / "installation", application=True, localnet=True)
+
+
+@pytest.mark.parametrize("failure", ["replacement", "restart", "health"])
+def test_retry_finishes_pending_activation(
+    source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    destination = tmp_path / "installed"
+    destination.mkdir()
+    env = destination / ".env"
+    env.write_text("ENVIRONMENT=localnet\nNETUID=2\nBITTENSOR_NETWORK=ws://subtensor:9944\n")
+    config = release.configuration(env, destination, application=True, localnet=True)
+    env.write_bytes(release.environment(config))
+    installation = release.Installation(
+        "factory-horde-test",
+        "test",
+        True,
+        release.Selection("snapshot", source.as_uri()),
+        {key: config[key] for key in release.IDENTITY_KEYS},
+    )
+    unit = tmp_path / "unit.service"
+    unit.write_bytes(release.unit_content(source, destination, config))
+
+    def path(value: str) -> Path:
+        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+
+    def prepare(*args: object) -> None:
+        pass
+
+    def active(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(release, "Path", path)
+    monkeypatch.setattr(release, "prepare_system_files", prepare)
+    monkeypatch.setattr(release.subprocess, "run", active)
+    restarts: list[str] = []
+    failing = True
+
+    def run(args: release.Sequence[str], *, quiet: bool = False) -> str:
+        if "--protocol-version" in args:
+            return str(release.PROTOCOL)
+        if "restart" in args:
+            restarts.append("restart")
+            if failing and failure == "restart":
+                raise release.ReleaseError("restart failed with old process active")
+        return ""
+
+    original_write = release.atomic_write
+
+    def write(path: Path, content: bytes, mode: int = 0o640) -> bool:
+        changed = original_write(path, content, mode)
+        if failing and failure == "replacement" and path == destination / "executor/executor.py":
+            raise RuntimeError("interrupted after replacement")
+        return changed
+
+    def health(root: Path, service: str, since: object, *, restarted: bool = False) -> dict[str, object]:
+        assert restarted
+        if failing and failure == "health":
+            raise release.ReleaseError("old heartbeat")
+        return {"pid": 456}
+
+    monkeypatch.setattr(release, "run", run)
+    monkeypatch.setattr(release, "atomic_write", write)
+    monkeypatch.setattr(release, "check_health", health)
+    with pytest.raises((RuntimeError, release.ReleaseError)):
+        release.apply_release(destination, installation, config, install=False, application=False, prepare_only=False)
+    marker = destination / "executor-activation.json"
+    assert json.loads(marker.read_bytes())["pending"] is True
+    before = len(restarts)
+    failing = False
+    release.apply_release(destination, installation, config, install=False, application=False, prepare_only=False)
+    assert len(restarts) == before + 1
+    assert json.loads(marker.read_bytes())["pending"] is False
+    assert json.loads((destination / "applied-release.json").read_bytes())["executor_pid"] == 456
+
+
+def test_activation_health_rejects_fresh_heartbeat_from_old_process(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    since = release.datetime.now(release.UTC)
+    health = {
+        "protocol_version": release.PROTOCOL,
+        "pid": 123,
+        "docker_ok": True,
+        "observed_at": since.isoformat(),
+        "started_at": "2020-01-01T00:00:00+00:00",
+    }
+    path = tmp_path / "control/executor-health.json"
+    path.parent.mkdir()
+    path.write_text(json.dumps(health))
+
+    def current_pid(*args: object, **kwargs: object) -> str:
+        return "123"
+
+    monkeypatch.setattr(release, "run", current_pid)
+    polls: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        polls.append(seconds)
+        health["started_at"] = since.isoformat()
+        path.write_text(json.dumps(health))
+
+    monkeypatch.setattr(release.time, "sleep", sleep)
+    assert release.check_health(tmp_path, "factory-horde-test", since, restarted=True)["pid"] == 123
+    assert polls == [1]

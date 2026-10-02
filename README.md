@@ -36,6 +36,11 @@ of evaluation. Acceptance uses shortened stages with the same gates. Unresolved
 execution holds new rounds; recovery never deletes evidence to force a rerun or
 redraws an accepted score.
 
+Current source also reconciles definitive Docker startup rejections, persists
+malformed-report failures, enforces the judge's actual round-end finish cutoff,
+and retries pending executor activation. These corrections have focused regression
+coverage; the immutable candidate above predates them.
+
 ## Repository and operation
 
 - [Validator](validator/README.md): Nexus tasks, round/weight settings, readiness and metrics.

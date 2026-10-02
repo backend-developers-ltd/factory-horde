@@ -58,6 +58,10 @@ class DockerError(RuntimeError):
     """Docker did not provide reliable evidence; this never proves termination."""
 
 
+class DockerRejected(DockerError):
+    """The CLI returned nonzero; Docker inspection must still establish execution."""
+
+
 def object_value(value: object) -> dict[str, object]:
     """Require a JSON object with string keys.
 
@@ -483,11 +487,11 @@ class Docker:
         """Require CLI success, preserving failures as uncertainty.
 
         Raises:
-            DockerError: Docker rejected the operation.
+            DockerRejected: The CLI completed with a failure response.
         """
         result = self.call(*args, timeout=timeout)
         if result.returncode:
-            raise DockerError(result.stderr.strip()[:512] or "Docker command failed")
+            raise DockerRejected(result.stderr.strip()[:512] or "Docker command failed")
         return result.stdout.strip()
 
     def inspect(self, request: Request) -> dict[str, object] | None:
@@ -644,7 +648,24 @@ class Executor:
         state = object_value(container["State"])
         ledger["container_id"] = identifier
         self.save_ledger(request, ledger)
-        if state["Status"] in ("exited", "dead"):
+        if (
+            state["Status"] == "created"
+            and state["Running"] is False
+            and state.get("Error")
+            and integer(state["ExitCode"]) != 0
+            and timestamp(state["StartedAt"]).year == 1
+            and timestamp(state["FinishedAt"]).year == 1
+        ):
+            ledger.update(phase="start_rejected", closed=True)
+            self.status(
+                request,
+                ledger,
+                state="failed",
+                execution="never_started",
+                startup_forbidden=True,
+                reason=("Docker rejected startup: " + string(state["Error"]))[:512],
+            )
+        elif state["Status"] in ("exited", "dead"):
             started, finished = (
                 timestamp(state["StartedAt"]),
                 timestamp(state["FinishedAt"]),
@@ -690,7 +711,7 @@ class Executor:
         ledger["closed"] = True
         self.save_ledger(request, ledger)
         state = object_value(container["State"])
-        if state["Status"] == "created" and ledger.get("phase") != "start_attempted":
+        if state["Status"] == "created" and ledger.get("phase") not in ("start_attempted", "start_rejected"):
             ledger["container_id"] = string(container["Id"])
             self.status(
                 request,
@@ -728,6 +749,7 @@ class Executor:
         Raises:
             ProtocolError: Immutable authorization conflicts, or status cannot be persisted.
             DockerError: Missing execution evidence, normally converted to an unresolved status.
+            DockerRejected: A completed CLI failure, recorded for reconciliation.
         """
         if self.shutdown.is_set():
             return
@@ -763,7 +785,9 @@ class Executor:
                 if (expected is not None and expected != container["Id"]) or ledger.get("phase") == "reserved":
                     raise DockerError("Unexpected Docker identity; replacement is forbidden")
                 state = object_value(container["State"])
-                if closed:
+                if state["Status"] == "created" and state.get("Error"):
+                    self.observe(request, ledger, container)
+                elif closed:
                     self.stop(request, ledger, container)
                 elif state["Status"] == "created" and ledger.get("phase") != "start_attempted":
                     ledger.update(phase="start_attempted", container_id=string(container["Id"]))
@@ -774,9 +798,25 @@ class Executor:
                         if not self.shutdown.is_set():
                             self.stop(request, ledger, container)
                         return
-                    self.docker.require("start", request.name)
+                    try:
+                        self.docker.require("start", request.name)
+                    except DockerRejected:
+                        ledger["phase"] = "start_rejected"
+                        ledger["closed"] = True
+                        self.save_ledger(request, ledger)
+                        raise
                 else:
                     self.observe(request, ledger, container)
+                return
+            if ledger.get("phase") == "create_rejected":
+                self.status(
+                    request,
+                    ledger,
+                    state="failed",
+                    execution="never_started",
+                    startup_forbidden=True,
+                    reason="Docker rejected creation",
+                )
                 return
             if ledger.get("phase") in (
                 "create_attempted",
@@ -842,7 +882,12 @@ class Executor:
                 return
             ledger["phase"] = "create_attempted"
             self.save_ledger(request, ledger)
-            identifier = self.docker.create(request)
+            try:
+                identifier = self.docker.create(request)
+            except DockerRejected:
+                ledger.update(phase="create_rejected", closed=True)
+                self.save_ledger(request, ledger)
+                raise
             ledger.update(phase="created", container_id=identifier)
             self.save_ledger(request, ledger)
         except (OSError, ValueError, KeyError, DockerError, subprocess.SubprocessError) as error:

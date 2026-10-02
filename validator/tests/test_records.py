@@ -1,6 +1,5 @@
 """Protocol boundaries and Linux publication/recovery checks; no Docker proof is claimed here."""
 
-import json
 import os
 import stat
 from concurrent.futures import ThreadPoolExecutor
@@ -163,7 +162,7 @@ def test_temporary_and_partial_records(repository: RoundRepository, plan: RoundP
     assert repository.requests() == ()
     committed = directory / f"{request.job_id}.json"
     committed.write_text('{"protocol_version":')
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(RecordFormatError):
         repository.requests()
     committed.write_bytes(
         encode_record(

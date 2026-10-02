@@ -20,6 +20,7 @@ from validator.records import JobStatus
 from .executor import (
     Docker,
     DockerError,
+    DockerRejected,
     Executor,
     Files,
     ProtocolError,
@@ -526,3 +527,59 @@ def test_zero_grace_still_sends_term_before_kill(executor: Executor, job_request
     assert daemon.signals == ["TERM"] and not status(executor, job_request).confirmed_stopped
     executor.step(job_request)
     assert daemon.signals == ["TERM", "KILL"] and status(executor, job_request).confirmed_stopped
+
+
+@pytest.mark.parametrize("phase", ["start_attempted", "start_rejected"])
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_runtime_start_rejection_is_terminal_after_restart(
+    executor: Executor, job_request: Request, phase: str, cancelled: bool
+) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    executor.step(job_request)
+    daemon.container = {
+        "Id": "a" * 64,
+        "State": {
+            "Status": "created",
+            "Running": False,
+            "ExitCode": 127,
+            "StartedAt": "0001-01-01T00:00:00Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Error": "failed to create task: executable file not found",
+        },
+    }
+    executor.save_ledger(job_request, {"phase": phase, "container_id": "a" * 64, "closed": cancelled})
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    failed = status(replacement, job_request)
+    assert failed.confirmed_stopped and failed.execution == "never_started" and failed.state == "failed"
+    replacement.step(job_request)
+    assert status(replacement, job_request) == failed and daemon.started == 0
+
+
+@pytest.mark.parametrize("operation", ["create", "start"])
+def test_completed_cli_rejection_is_persisted_before_reconciliation(
+    executor: Executor, job_request: Request, monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+
+    def reject(*args: object) -> str:
+        raise DockerRejected("daemon rejected operation")
+
+    if operation == "start":
+        executor.step(job_request)
+        monkeypatch.setattr(daemon, "require", reject)
+    else:
+        monkeypatch.setattr(daemon, "create", reject)
+    executor.step(job_request)
+    ledger = executor.files.read(f"control/executor/{job_request.job_id}.json")
+    assert ledger["phase"] == operation + "_rejected" and ledger["closed"] is True
+    replacement = Executor(executor.settings)
+    replacement.docker = daemon
+    replacement.step(job_request)
+    observed = status(replacement, job_request)
+    # A failed start response alone cannot prove the daemon did not execute it.
+    assert observed.confirmed_stopped == (operation == "create")
+    assert daemon.started == 0

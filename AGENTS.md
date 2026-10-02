@@ -62,6 +62,12 @@ verify the actual chain vector and mechanism-0 non-interference without relying 
 real chain and an isolated systemd executor. It restores miner commitments and retains unresolved
 fixture evidence in its own root. Workload artifact rejection distinguishes invalid output from
 transient host I/O failure; neither supplies a score.
+Malformed report encodings and numeric overflow are persisted evaluation failures;
+transient filesystem errors remain retryable. Judges must actually finish by the
+frozen round end, including its stop-confirmation reserve. Definitive Docker startup
+rejections become terminal never-started failures; ambiguous starts remain unresolved.
+Updater activation intent survives replacement/restart failures and requires health
+from a process started during the activation attempt before it is cleared.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

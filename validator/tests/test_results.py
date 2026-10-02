@@ -428,3 +428,22 @@ def test_unsafe_report_is_failed_without_following_target(pair: Pair, artifact: 
             report.symlink_to("/etc/passwd")
     result = pair.repo.finalize(pair.judge, BEAT)
     assert result.failure is not None and result.accepted is None
+
+
+@pytest.mark.parametrize("raw", [b"\xff", b'{"score":' + b"9" * 5000 + b"}"], ids=["utf8", "integer"])
+def test_decoding_failure_is_retained_across_restart(pair: Pair, raw: bytes) -> None:
+    test_malformed_report_is_permanent_failure(pair, raw)
+
+
+def test_transient_report_io_failure_can_recover(pair: Pair, monkeypatch: pytest.MonkeyPatch) -> None:
+    original = pair.repo.rounds.report
+
+    def unavailable(request: JobRequest) -> None:
+        raise OSError("temporary host I/O failure")
+
+    monkeypatch.setattr(pair.repo.rounds, "report", unavailable)
+    with pytest.raises(OSError, match="temporary host"):
+        pair.repo.finalize(pair.judge, BEAT)
+    assert pair.repo.read(pair.judge) is None
+    monkeypatch.setattr(pair.repo.rounds, "report", original)
+    assert pair.repo.finalize(pair.judge, LATER).accepted is not None

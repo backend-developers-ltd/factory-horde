@@ -120,6 +120,8 @@ class ResultRepository:
             or status.started_at < request.created_at
         ):
             raise ResultRejected("Judge did not follow confirmed factory completion and evaluation start")
+        if status.finished_at > plan.deadlines.round_end:
+            raise ResultRejected("Judge finished after the evaluation window")
         try:
             report = self.rounds.report(request)
         except (FileNotFoundError, RecordFormatError, ValidationError, json.JSONDecodeError) as error:

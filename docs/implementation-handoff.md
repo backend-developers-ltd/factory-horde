@@ -123,3 +123,28 @@ scale/storage platform, TEE or public deployment. Durability checks cover local
 Linux file/fsync behavior and process crashes, not physical power loss. Deliberately
 unresolved fault fixtures retain their own stopped executor and separate data root;
 never point ordinary admission at those roots.
+
+## Issue-list recovery corrections
+
+Current source resolves the four failures recorded in `spec/issues.md`:
+
+- Docker's created/non-running state, zero execution timestamps, nonzero exit code
+  and runtime error establish a rejected start, including recovery after the CLI
+  response was lost. Completed create/start CLI failures retain separate ledger
+  phases; ambiguous start responses alone still cannot prove termination.
+- Invalid report encodings and oversized JSON integers become persisted failed
+  evaluations. Transient report I/O failures remain retryable.
+- Judge finishes at or before the frozen round end remain eligible when observed
+  late. Actual finishes beyond that inclusive boundary receive no score.
+- Executor updates persist activation intent before replacement and retry the
+  restart until a fresh heartbeat from the current systemd process also proves
+  that process started during the activation attempt.
+
+Regression coverage lives in the executor, result/coordinator and installer test
+suites. Fault injection covers replacement interruption, restart rejection with an
+old active service, and health failure. This is source-level regression evidence,
+not a new real-systemd/localnet acceptance run or a change to the packaged candidate.
+
+Verification on 2 October 2026: 245 tests passed, 9 optional image tests skipped;
+Ruff, strict basedpyright for validator/executor/installer, and the regenerated
+release-manifest check passed. The retained test cases are linked in `spec/issues.md`.

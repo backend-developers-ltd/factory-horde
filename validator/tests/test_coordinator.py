@@ -477,3 +477,47 @@ def test_unsafe_output_is_ineligible_but_host_io_failure_stays_unresolved(
     assert not observed.errors and not observed.unresolved
     skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
     assert skipped.reason == "invalid_output"
+
+
+@pytest.mark.parametrize("raw", [b"\xff", b'{"score":' + b"9" * 5000 + b"}"], ids=["utf8", "integer"])
+def test_bad_report_encoding_releases_round_admission(fixture: Fixture, raw: bytes) -> None:
+    plan = fixture.start()
+    for member in plan.cohort:
+        fixture.status(request_for(plan, member, "factory"))
+    fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT)
+    for member in plan.cohort:
+        judge = request_for(plan, member, "judge")
+        fixture.status(judge)
+        fixture.repository.files.write_bytes(f"{judge.report_dir}/report.json", raw, immutable=False)
+    result = fixture.coordinator().tick(plan.deadlines.round_end, BEAT)
+    assert not result.errors
+    assert all(request_for(plan, member, "judge").job_id not in result.unresolved for member in plan.cohort)
+    for member in plan.cohort:
+        decision = fixture.repository.read(request_for(plan, member, "judge"))
+        assert decision is not None and decision.failure and decision.accepted is None
+    resumed = fixture.coordinator().tick(plan.deadlines.round_end + timedelta(seconds=1), BEAT)
+    assert not resumed.errors
+    assert len(fixture.repository.rounds.rounds()) == 2
+
+
+@pytest.mark.parametrize("offset", [-1, 0, 1, 600_000_000])
+def test_judge_actual_finish_controls_recovered_score(fixture: Fixture, offset: int) -> None:
+    plan = fixture.start()
+    for member in plan.cohort:
+        fixture.status(request_for(plan, member, "factory"))
+    fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT)
+    assert fixture.coordinator().tick(plan.deadlines.round_end, BEAT).unresolved
+    for member in plan.cohort:
+        fixture.status(
+            request_for(plan, member, "judge"),
+            finished_at=plan.deadlines.round_end + timedelta(microseconds=offset),
+            observed_at=plan.deadlines.round_end + timedelta(minutes=20),
+        )
+    result = fixture.coordinator().tick(plan.deadlines.round_end + timedelta(minutes=20), BEAT)
+    assert not result.errors
+    assert all(request_for(plan, member, "judge").job_id not in result.unresolved for member in plan.cohort)
+    for member in plan.cohort:
+        decision = fixture.repository.read(request_for(plan, member, "judge"))
+        assert decision is not None
+        assert (decision.accepted is not None) == (offset <= 0)
+        assert bool(decision.failure) == (offset > 0)

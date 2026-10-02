@@ -54,8 +54,17 @@ def encode_record(record: Record) -> bytes:
 
 
 def decode_record[T: Record](payload: bytes, model: type[T]) -> T:
-    """Reject duplicate fields and NaN before applying strict versioned validation."""
-    json.loads(payload, object_pairs_hook=_unique_keys, parse_constant=_invalid_constant)
+    """Reject malformed content before applying strict versioned validation.
+
+    Raises:
+        RecordFormatError: JSON encoding, structure or numeric representation is invalid.
+    """
+    try:
+        json.loads(payload, object_pairs_hook=_unique_keys, parse_constant=_invalid_constant)
+    except RecordFormatError:
+        raise
+    except (ValueError, RecursionError) as error:
+        raise RecordFormatError("Malformed JSON record") from error
     return model.model_validate_json(payload)
 
 

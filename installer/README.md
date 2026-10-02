@@ -60,7 +60,10 @@ existing request/stop/status headers and Compose syntax are checked first. The
 verified executor is copied to a temporary file on its destination filesystem,
 fsynced, renamed atomically and directory-fsynced before the service restarts.
 Configuration and updater assets come from the same verified selection. An unchanged
-executor is not replaced/restarted. Compatible detached workloads keep running;
+executor is not replaced/restarted unless activation is pending or the service is
+inactive. Before replacing executor inputs, `executor-activation.json` durably
+records pending activation. Retrying an interrupted or failed update completes the
+restart even if installed bytes already match. Compatible detached workloads keep running;
 requests, permanent stops, Docker identities and accepted scores remain in place.
 
 Executor shutdown interrupts local Docker CLI process groups, including a pull
@@ -75,7 +78,9 @@ the changed unit requires installation privileges; ordinary updates do not repla
 system units. The interruptible shutdown also works with an already installed unit.
 
 After replacement, the updater requires a fresh protocol-compatible health record
-from the current systemd PID with a successful Docker probe. Health failure exits
+from the current systemd PID with a successful Docker probe. After restart, its
+process start time must also follow the activation attempt; a fresh heartbeat from
+the old process cannot clear pending activation. Health failure exits
 nonzero, leaves the selected file installed and records the failure in
 `applied-release.json`. Repair the configuration or select a working release using
 ordinary installation/update commands. There is no automatic rollback, rejected
