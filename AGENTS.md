@@ -24,8 +24,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);
   the rendered repo is promoted on the `deploy-config-production` branch, with this compose file and the
   installer scripts as the operator-critical files
-- `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes the validator
-  image to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
+- `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
+  and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation

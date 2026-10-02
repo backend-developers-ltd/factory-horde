@@ -67,10 +67,11 @@ Two independent branches drive the deploy. They are **not** the same thing —
 different consumers, different roles:
 
 - `deploy-build-<env>` — triggers the `build-validator.yml` GitHub Actions
-  workflow, which builds the validator image and pushes it to the configured
+  workflow, which builds validator and submitter images and pushes them to the configured
   registry as `<image_registry>/<github_org>/<image_basename>-<env>:v0-latest`
   and `...:sha-<commit>`. Nothing else reads this branch — it exists to fire CI.
-  Used by procedure 1.
+  Used by procedure 1. Both builds use pinned base/uv images and frozen project
+  locks, then smoke-test each published digest and upload its source/digest metadata.
 - `deploy-config-<env>` — the source of truth for what the **operator** pulls.
   Their cron-driven `update_compose.sh` resolves this branch to one SHA, verifies
   the release manifest and applies compatible application/executor assets. The first-time
