@@ -38,7 +38,9 @@ redraws an accepted score.
 
 Current source also reconciles definitive Docker startup rejections, persists
 malformed-report failures, enforces the judge's actual round-end finish cutoff,
-and retries pending executor activation. These corrections have focused regression
+and retries pending executor and application activation. Completed executor jobs leave
+the worker polling loop after durable publication and reconcile once on restart.
+These corrections have focused regression
 coverage; the immutable candidate above predates them.
 
 ## Repository and operation

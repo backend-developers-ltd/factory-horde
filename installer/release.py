@@ -614,25 +614,43 @@ def apply_release(
             atomic_write(activation_path, json_bytes({"pending": True, "revision": revision}))
         executor_changed = atomic_write(directory / "executor/executor.py", executor_bytes, 0o555)
         env_changed = atomic_write(directory / "executor/executor.env", env_bytes, 0o600)
-        application_changed = False
+        application_activation_path = directory / "application-activation.json"
+        previous: dict[str, object] = {}
+        if (directory / "applied-release.json").exists():
+            previous = object_value(json.loads((directory / "applied-release.json").read_bytes()))
+        config_sha256 = hashlib.sha256((directory / ".env").read_bytes()).hexdigest()
+        application_pending = (
+            application_activation_path.exists()
+            and object_value(json.loads(application_activation_path.read_bytes())).get("pending") is True
+        )
+        activate_application = (
+            install
+            or application_pending
+            or previous.get("application_started") is not True
+            or previous.get("config_sha256") != config_sha256
+            or any(
+                not (directory / name).exists() or (directory / name).read_bytes() != (stage / name).read_bytes()
+                for name in ASSETS
+                if name.endswith(".yml")
+            )
+        )
+        if activate_application:
+            # Preserve intent even when this invocation only prepares application assets.
+            atomic_write(
+                application_activation_path,
+                json_bytes({"pending": True, "revision": revision}),
+            )
         for name in ASSETS:
             if name == "executor/executor.py":
                 continue
-            changed = atomic_write(
+            atomic_write(
                 directory / name, (stage / name).read_bytes(), 0o555 if name.endswith((".sh", ".py")) else 0o644
             )
-            if name.endswith(".yml"):
-                application_changed = application_changed or changed
         atomic_write(directory / MANIFEST, metadata, 0o644)
         atomic_write(directory / "installation.json", json_bytes(asdict(installation)), 0o600)
         if install:
             install_system(stage, directory, installation, cron=application)
         started = datetime.now(UTC)
-        previous: dict[str, object] = {}
-        if (directory / "applied-release.json").exists():
-            previous = object_value(json.loads((directory / "applied-release.json").read_bytes()))
-        config_sha256 = hashlib.sha256((directory / ".env").read_bytes()).hexdigest()
-        application_changed = application_changed or previous.get("config_sha256") != config_sha256
         state: dict[str, object] = {
             "revision": revision,
             "source": installation.selection.source,
@@ -659,12 +677,9 @@ def apply_release(
                 atomic_write(
                     activation_path, json_bytes({"pending": False, "revision": revision, "pid": health["pid"]})
                 )
-            if (
-                application
-                and not prepare_only
-                and (install or application_changed or previous.get("application_started") is not True)
-            ):
+            if application and not prepare_only and activate_application:
                 run(compose(directory, installation, "up", "-d", "--wait", "--wait-timeout", "180"), quiet=True)
+                atomic_write(application_activation_path, json_bytes({"pending": False, "revision": revision}))
             state.update(
                 health="healthy", executor_pid=health["pid"], application_started=application and not prepare_only
             )

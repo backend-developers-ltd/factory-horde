@@ -66,7 +66,10 @@ Malformed report encodings and numeric overflow are persisted evaluation failure
 transient filesystem errors remain retryable. Judges must actually finish by the
 frozen round end, including its stop-confirmation reserve. Definitive Docker startup
 rejections become terminal never-started failures; ambiguous starts remain unresolved.
-Updater activation intent survives replacement/restart failures and requires health
+Completed executor jobs leave normal polling after durable terminal publication; restart
+rebuilds that knowledge through retained-record reconciliation. Application activation intent
+is persisted before replacing Compose assets and cleared only after successful Compose startup.
+Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When

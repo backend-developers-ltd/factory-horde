@@ -583,3 +583,92 @@ def test_completed_cli_rejection_is_persisted_before_reconciliation(
     # A failed start response alone cannot prove the daemon did not execute it.
     assert observed.confirmed_stopped == (operation == "create")
     assert daemon.started == 0
+
+
+@pytest.mark.parametrize("restart", [False, True])
+@pytest.mark.parametrize("outcome", ["never_started", "exited"])
+def test_completed_jobs_leave_polling_after_durable_reconciliation(
+    executor: Executor,
+    job_request: Request,
+    monkeypatch: pytest.MonkeyPatch,
+    restart: bool,
+    outcome: str,
+) -> None:
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    executor.files.write(
+        f"control/requests/{job_request.job_id}.json",
+        job_request.record,
+        immutable=True,
+    )
+    if outcome == "never_started":
+        daemon.pull_error = True
+    executor.step(job_request)
+    if outcome == "exited":
+        executor.step(job_request)
+        daemon.finish()
+        executor.step(job_request)
+    terminal = status(executor, job_request)
+    assert terminal.execution == outcome
+    if restart:
+        executor = Executor(executor.settings)
+        executor.docker = daemon
+        # Reconcile a durable decision whose public status needs repair.
+        (executor.settings.root / f"control/statuses/{job_request.job_id}.json").unlink()
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            executor.poll(pool)
+            executor.active[job_request.job_id].result(timeout=2)
+        assert status(executor, job_request) == terminal
+    else:
+        executor.observed_jobs.add(job_request.job_id)
+    writes: list[str] = []
+    original_write = executor.files.write
+
+    def write(relative: str, value: dict[str, object], *, immutable: bool = False) -> None:
+        writes.append(relative)
+        original_write(relative, value, immutable=immutable)
+
+    monkeypatch.setattr(executor.files, "write", write)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        for _ in range(3):
+            executor.poll(pool)
+            assert not executor.active
+    assert all(job_request.job_id not in name for name in writes)
+    assert executor.files.read("control/executor-health.json")["reconciled"] is True
+
+
+def test_terminal_publication_failure_stays_scheduled_until_repaired(
+    executor: Executor, job_request: Request, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    daemon = FakeDocker(executor)
+    daemon.pull_error = True
+    executor.docker = daemon
+    executor.files.write(
+        f"control/requests/{job_request.job_id}.json",
+        job_request.record,
+        immutable=True,
+    )
+    original_write = executor.files.write
+    failing = True
+
+    def write(relative: str, value: dict[str, object], *, immutable: bool = False) -> None:
+        if (
+            failing
+            and relative == f"control/statuses/{job_request.job_id}.json"
+            and value["execution"] == "never_started"
+        ):
+            raise OSError("terminal status unavailable")
+        original_write(relative, value, immutable=immutable)
+
+    monkeypatch.setattr(executor.files, "write", write)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        executor.poll(pool)
+        executor.active[job_request.job_id].result(timeout=2)
+        assert job_request.job_id not in executor.completed_jobs
+        assert status(executor, job_request).execution == "unresolved"
+        failing = False
+        executor.poll(pool)
+        executor.active[job_request.job_id].result(timeout=2)
+        executor.poll(pool)
+        assert not executor.active
+    assert status(executor, job_request).execution == "never_started"

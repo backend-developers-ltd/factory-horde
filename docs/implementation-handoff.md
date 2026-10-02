@@ -126,7 +126,7 @@ never point ordinary admission at those roots.
 
 ## Issue-list recovery corrections
 
-Current source resolves the four failures recorded in `spec/issues.md`:
+Earlier source corrections resolved four recovery failures:
 
 - Docker's created/non-running state, zero execution timestamps, nonzero exit code
   and runtime error establish a rejected start, including recovery after the CLI
@@ -147,4 +147,21 @@ not a new real-systemd/localnet acceptance run or a change to the packaged candi
 
 Verification on 2 October 2026: 245 tests passed, 9 optional image tests skipped;
 Ruff, strict basedpyright for validator/executor/installer, and the regenerated
-release-manifest check passed. The retained test cases are linked in `spec/issues.md`.
+release-manifest check passed. The retained test cases live in the corresponding subsystem suites.
+
+
+## Application activation and completed-job polling corrections
+
+Current source addresses both issues in `spec/issues.md`. Application activation
+intent is durable before Compose asset replacement and survives interrupted updates,
+failed Compose startup and preparation-only runs. It clears after successful startup.
+Completed executor jobs stop consuming poll workers and job-record writes after
+terminal publication. Restart reconciles retained records once, repairing public
+terminal status when necessary, before excluding completed jobs again.
+
+Installer and executor regression tests cover these paths. These are source-level
+corrections; they do not change the selected candidate or establish another real
+systemd/localnet acceptance run.
+
+Verification on 2 October 2026: 255 tests passed, 9 optional image tests skipped;
+Ruff, strict basedpyright, formatting and release-manifest verification passed.

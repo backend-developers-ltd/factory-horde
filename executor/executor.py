@@ -584,6 +584,7 @@ class Executor:
         self.active: dict[str, Future[None]] = {}
         self.started_at = now()
         self.observed_jobs: set[str] = set()
+        self.completed_jobs: set[str] = set()
 
     def cancelled(self, request: Request) -> bool:
         """A valid permanent stop or elapsed deadline closes startup.
@@ -633,6 +634,7 @@ class Executor:
             self.save_ledger(request, ledger)
         self.files.write(f"control/statuses/{request.job_id}.json", value)
         if value["execution"] in ("exited", "never_started"):
+            self.completed_jobs.add(request.job_id)
             print(json.dumps({"event": "job_terminal", **value}), flush=True)
         return value
 
@@ -774,6 +776,7 @@ class Executor:
                     current = None
                 if current != terminal:
                     self.files.write(f"control/statuses/{request.job_id}.json", terminal)
+                self.completed_jobs.add(request.job_id)
                 return
             container = self.docker.inspect(request)
             closed = self.cancelled(request) or ledger.get("closed") is True
@@ -905,7 +908,7 @@ class Executor:
             )
 
     def poll(self, pool: ThreadPoolExecutor) -> None:
-        """Schedule at most one worker per job; a pull never acknowledges its own cancellation early."""
+        """Reconcile retained jobs once, then schedule only work without durable terminal status."""
         rejected = 0
         for job_id, future in tuple(self.active.items()):
             if future.done():
@@ -925,6 +928,9 @@ class Executor:
             if self.shutdown.is_set():
                 break
             if re.fullmatch(r"[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.json", name) is None:
+                continue
+            if name.removesuffix(".json") in self.completed_jobs:
+                requested.add(name.removesuffix(".json"))
                 continue
             try:
                 request = Request.load(self.files.read(f"control/requests/{name}"), name)

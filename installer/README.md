@@ -65,6 +65,10 @@ inactive. Before replacing executor inputs, `executor-activation.json` durably
 records pending activation. Retrying an interrupted or failed update completes the
 restart even if installed bytes already match. Compatible detached workloads keep running;
 requests, permanent stops, Docker identities and accepted scores remain in place.
+Application updates similarly persist `application-activation.json` before replacing
+Compose assets. Pending activation survives interrupted replacement, failed Compose
+startup and preparation-only runs; it clears only after `docker compose up --wait`
+succeeds. An ordinary update retries activation even when asset bytes already match.
 
 Executor shutdown interrupts local Docker CLI process groups, including a pull
 still waiting on the registry, and cancels queued workers. Interrupted calls remain

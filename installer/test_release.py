@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import replace
@@ -289,3 +290,124 @@ def test_activation_health_rejects_fresh_heartbeat_from_old_process(
     monkeypatch.setattr(release.time, "sleep", sleep)
     assert release.check_health(tmp_path, "factory-horde-test", since, restarted=True)["pid"] == 123
     assert polls == [1]
+
+
+@pytest.mark.parametrize("failure", ["replacement", "compose", "prepare_only"])
+def test_retry_activates_application_after_assets_already_match(
+    source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    destination = tmp_path / "installed"
+    destination.mkdir()
+    env = destination / ".env"
+    env.write_text("ENVIRONMENT=localnet\nNETUID=2\nBITTENSOR_NETWORK=ws://subtensor:9944\n")
+    config = release.configuration(env, destination, application=True, localnet=True)
+    env.write_bytes(release.environment(config))
+    installation = release.Installation(
+        "factory-horde-test",
+        "test",
+        True,
+        release.Selection("snapshot", source.as_uri()),
+        {key: config[key] for key in release.IDENTITY_KEYS},
+    )
+    unit = tmp_path / "unit.service"
+    unit.write_bytes(release.unit_content(source, destination, config))
+
+    def path(value: str) -> Path:
+        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+
+    def prepare(*args: object) -> None:
+        pass
+
+    def active(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    def health(*args: object, **kwargs: object) -> dict[str, object]:
+        return {"pid": 456}
+
+    failing = False
+    starts: list[tuple[str, ...]] = []
+
+    def run(args: release.Sequence[str], *, quiet: bool = False) -> str:
+        if "--protocol-version" in args:
+            return str(release.PROTOCOL)
+        if "up" in args:
+            starts.append(tuple(args))
+            if failing and failure == "compose":
+                raise release.ReleaseError("Compose activation failed")
+        return ""
+
+    original_write = release.atomic_write
+    compose_name = "envs/deployed/docker-compose.yml"
+
+    def write(path: Path, content: bytes, mode: int = 0o640) -> bool:
+        changed = original_write(path, content, mode)
+        if failing and failure == "replacement" and path == destination / compose_name:
+            raise RuntimeError("interrupted after Compose replacement")
+        return changed
+
+    monkeypatch.setattr(release, "Path", path)
+    monkeypatch.setattr(release, "prepare_system_files", prepare)
+    monkeypatch.setattr(release.subprocess, "run", active)
+    monkeypatch.setattr(release, "check_health", health)
+    monkeypatch.setattr(release, "run", run)
+    monkeypatch.setattr(release, "atomic_write", write)
+    release.apply_release(
+        destination,
+        installation,
+        config,
+        install=False,
+        application=True,
+        prepare_only=False,
+    )
+    assert len(starts) == 1
+    candidate = source / compose_name
+    candidate.write_text(re.sub(r"sha256:[0-9a-f]{64}", "sha256:" + "1" * 64, candidate.read_text(), count=1))
+    release.manifest(source, check=False)
+    failing = True
+    if failure == "prepare_only":
+        release.apply_release(
+            destination,
+            installation,
+            config,
+            install=False,
+            application=True,
+            prepare_only=True,
+        )
+    else:
+        with pytest.raises((RuntimeError, release.ReleaseError)):
+            release.apply_release(
+                destination,
+                installation,
+                config,
+                install=False,
+                application=True,
+                prepare_only=False,
+            )
+    assert (destination / compose_name).read_bytes() == candidate.read_bytes()
+    marker = destination / "application-activation.json"
+    assert json.loads(marker.read_bytes())["pending"] is True
+    if failure == "replacement":
+        assert json.loads((destination / "applied-release.json").read_bytes())["application_started"] is True
+    before = len(starts)
+    failing = False
+    release.apply_release(
+        destination,
+        installation,
+        config,
+        install=False,
+        application=True,
+        prepare_only=False,
+    )
+    assert len(starts) == before + 1
+    assert json.loads(marker.read_bytes())["pending"] is False
+    state = json.loads((destination / "applied-release.json").read_bytes())
+    assert state["health"] == "healthy" and state["application_started"] is True
+    release.apply_release(
+        destination,
+        installation,
+        config,
+        install=False,
+        application=True,
+        prepare_only=False,
+    )
+    assert len(starts) == before + 1
