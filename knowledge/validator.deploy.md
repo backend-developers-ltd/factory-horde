@@ -40,28 +40,26 @@ third-party image in the stack (pylon, anything else). There is no "but this
 tag is semver, so it's safe" exception — the registry doesn't care about
 semver.
 
-> Observability sidecars currently ship pinned only by tag (`cadvisor:v0.40.0`,
-> `node-exporter:latest`, `bittensor_prometheus:latest`, `grafana/alloy:v1.15.1`)
-> rather than by digest. This is a known gap, not an endorsement: when hardening
-> the deploy, pin these by `@sha256` too via Procedure 3. The `alloy` traces
-> sidecar (see the tracing notes below) follows the same convention as the rest
-> of the metrics stack for now.
+## V2 topology and release assets
 
-## The traces sidecar (Alloy)
+The prototype currently uses pinned official Prometheus and node-exporter images,
+authenticated Pylon scraping and the validator's actor-owned metrics/readiness
+endpoint. Tracing, Alloy and remote-write are disabled. The inherited Alloy file is
+not an active service or an updater input.
 
-`envs/deployed/docker-compose.yml` runs a `grafana/alloy` sidecar that tail-samples the
-validator's OpenTelemetry spans and forwards them to an OTLP/HTTP upstream. Its config lives
-next to the compose file in `envs/deployed/alloy/config.alloy` and is synced to operator hosts
-by the same `update_compose.sh` cron job (it now fetches both files). **`TRACES_UPSTREAM_URL` /
-`TRACES_UPSTREAM_USER` / `TRACES_UPSTREAM_PASSWORD` are required by the sidecar** — Alloy
-refuses to build its exporter without an endpoint and credentials, so with any of them
-empty the sidecar crash-loops on startup. Bumping the Alloy image or editing the Alloy
-config is a Procedure 3 change (non-validator service) and ships on `deploy-config-<env>`.
+The maintained installer consumes `installer/release-manifest.json`, the standalone
+executor/checksum, common Compose and installer assets from one resolved Git
+revision. A moving `deploy-config-*` branch resolves once before downloading any
+asset. Operator updates serialize, verify every checksum and protocol compatibility,
+atomically replace the executor on its destination filesystem and restart its exact
+system unit. The operator's cron has only that restart sudo grant. A changed system
+unit requires installation privileges; unhealthy replacement requires ordinary
+repair and is not rolled back automatically. See [installer instructions](../installer/README.md).
 
-> TODO: the intended upstream is the observability proxy (today the Prometheus proxy), mirroring
-> metrics — once it supports traces, point the exporter at it and the proxy will add the operator
-> `hotkey` label. For now `TRACES_UPSTREAM_URL` can target a Tempo backend (or any OTLP upstream)
-> directly.
+Task 16 prepares a candidate through this build/promotion structure. Production
+configuration promotion, subnet-12 deployment and emissions changes remain outside
+the prototype. The promotion commands below describe a separate, later authorized
+operator release; they are not part of localnet acceptance.
 
 ## Branches and what they do
 
@@ -74,8 +72,8 @@ different consumers, different roles:
   and `...:sha-<commit>`. Nothing else reads this branch — it exists to fire CI.
   Used by procedure 1.
 - `deploy-config-<env>` — the source of truth for what the **operator** pulls.
-  Their cron-driven `update_compose.sh` reads `envs/deployed/docker-compose.yml`
-  from this branch and restarts the stack if it changed. The first-time
+  Their cron-driven `update_compose.sh` resolves this branch to one SHA, verifies
+  the release manifest and applies compatible application/executor assets. The first-time
   `installer/install.sh` is also fetched from here. Used by procedures 2 and 3.
 
 ## Procedure 1 — Build a new validator image
@@ -144,7 +142,14 @@ stack.
    image: <image_registry>/<github_org>/<image_basename>-${ENVIRONMENT:?}@sha256:<digest>
    ```
 
-4. Commit (e.g. `chore(deploy): pin production validator to <digest-prefix>`), push
+4. Regenerate/check release metadata after changing any listed asset:
+
+   ```sh
+   env -u UV_EXCLUDE_NEWER uv run --project validator python installer/release.py manifest "$PWD"
+   env -u UV_EXCLUDE_NEWER uv run --project validator python installer/release.py manifest "$PWD" --check
+   ```
+
+   Commit (e.g. `chore(deploy): pin production validator to <digest-prefix>`), push
    `master`, then fast-forward `master` → `deploy-config-production`:
 
    ```sh
@@ -155,11 +160,11 @@ stack.
    pick up the new `docker-compose.yml` and — because the `image:` digest
    changed — restart the stack onto the pinned image.
 
-5. (Recommended for material changes.) Smoke test on a clean Linux host: run
-   the `curl ... | bash` command from `installer/README.md`, confirm validator
-   and pylon are healthy, the cron line tagged with `cron_tag` is in place,
-   and `docker inspect` of the running validator container shows the exact
-   digest you pinned in step 3.
+5. Smoke test on a clean Linux host using the explicit environment/revision
+   procedure in `installer/README.md`. Confirm validator and Pylon readiness,
+   the operator-owned command in `/etc/cron.d/<executor-service>`, executor health
+   and the exact selected validator image digest. The initial prototype performs
+   this on isolated localnet only.
 
 ## Procedure 3 — Promote a non-validator service (e.g. pylon)
 
@@ -207,7 +212,8 @@ validator needs a newer pylon than the one the template ships with.
    image: backenddevelopersltd/bittensor-pylon@sha256:<digest>
    ```
 
-5. Commit (e.g. `chore(deploy): pin production pylon to <digest-prefix>`), push
+5. Regenerate/check the release manifest as in Procedure 2, step 4.
+   Commit (e.g. `chore(deploy): pin production pylon to <digest-prefix>`), push
    `master`, then fast-forward `master` → `deploy-config-production`:
 
    ```sh
@@ -223,9 +229,9 @@ procedure 2 step 2 happens against the stack the operator will end up running.
 ## Other environments
 
 Mirror the same flow with a matching pair of branches — `deploy-build-<env>`
-triggers a CI build of `<image_basename>-<env>:v0-latest`, and
-`deploy-config-<env>` is what `installer/install.sh ... <env>` reads from.
-Operators select the environment with the `ENV_NAME` argument to `install.sh`.
+triggers a CI build of `<image_basename>-<env>:v0-latest`. Operators explicitly
+select `--ref deploy-config-<env>` (or a full commit SHA) and supply `ENVIRONMENT`
+in their operator environment. No installer argument defaults the subnet/network.
 
 ## After done
 

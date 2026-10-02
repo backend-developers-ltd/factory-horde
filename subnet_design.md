@@ -160,6 +160,13 @@ from an immutable candidate on clean Linux. Record exact dependencies, digest
 references, protocol records, outputs, scores and direct chain evidence outside
 source commits. Executor updates serialize, verify checksum/protocol, replace
 atomically and restart without rerunning detached jobs; no automatic rollback.
+The selected implementation publishes `installer/release-manifest.json` and
+`executor/executor.sha256`. A configuration branch resolves once to a Git SHA;
+all files are validated before replacement under one installation lock. The host
+cron runs as the operator with an exact-unit restart grant. System-unit changes
+require installation privileges, and failed replacement health remains visible
+for ordinary repair. Localnet bootstrap accepts the installer's isolated `.env`
+with its own adjacent wallets and registration evidence.
 
 Generic HTTP, validator-only, inference and host-tmux recipes yield to V2. Mainnet,
 subnet 12 / Compute Horde changes, public emissions, real generation/quality judging,

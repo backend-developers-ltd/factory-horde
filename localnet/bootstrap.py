@@ -17,11 +17,13 @@ Usage: uv run --project miner --group bootstrap python localnet/bootstrap.py
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import cast
 
 import bittensor as bt
 from bittensor.utils.balance import Balance
@@ -29,7 +31,6 @@ from bittensor_wallet import Keypair, Wallet
 from dotenv import dotenv_values
 
 LOCALNET_ROOT = Path(__file__).resolve().parent
-WALLETS_DIR = LOCALNET_ROOT / "wallets"
 VALIDATOR_STAKE_TAO = 1000.0
 FUND_AMOUNT_TAO = 10_000.0
 EXPECTED_NETUID = 2
@@ -58,19 +59,19 @@ def wait_for_subtensor(network: str, retries: int = 30, delay: float = 2.0) -> b
     sys.exit(1)
 
 
-def get_alice_wallet() -> Wallet:
+def get_alice_wallet(wallets_dir: Path) -> Wallet:
     """Create a wallet backed by Alice's well-known devnet keypair."""
     alice_kp = Keypair.create_from_uri("//Alice")
-    wallet = Wallet(name="alice", path=str(WALLETS_DIR))
+    wallet = Wallet(name="alice", path=str(wallets_dir))
     wallet.set_coldkey(keypair=alice_kp, encrypt=False, overwrite=True)
     wallet.set_coldkeypub(keypair=alice_kp, overwrite=True)
     wallet.set_hotkey(keypair=alice_kp, encrypt=False, overwrite=True)
     return wallet
 
 
-def get_or_create_wallet(name: str) -> Wallet:
+def get_or_create_wallet(name: str, wallets_dir: Path) -> Wallet:
     """Create a wallet if it doesn't exist, using localnet wallets directory."""
-    wallet = Wallet(name=name, path=str(WALLETS_DIR))
+    wallet = Wallet(name=name, path=str(wallets_dir))
     # The SDK prints secret recovery words when creating keys; local disposable keys
     # are written directly so bootstrap logs never contain them.
     if not wallet.coldkey_file.exists_on_device():
@@ -367,7 +368,7 @@ class Registration:
     coldkey: str
 
 
-def verify_registrations(network: str, wallets: list[Wallet], mechanism: int) -> None:
+def verify_registrations(network: str, wallets: list[Wallet], mechanism: int, destination: Path) -> None:
     """Independently read a block-aligned registration snapshot directly from Subtensor.
 
     Raises:
@@ -393,7 +394,7 @@ def verify_registrations(network: str, wallets: list[Wallet], mechanism: int) ->
             "block_hash": chain.get_block_hash(block),
             "registrations": [asdict(entry) for entry in registrations],
         }
-    destination = LOCALNET_ROOT / "state" / "registrations.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(".tmp")
     temporary.write_text(json.dumps(evidence, indent=2) + "\n")
     temporary.replace(destination)
@@ -406,14 +407,21 @@ def main() -> None:
     Raises:
         ValueError: Configuration does not describe the isolated localnet.
     """
-    config = dotenv_values(LOCALNET_ROOT / ".env")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--env-file", type=Path, default=LOCALNET_ROOT / ".env")
+    arguments = parser.parse_args()
+    env_file = cast(Path, arguments.env_file).resolve()
+    wallets_dir = env_file.parent / "wallets"
+    config = dotenv_values(env_file)
     if (
         config.get("ENVIRONMENT") != "localnet"
         or config.get("NETUID") != "2"
         or config.get("BITTENSOR_NETWORK") != "ws://subtensor:9944"
-        or config.get("HOST_WALLET_DIR") != str(WALLETS_DIR)
+        or config.get("HOST_WALLET_DIR") != str(wallets_dir)
+        or wallets_dir.resolve() != wallets_dir
+        or wallets_dir.is_relative_to(Path.home() / ".bittensor")
     ):
-        raise ValueError("Run localnet/prepare.sh; bootstrap accepts only the isolated localnet configuration")
+        raise ValueError("Bootstrap requires localnet subnet 2 and an isolated wallets directory beside its .env")
     port = int(config.get("SUBTENSOR_HOST_PORT") or "9944")
     if not 1024 <= port <= 65535:
         raise ValueError("Invalid local Subtensor port")
@@ -422,14 +430,14 @@ def main() -> None:
     if mechanism not in (0, 1):
         raise ValueError("Local bootstrap supports mechanism 0 or 1")
     subtensor = wait_for_subtensor(network)
-    alice = get_alice_wallet()
+    alice = get_alice_wallet(wallets_dir)
 
     alice_balance = subtensor.get_balance(alice.coldkey.ss58_address)
     print(f"Alice balance: {alice_balance}")
 
     # Owner: creates and owns the subnet
     print("\n--- Setting up owner wallet ---")
-    owner = get_or_create_wallet("owner")
+    owner = get_or_create_wallet("owner", wallets_dir)
     fund_wallet(subtensor, alice, owner)
 
     print("\n--- Creating subnet ---")
@@ -448,18 +456,18 @@ def main() -> None:
 
     # Validator: registers and stakes
     print("\n--- Setting up validator ---")
-    validator = get_or_create_wallet("validator")
+    validator = get_or_create_wallet("validator", wallets_dir)
     fund_wallet(subtensor, alice, validator)
     register_neuron(subtensor, validator, netuid)
     stake_validator(subtensor, validator, netuid)
     wallets = [owner, validator]
     for index in range(1, 6):
-        miner = get_or_create_wallet(f"miner{index}")
+        miner = get_or_create_wallet(f"miner{index}", wallets_dir)
         fund_wallet(subtensor, alice, miner)
         register_neuron(subtensor, miner, netuid)
         wallets.append(miner)
     subtensor.close()
-    verify_registrations(network, wallets, mechanism)
+    verify_registrations(network, wallets, mechanism, env_file.parent / "state/registrations.json")
 
 
 if __name__ == "__main__":

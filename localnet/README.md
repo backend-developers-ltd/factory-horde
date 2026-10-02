@@ -90,7 +90,10 @@ The generated `.env` selects that same numeric UID/GID for all workload containe
 and names the host executor user/group. The operator controls the complete tree;
 individual workloads receive only their job's fixed protocol mounts.
 
-The installer creates a system service running the single standard-library Python executor
+The source installer verifies `installer/release-manifest.json` and the standalone
+executor checksum before installing. After editing listed assets, regenerate them
+with `env -u UV_EXCLUDE_NEWER uv run --project validator python installer/release.py
+manifest "$PWD"` and use `--check` before committing. The installer creates a system service running the single standard-library Python executor
 as `EXECUTOR_USER`/`EXECUTOR_GROUP`, with `UMask=0027`, Docker-group access, automatic
 service restart and this host root. Python defaults to `/usr/bin/python3.14`.
 Docker access grants host-level control; it belongs only to the trusted executor.
@@ -118,6 +121,35 @@ sudo systemctl stop factory-horde-localnet-executor
 
 Stopping the service leaves detached workloads running; normal job cancellation
 uses permanent protocol stop records. Preserve its data root to resume observation.
+
+## Full installer and update acceptance
+
+The [operator installer](../installer/README.md) provides a checksummed application
+installation, explicit revision selection and a fifteen-minute cron updater running
+as the operator. It resolves a moving configuration branch once per run, validates
+all files before replacement and grants only the exact executor service restart.
+Use this path for candidate acceptance; `install-executor.sh` remains the source
+checkout convenience interface for focused executor fixtures.
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_installer
+```
+
+This creates a separate local chain, isolated wallets/data, common application
+stack and systemd service. It tests clean/repeated installs, no-change updates,
+failed downloads/checksums/protocol, updater overlap, atomic replacement while
+detached factories run, stable stops/accepted scores, visible unhealthy replacement
+and ordinary repair. An actual cron run under a temporary restricted account proves
+the update can restart its unit without general sudo access. The suite stops its
+stack/executor and removes cron/sudoers rules, retaining raw artifacts under
+`state/installer-*` and the summary in `state/task15-installer.json`.
+
+`bootstrap.py --env-file /absolute/installation/.env` supports the full installer's
+isolated root: wallets must be in `wallets/` beside that `.env`, outside
+`~/.bittensor`. It still requires localnet subnet 2 and `ws://subtensor:9944`, connects
+only through the configured loopback port and writes direct-chain registration
+evidence to `state/registrations.json` beside the installation. The default
+`localnet/.env` behavior is unchanged.
 
 ## Executor recovery acceptance
 

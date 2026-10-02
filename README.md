@@ -31,8 +31,9 @@ Pylon; direct Subtensor checks verify mechanism 1 and mechanism-0 non-interferen
 This completes the first localnet milestone. The real-container adversarial suite
 also passes. Application readiness and a single validator metrics endpoint expose
 round/job state and file-only executor health; packaging remains in the task list.
-The public installer is still scaffold code
-pending its implementation task.
+The installer now validates a coherent checksummed release, installs the systemd
+executor and common Compose settings, and grants the operator's cron only the
+required service restart. An immutable accepted candidate remains pending.
 
 The first milestone is a reproducible Linux localnet run with roughly five miners,
 actual Docker execution and independently verified chain weights. Localnet now

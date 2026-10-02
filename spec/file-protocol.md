@@ -250,6 +250,15 @@ the job workers continue independently. Failures publish `docker_ok=false`.
 Both health and metrics are replaced atomically and include the executor PID so
 a validator can reject mixed snapshots during a service replacement.
 
+`executor.py --protocol-version` prints `1` without opening a data root or starting
+workers. Installer release metadata, this executable declaration and existing
+request/stop/status headers must agree before replacement. Checksums and the fixed
+asset manifest are verified before executing that probe. Updates replace only
+installation assets and resource configuration; they never migrate or remove shared
+execution records. A current systemd PID and fresh Docker health are required after
+replacement. A health failure remains visible and requires ordinary repair; it is
+not permission to roll back or rerun a workload.
+
 Validator readiness is a disposable in-memory projection, rebuilt on actor polls.
 Hidden `.readiness.json` files probe atomic writes/fsync in validator-owned control
 and result directories; all record discovery ignores these non-identity filenames.

@@ -38,7 +38,13 @@ See `localnet/README.md` for the common Compose services and isolated bootstrap.
 to disabled; enabling it requires explicit identity, judge and timing configuration. The host systemd executor is implemented;
 `installer/install-executor.sh` installs its standalone file and unit. Concurrent dispatch, permanent
 cancellation and Docker reconciliation have focused unit and real systemd fault checks. Development tests
-live beside it but are not deployed. `result_repository.py` owns immutable execution decisions
+live beside it but are not deployed. `installer/install.sh` and `update_compose.sh` use the standard-library
+`installer/release.py` helper and a checksummed asset manifest. Updates resolve a configuration branch once,
+stage/validate all files, serialize on an installation lock and atomically replace the executor before
+restarting its exact system unit. The operator's cron receives only that restart sudo grant. System-unit
+changes require installation privileges; health failure is visible without rollback. Regenerate the manifest
+and standalone checksum with `uv run --project validator python installer/release.py manifest "$PWD"`
+after editing listed assets, and verify with `--check` before committing. `result_repository.py` owns immutable execution decisions
 and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
 `tasks.py` wires distinct factory/evaluation Nexus tasks with the shared provider;
 `file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
@@ -162,8 +168,8 @@ attributes **deliberately carry no operator hotkey** — the observability proxy
 the structlog processors in `logging_config.py` stamp the same attributes onto every log line so logs
 and traces correlate.
 
-Tracing export is explicitly disabled in common Compose. The inherited Alloy config and updater are
-not the active prototype topology; coherent installer/update behavior is implemented in task 15.
+Tracing export is explicitly disabled in common Compose. The inherited Alloy config is unused;
+the updater downloads only the checksummed common application/executor assets.
 
 #### Structured logging
 

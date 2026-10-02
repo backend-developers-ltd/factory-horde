@@ -905,6 +905,7 @@ class Executor:
 def main() -> None:
     """Run one systemd-owned executor instance for an explicitly configured host root."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--protocol-version", action="version", version=str(PROTOCOL_VERSION))
     parser.add_argument("--root", type=Path, required=True)
     args = parser.parse_args()
     settings = Settings(

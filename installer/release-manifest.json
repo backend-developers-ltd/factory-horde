@@ -1,0 +1,21 @@
+{
+  "files": {
+    "envs/deployed/docker-compose.yml": "6117947219d02e9a2f4cd8d3069128354cbe8b24981fc908375ea8a78d442047",
+    "executor/executor.py": "50402bb9c86bef25b03f5cdeea8d06ae2eaf286293a8422ce66394e4064f1177",
+    "executor/executor.sha256": "248d12589896744faa0277c1f77e9dad02065ebf3aaefd499d9e854241b12d9a",
+    "installer/factory-horde-executor.service": "295b7c8dfddcbde23789a4b15abd11b12b1e1fa9cd9001e9b31bbd1b4b6f2818",
+    "installer/install-executor.sh": "87f7de9bf302841ed276352610eb98e2aabecff83ef01fc00cf17c749fb8d37b",
+    "installer/install.sh": "f3a543ceb1dd8d415d8cd871692b7c20a9c6b258511fb1b7bae5167374c12301",
+    "installer/prepare-data-root.sh": "e974c61be9c36e09c3336e14049808ad098caa1eec0ae8f59e67e34b4aa6aa8f",
+    "installer/release.py": "232f49b119f8d4888419065579bf505969c562fb6ded934daa6a03a325606de1",
+    "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
+    "localnet/compose.yml": "bb7155dc8e8a250b998bc2437928628fdfcaf54bacd9140b963652192214463a"
+  },
+  "platform": "linux/amd64",
+  "protocol": 1,
+  "python_min": [
+    3,
+    14
+  ],
+  "schema": 1
+}

@@ -1,0 +1,232 @@
+{
+  "checked_at": "2026-10-02T10:41:21.937962+00:00",
+  "root": "/home/ubuntu/repo/factory-horde/localnet/state/installer-cb8d3dde",
+  "service": "factory-horde-installer-cb8d3dde",
+  "project": "factory-horde-installer-cb8d3dde",
+  "release_source": "revision-addressed loopback HTTP fixtures",
+  "clean_repeated_no_change": {
+    "pid": "67040",
+    "inode": 5815303,
+    "services": [
+      {
+        "Service": "node-exporter",
+        "Image": "docker.io/prom/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "prometheus",
+        "Image": "docker.io/prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996",
+        "State": "running",
+        "Health": ""
+      },
+      {
+        "Service": "pylon",
+        "Image": "docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "subtensor",
+        "Image": "ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "validator",
+        "Image": "sha256:78bc3038f98479b6165bbdc50a8a6323862023912842867fa369d4a555805f3f",
+        "State": "running",
+        "Health": "healthy"
+      }
+    ]
+  },
+  "preflight_failures_preserved_executor": [
+    "missing HTTP asset",
+    "bad checksum",
+    "protocol mismatch"
+  ],
+  "overlap": "Second actual updater exited 75 while the first held a live HTTP request; first completed",
+  "accepted_result": {
+    "protocol_version": 1,
+    "round_id": "27d17049-e091-4ad1-979d-046c16f5f71e",
+    "job_id": "59439158-8c1d-4d58-86c0-9c78305435f0",
+    "miner_hotkey": "5GMrLuokVovzo3kuBxSWkrgRYLdDFTw2fDyvMomMkZBz2Dsw",
+    "kind": "judge",
+    "factory_job_id": "e71f9d9b-1160-43f6-b40b-5f12f998f3d0",
+    "score": 0.5803914412725653,
+    "accepted_at": "2026-10-02T10:43:38.417618Z",
+    "report_sha256": "179c8ec9dd20e0f92efc33a14233de4b684a2f687329bd9a3b9732bfa1caa27c",
+    "result_id": "2ac82e48-f0d3-5a0f-9267-6c317d915149",
+    "processing_started": "2026-10-02T10:43:35.916118Z",
+    "processing_finished": "2026-10-02T10:43:36.106065Z",
+    "completion_block": 388,
+    "completion_block_hash": "0x40b09e0e9ce9d5ce0c61577082ee76fe2f3576c56e50ff6d341c60a4a5a00d9d"
+  },
+  "active_replacement": {
+    "seconds": 1.480294320999974,
+    "old_pid": "67040",
+    "new_pid": "78851",
+    "old_inode": 5815303,
+    "new_inode": 5823175,
+    "before": [
+      {
+        "Id": "f926676e03960c26fbc9295f312f68d6e176ade98c6df50490946b293e575bf5",
+        "State": {
+          "Status": "running",
+          "Running": true,
+          "ExitCode": 0,
+          "StartedAt": "2026-10-02T10:43:42.181393016Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      },
+      {
+        "Id": "5fdce7021018ded9d963c8cd610344869ac41901e2c26e1e3685b7b8cceab566",
+        "State": {
+          "Status": "running",
+          "Running": true,
+          "ExitCode": 0,
+          "StartedAt": "2026-10-02T10:43:42.189594864Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      }
+    ],
+    "after": [
+      {
+        "Id": "f926676e03960c26fbc9295f312f68d6e176ade98c6df50490946b293e575bf5",
+        "State": {
+          "Status": "running",
+          "Running": true,
+          "ExitCode": 0,
+          "StartedAt": "2026-10-02T10:43:42.181393016Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      },
+      {
+        "Id": "5fdce7021018ded9d963c8cd610344869ac41901e2c26e1e3685b7b8cceab566",
+        "State": {
+          "Status": "running",
+          "Running": true,
+          "ExitCode": 0,
+          "StartedAt": "2026-10-02T10:43:42.189594864Z",
+          "FinishedAt": "0001-01-01T00:00:00Z"
+        }
+      }
+    ],
+    "terminal_statuses": [
+      {
+        "protocol_version": 1,
+        "round_id": "5684eab5-5d07-4432-b222-e0779c120a78",
+        "job_id": "f97ca496-b74b-4b10-9402-0d003fc1a7d4",
+        "miner_hotkey": "5GMrLuokVovzo3kuBxSWkrgRYLdDFTw2fDyvMomMkZBz2Dsw",
+        "kind": "factory",
+        "factory_job_id": "f97ca496-b74b-4b10-9402-0d003fc1a7d4",
+        "state": "failed",
+        "observed_at": "2026-10-02T10:43:51.334215Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "f926676e03960c26fbc9295f312f68d6e176ade98c6df50490946b293e575bf5",
+        "container_name": "factory-horde-f97ca496-b74b-4b10-9402-0d003fc1a7d4",
+        "started_at": "2026-10-02T10:43:42.181393Z",
+        "finished_at": "2026-10-02T10:43:51.247458Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      },
+      {
+        "protocol_version": 1,
+        "round_id": "5684eab5-5d07-4432-b222-e0779c120a78",
+        "job_id": "4e7ab2cb-cd94-4099-afa6-8cea83d60302",
+        "miner_hotkey": "5D7sN6r239nCsmQjNJbpwjw2bLTTTvbYtG6tVzSku1uRwx9n",
+        "kind": "factory",
+        "factory_job_id": "4e7ab2cb-cd94-4099-afa6-8cea83d60302",
+        "state": "failed",
+        "observed_at": "2026-10-02T10:43:53.409967Z",
+        "execution": "exited",
+        "startup_forbidden": true,
+        "container_id": "5fdce7021018ded9d963c8cd610344869ac41901e2c26e1e3685b7b8cceab566",
+        "container_name": "factory-horde-4e7ab2cb-cd94-4099-afa6-8cea83d60302",
+        "started_at": "2026-10-02T10:43:42.189594Z",
+        "finished_at": "2026-10-02T10:43:53.323091Z",
+        "exit_code": 137,
+        "forced": true,
+        "oom_killed": false,
+        "reason": "Factory/judge did not exit cleanly"
+      }
+    ],
+    "accepted_score_bytes_preserved": true,
+    "request_stop_bytes_preserved": true
+  },
+  "failed_health": {
+    "applied_at": "2026-10-02T10:43:54.455056+00:00",
+    "config_sha256": "a6f76f67738b6ce0c49597c18b4cb906afdc945ebb1ab61016d35b69216f1f74",
+    "executor_changed": true,
+    "health": "failed; ordinary repair required",
+    "manifest_sha256": "251d429035196927152292c48ac4894f7e4f8edc6ff9878d0c18a1699db58e63",
+    "revision": "85826072c3d4c3a4be8b8e4f205e19547d3f6fce",
+    "source": "http://127.0.0.1:41757"
+  },
+  "ordinary_repair": {
+    "application_started": true,
+    "applied_at": "2026-10-02T10:44:35.153119+00:00",
+    "config_sha256": "a6f76f67738b6ce0c49597c18b4cb906afdc945ebb1ab61016d35b69216f1f74",
+    "executor_changed": true,
+    "executor_pid": 82170,
+    "health": "healthy",
+    "manifest_sha256": "5a56c7e17589cd9601aecff98e541887f754da32ed1e79b72fe6e9f5b6a06e6c",
+    "revision": "97b0560280ed60a5a1eaa1bc45492543c8a986ad",
+    "source": "http://127.0.0.1:41757"
+  },
+  "cron_permissions": {
+    "user": "fhupdate-5327ee96",
+    "uid": "1001",
+    "gid": "1001",
+    "cron_uid": "1001",
+    "cron_exit": "0",
+    "old_pid": "82520",
+    "new_pid": "85201",
+    "other_unit_restart_denied": true,
+    "sudoers": "fhupdate-5327ee96 ALL=(root) NOPASSWD: /usr/bin/systemctl restart factory-horde-permissions-5327ee96.service\n",
+    "cron_log": "{\"event\": \"release_applied\", \"revision\": \"97b0560280ed60a5a1eaa1bc45492543c8a986ad\", \"source\": \"http://127.0.0.1:41757\", \"manifest_sha256\": \"5a56c7e17589cd9601aecff98e541887f754da32ed1e79b72fe6e9f5b6a06e6c\", \"applied_at\": \"2026-10-02T10:45:02.489461+00:00\", \"executor_changed\": true, \"health\": \"healthy\", \"config_sha256\": \"1dc5831aec9a3ccefe251e65638d9749769bae95ecc5be49037f9e0ba9dc06db\", \"executor_pid\": 85201, \"application_started\": false}",
+    "retained_home": "/home/fhupdate-5327ee96"
+  },
+  "executor_sha256": "50402bb9c86bef25b03f5cdeea8d06ae2eaf286293a8422ce66394e4064f1177",
+  "sudoers": "ubuntu ALL=(root) NOPASSWD: /usr/bin/systemctl restart factory-horde-installer-cb8d3dde.service\n",
+  "cron": "SHELL=/bin/bash\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/15 * * * * ubuntu /home/ubuntu/repo/factory-horde/localnet/state/installer-cb8d3dde/installation/installer/update_compose.sh /home/ubuntu/repo/factory-horde/localnet/state/installer-cb8d3dde/installation >> /home/ubuntu/repo/factory-horde/localnet/state/installer-cb8d3dde/installation/update.log 2>&1\n",
+  "scope": "Real Linux systemd, Docker, isolated Subtensor, common application Compose and actual cron. Revision-addressed loopback fault fixtures are not published release candidates; clean-host candidate acceptance remains tasks 16-17.",
+  "qa": {
+    "validator_executor_installer": "205 passed, 9 optional image tests skipped",
+    "miner": "22 passed",
+    "ruff": "passed",
+    "basedpyright": "zero errors/warnings",
+    "shell_syntax": "passed",
+    "manifest_check": "passed"
+  },
+  "final_unit_preflight": {
+    "change": "Moved systemd unit validation before executor replacement after the full runtime run; added invalid-unit regression (14 installer tests passed).",
+    "clean_install": {
+      "application_started": false,
+      "applied_at": "2026-10-02T10:45:57.163937+00:00",
+      "config_sha256": "b5e445eb962ae16134ba2430e0d6652c5852f4c35fb646b8afad3f57961075e2",
+      "executor_changed": true,
+      "executor_pid": 88354,
+      "health": "healthy",
+      "manifest_sha256": "245a4f1878a66bd5021c745578e4e8274db74257ac7f5755ed2bd553aa6026e2",
+      "revision": "snapshot",
+      "source": "file:///home/ubuntu/repo/factory-horde"
+    },
+    "journal": "Started PID 88354 at 2026-10-02 10:45:57 UTC, published Docker health, then cleanly disabled/stopped."
+  },
+  "release_manifest_sha256": "245a4f1878a66bd5021c745578e4e8274db74257ac7f5755ed2bd553aa6026e2",
+  "source_sha256": {
+    "installer/release.py": "232f49b119f8d4888419065579bf505969c562fb6ded934daa6a03a325606de1",
+    "installer/test_release.py": "0c99d35452b96d3ff42cec3912f5d4028107b5460273b8e070115d22e88b1c50",
+    "localnet/check_installer.py": "a253a74c24090d4d30782b41ab115c02e880a1d4aee34e6c2d9f8564417829b4",
+    "localnet/bootstrap.py": "eac516345e156e9d9e93bbe0e96ddb023f3bff3acb9afdb7b75041c5e11fa5f7"
+  },
+  "reproduction": [
+    "env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_installer",
+    "env -u UV_EXCLUDE_NEWER uv run --project validator pytest -q validator/tests installer executor",
+    "env -u UV_EXCLUDE_NEWER uv run --project validator python installer/release.py manifest \"$PWD\" --check"
+  ]
+}
