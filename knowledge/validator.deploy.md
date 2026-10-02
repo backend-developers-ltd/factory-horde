@@ -56,7 +56,7 @@ system unit. The operator's cron has only that restart sudo grant. A changed sys
 unit requires installation privileges; unhealthy replacement requires ordinary
 repair and is not rolled back automatically. See [installer instructions](../installer/README.md).
 
-Task 16 prepares a candidate through this build/promotion structure. Production
+[Task 16's candidate](../envs/candidate/README.md) uses this build/promotion structure. Production
 configuration promotion, subnet-12 deployment and emissions changes remain outside
 the prototype. The promotion commands below describe a separate, later authorized
 operator release; they are not part of localnet acceptance.

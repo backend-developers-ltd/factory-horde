@@ -7,6 +7,9 @@ The factory and judge retain their verified task-5 images. Common Compose uses t
 validator digest by default; the candidate environment also supplies exact factory,
 judge and submitter references. There are no mutable runtime image selections.
 
+All eight selected images passed anonymous pulls. Installation from Git revision
+`87353ed2e97cf435b6d8210dceb177affe2febfb` passed application readiness, identity and
+monitoring checks on the prepared Linux host; see [task-16 evidence](../../spec/evidence/task16-candidate.json).
 This is an isolated localnet candidate. Task 17's clean Linux acceptance is still
 required. No production configuration branch has been promoted.
 

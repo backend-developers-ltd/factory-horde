@@ -1,0 +1,236 @@
+{
+  "checked_at": "2026-10-02T10:57:20.820325+00:00",
+  "scope": "Immutable candidate packaging and real separate installation on the existing prepared Linux host; clean-host end-to-end acceptance remains task 17.",
+  "configuration_revision": "87353ed2e97cf435b6d8210dceb177affe2febfb",
+  "build": {
+    "conclusion": "success",
+    "headSha": "f173bfd0c658fa421a540c6caa65a483822eeddd",
+    "updatedAt": "2026-10-02T10:52:44Z",
+    "url": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36997766725"
+  },
+  "release": {
+    "schema": 1,
+    "platform": "linux/amd64",
+    "protocol": 1,
+    "python_min": [
+      3,
+      14
+    ],
+    "scope": "Localnet candidate only; clean Linux end-to-end acceptance is task 17. No operator promotion.",
+    "images": {
+      "validator": {
+        "kind": "validator",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-validator-prototype@sha256:71807ba7181bf544388d2b809d69777adefc5cda89124e2d918c4b5834112eb5",
+        "commit": "f173bfd0c658fa421a540c6caa65a483822eeddd",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36997766725"
+      },
+      "submitter": {
+        "kind": "submitter",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-submitter-prototype@sha256:260ae682875e7dc93797838f42b255bb62a9ad46169fab3eefaccef59090cf29",
+        "commit": "f173bfd0c658fa421a540c6caa65a483822eeddd",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36997766725"
+      },
+      "factory": {
+        "kind": "factory",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3",
+        "commit": "a9d800d83f8560b4d14505f1d84d02ac1aba5a56",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36920750021"
+      },
+      "judge": {
+        "kind": "judge",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:e46ef2808251ee3bd7df35e321b9e8383d82373f335da890920ad93724c289cf",
+        "commit": "a9d800d83f8560b4d14505f1d84d02ac1aba5a56",
+        "platform": "linux/amd64",
+        "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/36920750021"
+      },
+      "pylon": {
+        "image": "docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5",
+        "platform": "linux/amd64"
+      },
+      "node-exporter": {
+        "image": "docker.io/prom/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
+        "platform": "linux/amd64"
+      },
+      "prometheus": {
+        "image": "docker.io/prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996",
+        "platform": "linux/amd64"
+      },
+      "subtensor": {
+        "image": "ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f",
+        "platform": "linux/amd64"
+      }
+    },
+    "executor_sha256": "50402bb9c86bef25b03f5cdeea8d06ae2eaf286293a8422ce66394e4064f1177",
+    "nexus_revision": "e7f4cc1a261dabd52f9cb66bcdfb351cfed53b7b",
+    "pylon_client": "2.3.0",
+    "pylon_service": "2.3.3",
+    "build_inputs": {
+      "python": "docker.io/library/python@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d",
+      "uv": "ghcr.io/astral-sh/uv@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7"
+    },
+    "locks_sha256": {
+      "validator/uv.lock": "c80cb0bad442de6ff5262c4ac83137ebcd7f083f22a8138715f0d1976f8cf16a",
+      "miner/uv.lock": "11f91e32d2c2ca6a000647c6794edd690e75f26fed77922b785435f2c209f9af"
+    },
+    "asset_manifest_sha256": "47af4684d151fd5ef1f4944f31aa2e2ac0cc95ef20f0c66c424bbf9744178f4a",
+    "localnet_config_sha256": "2197d9070f5b18be0c78f0f1090f75c751895fcd293d93fdb607f11d1de1450d"
+  },
+  "anonymous_pulls": {
+    "passed": true,
+    "images": [
+      "validator",
+      "submitter",
+      "factory",
+      "judge",
+      "pylon",
+      "node-exporter",
+      "prometheus",
+      "subtensor"
+    ],
+    "method": "Fresh empty Docker config per image; registry digests only"
+  },
+  "applied_release": {
+    "application_started": true,
+    "applied_at": "2026-10-02T10:56:15.270038+00:00",
+    "config_sha256": "7c67efae7cbfe019388e488ae8a0070f82473264f56611ba7bc47fbd79b62612",
+    "executor_changed": false,
+    "executor_pid": 111561,
+    "health": "healthy",
+    "manifest_sha256": "47af4684d151fd5ef1f4944f31aa2e2ac0cc95ef20f0c66c424bbf9744178f4a",
+    "revision": "87353ed2e97cf435b6d8210dceb177affe2febfb",
+    "source": "https://raw.githubusercontent.com/backend-developers-ltd/factory-horde"
+  },
+  "readiness": {
+    "ready": true,
+    "checks": {
+      "chain": true,
+      "records": true,
+      "writable_paths": true,
+      "executor": true,
+      "docker": true,
+      "reconciled": true,
+      "job_observations": true,
+      "coordinator": true,
+      "monitor": true
+    },
+    "observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:57:20.424752Z",
+      "checks": {
+        "chain": true,
+        "records": true,
+        "writable_paths": true,
+        "executor": true,
+        "docker": true,
+        "reconciled": true,
+        "job_observations": true,
+        "coordinator": true
+      },
+      "errors": [],
+      "phase": "idle",
+      "active_jobs": 0,
+      "unresolved_jobs": 0,
+      "blocked_next_round": false,
+      "usable_scores": 0,
+      "usable_round_completed_at": null,
+      "executor_observed_at": "2026-10-02T10:57:20.193228Z",
+      "docker_observed_at": "2026-10-02T10:57:20.193237Z",
+      "chain_observed_at": "2026-10-02T10:57:18.502502Z",
+      "coordinator_observed_at": null
+    }
+  },
+  "runtime_check": {
+    "checked_at": "2026-10-02T10:56:47.968085+00:00",
+    "validator_observation": {
+      "protocol_version": 1,
+      "observed_at": "2026-10-02T10:56:46.429991Z",
+      "block": 269,
+      "block_hash": "0x6b7b5ee507d93cf3eab5c35e8c6cda3d3110f1a93a6216b7e460c85735c68bdc",
+      "mechanism_id": 1,
+      "dispatch_enabled": false
+    },
+    "authenticated_identity_blocks": {
+      "validator": 274,
+      "miner1": 274,
+      "miner2": 274,
+      "miner3": 274,
+      "miner4": 274,
+      "miner5": 274
+    },
+    "cross_identity_token_rejected": true,
+    "scrapes": {
+      "host": "up",
+      "pylon": "up",
+      "validator": "up"
+    }
+  },
+  "services": [
+    {
+      "Service": "node-exporter",
+      "Image": "docker.io/prom/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
+      "State": "running",
+      "Health": ""
+    },
+    {
+      "Service": "prometheus",
+      "Image": "docker.io/prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996",
+      "State": "running",
+      "Health": ""
+    },
+    {
+      "Service": "pylon",
+      "Image": "docker.io/backenddevelopersltd/bittensor-pylon@sha256:162a2c56b1183b1420d1c86dad135334380aeadb78e609ded4f52fd6d169efc5",
+      "State": "running",
+      "Health": "healthy"
+    },
+    {
+      "Service": "subtensor",
+      "Image": "ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f",
+      "State": "running",
+      "Health": "healthy"
+    },
+    {
+      "Service": "validator",
+      "Image": "ghcr.io/backend-developers-ltd/factory-horde-validator-prototype@sha256:71807ba7181bf544388d2b809d69777adefc5cda89124e2d918c4b5834112eb5",
+      "State": "running",
+      "Health": "healthy"
+    }
+  ],
+  "timing_seconds": {
+    "generation": 3600,
+    "confirmation": 300,
+    "evaluation": 3300,
+    "judge_stop_reserve": 300,
+    "stop_grace": 60
+  },
+  "dispatch_enabled": false,
+  "weights_enabled": false,
+  "source_build_smoke": "Both pinned frozen-dependency builds and offline container smoke checks passed locally and in GitHub Actions. Published validator imports report Nexus 0.0.1.dev179+ge7f4cc1a2 and Pylon client 2.3.0; submitter --help passed.",
+  "qa": {
+    "validator_executor_installer": "205 passed, 9 optional image tests skipped at task 15; runtime validator code and locks unchanged",
+    "installer_current_manifest": "14 passed",
+    "miner": "22 passed",
+    "candidate_checker": "Ruff and strict basedpyright clean; default developer root and installed candidate root both passed",
+    "compose": "All service images match the candidate selection; explicit 60/5/55-minute defaults verified"
+  },
+  "operator_promotion": {
+    "performed": false,
+    "production_config_branch": "absent before and after packaging",
+    "source_push": "master only; build triggered through deploy-build-prototype"
+  },
+  "raw_artifacts": [
+    "localnet/state/task16-ci.log",
+    "localnet/state/task16-image-inspection.json",
+    "localnet/state/task16-bootstrap.log",
+    "localnet/state/candidate"
+  ],
+  "source_sha256": {
+    "validator/Dockerfile": "cfb84f01f0b9aceb8ec1dec6de39ef173b878ac67d093fa97b75f9af8b9553bb",
+    ".github/workflows/build-validator.yml": "2b48d9a4303ac0420b6072b9a118f783682515bbf2119100fa0d9c4160214083",
+    "localnet/check.py": "de69d7719e4d44b2092d7e392037ac357b1b900e2ae08599cc0692a0d01f02b6",
+    "installer/release-manifest.json": "47af4684d151fd5ef1f4944f31aa2e2ac0cc95ef20f0c66c424bbf9744178f4a"
+  }
+}
