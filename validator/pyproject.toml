@@ -31,6 +31,7 @@ build-backend = "hatchling.build"
 # This exclusion is a crucial security measure and MUST NOT be relaxed.
 # This is intended to help avoid pulling in freshly published compromised dependencies.
 exclude-newer = "11 days"
+exclude-newer-package = { certifi = "P1D" }
 
 [tool.uv.sources]
 # origin/mechanism-id: public API compatibility and mechanism-aware status/writes.

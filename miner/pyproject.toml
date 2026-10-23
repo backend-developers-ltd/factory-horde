@@ -22,6 +22,7 @@ only-include = ["miner.py"]
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { certifi = "P1D" }
 
 [dependency-groups]
 bootstrap = [
