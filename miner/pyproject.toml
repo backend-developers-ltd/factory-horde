@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "One-shot FactoryHorde GHCR image submission through Pylon."
 requires-python = ">=3.14"
 dependencies = [
-    "bittensor-pylon-client==2.3.0",
+    "bittensor-pylon-client==2.3.1",
     "click>=8.3.2",
     "prometheus-client>=0.25.0",
     "tenacity>=9.1.4",
@@ -21,8 +21,10 @@ build-backend = "hatchling.build"
 only-include = ["miner.py"]
 
 [tool.uv]
+required-version = ">=0.13.6"
+constraint-dependencies = ["certifi>=2026.10.19"]
 exclude-newer = "1 week"
-exclude-newer-package = { certifi = "P1D" }
+exclude-newer-package = { certifi = "P1D", bittensor-pylon-client = "P1D" }
 
 [dependency-groups]
 bootstrap = [

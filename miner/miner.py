@@ -26,7 +26,7 @@ from pylon_client.artanis import (
 from pylon_client.artanis.v1 import GetCommitmentResponse, GetNeuronsResponse, SetCommitmentResponse
 from tenacity import Retrying, stop_after_attempt
 
-# The selected Pylon 2.3.3 writer uses RawN, whose supported maximum is Raw128.
+# The selected Pylon 2.3.4 writer uses RawN, whose supported maximum is Raw128.
 COMMITMENT_MAX_BYTES = 128
 IMAGE_PATTERN = r"ghcr\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[0-9a-f]{64}"
 _events = Counter("factory_horde_submissions_total", "One-shot submission outcomes", ("outcome",))

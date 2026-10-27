@@ -22,8 +22,9 @@ Docker socket, callback endpoint or registry credential. See
 for a complete token/configuration fixture. Python development uses `uv sync` inside
 `miner/`; `uv run miner --help` describes configuration.
 
-Pylon client 2.3.0 and service 2.3.3 use the explicit v1 commitment API. References
-are encoded as UTF-8 bytes, not supplied as strings interpreted as hexadecimal.
+Current source selects Pylon client 2.3.1 and service 2.3.4. The submitter uses the
+explicit v1 commitment API. References are encoded as UTF-8 bytes, not supplied as
+strings interpreted as hexadecimal.
 Only complete lowercase GHCR SHA-256 manifest references are accepted. The selected
 writer sends `RawN`, so references must fit 128 bytes; the baseline is 124 bytes.
 Tags, malformed hex/UTF-8, unsupported registries and overlong references fail.

@@ -1,4 +1,5 @@
-FROM docker.io/library/python@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d
+# python:3.14.9-slim-trixie
+FROM docker.io/library/python@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8
 COPY --chmod=0555 factory.py /usr/local/bin/factory-horde-factory
 COPY --chmod=0555 judge.py /usr/local/bin/factory-horde-judge
 ARG FIXTURE_PROFILE=lifecycle

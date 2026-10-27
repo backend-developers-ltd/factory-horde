@@ -1,8 +1,10 @@
-ARG BASE_IMAGE=docker.io/library/python@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d
+# python:3.14.9-slim-trixie
+ARG BASE_IMAGE=docker.io/library/python@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8
 
 FROM $BASE_IMAGE AS builder
 
-COPY --from=ghcr.io/astral-sh/uv@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7 /uv /uvx /bin/
+# ghcr.io/astral-sh/uv:0.13.6
+COPY --from=ghcr.io/astral-sh/uv@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 /uv /uvx /bin/
 
 WORKDIR /build
 

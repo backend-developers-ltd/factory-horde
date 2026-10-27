@@ -165,3 +165,52 @@ systemd/localnet acceptance run.
 
 Verification on 2 October 2026: 255 tests passed, 9 optional image tests skipped;
 Ruff, strict basedpyright, formatting and release-manifest verification passed.
+
+## Certificate-related version refresh (27 October 2026)
+
+Current source selects these versions following the emSign/eMudhra audit:
+
+| Component | Selected version |
+| --- | --- |
+| Validator, submitter, judge and executor-fixture Python base | 3.14.9-slim-trixie (previous refresh) |
+| Validator and submitter uv image | 0.13.6 (previous refresh) |
+| Factory Node base | 24.22.1-bookworm-slim |
+| Pylon service | 2.3.4 |
+| Submitter Pylon client | 2.3.1 |
+| Prometheus | 3.15.1 |
+| node-exporter | 1.12.1 |
+| Subtensor localnet | v486, under `ghcr.io/raofoundation/subtensor-localnet` |
+| CI BuildKit | 0.34.1 |
+| Validator boto3 / botocore | 1.43.118 |
+
+All listed container inputs are pinned by registry manifest digest. The three image
+publishing workflows upgrade the runner's CA certificates before checkout and select
+the BuildKit digest explicitly. The Basilica Dockerfile example uses the same Python
+base as the application Dockerfiles.
+
+Both uv projects now require uv >= 0.13.6 and constrain certifi >= 2026.10.19;
+certifi remains locked at 2026.10.23. The validator also constrains botocore >=
+1.43.117. The certificate packages, boto3 and the submitter Pylon client have a
+one-day package-specific cooldown. Other cooldown settings are unchanged. The
+locks retain the existing seven-day `UV_EXCLUDE_NEWER` setting from this environment;
+unsetting that override applies the validator's stricter eleven-day project policy.
+Boto3/botocore 1.43.119 was still inside the one-day cooldown when resolving.
+
+The selected Nexus revision requires Pylon client 2.3.0, so the validator retains
+that version. There is no newer published `nodejs-wheel-binaries` than the locked
+24.19.0. Drand was excluded from this refresh at the user's request.
+
+Version updates alone do not finish the audit: node-exporter 1.12.1 and BuildKit
+0.34.1 still ship affected CA stores, as recorded in the
+[emSign reference](https://github.com/backend-developers-ltd/t1-multica-workspace/blob/master/skills/emsign-signals/emsign-signals.md).
+They need refreshed bundles in derived images or fixed upstream releases.
+The development Node wheel also remains affected. The runner CA upgrade is a
+workflow change, not evidence that a hosted run has executed it.
+
+Registry manifests and upstream release metadata were checked, the dependency locks
+were resolved, and the installer asset manifest was regenerated. Lockfile checks,
+workflow YAML and Compose validation with placeholder values, and installer manifest
+verification passed. At the user's request, no code tests, image rebuilds or localnet acceptance were repeated for this
+refresh. Published application images and the retained candidate selection have not
+changed; replacing them requires publishing rebuilt artifacts and selecting their
+actual digests. The earlier acceptance evidence does not cover these new versions.

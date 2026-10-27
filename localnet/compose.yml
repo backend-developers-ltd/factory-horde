@@ -1,7 +1,8 @@
 # Use only with envs/deployed/docker-compose.yml through localnet/compose.sh.
 services:
   subtensor:
-    image: ghcr.io/opentensor/subtensor-localnet@sha256:592aa28d528ebadba5f83807d0d38e29fa954dd91ac3e180b48259d64a654e8f
+    # raofoundation/subtensor-localnet:v486
+    image: ghcr.io/raofoundation/subtensor-localnet@sha256:597778ceb7de7e39e60545a7e5f18829ca1530d8e5be7e097c17cf404e742ff0
     platform: linux/amd64
     cpus: 4.0
     environment:
