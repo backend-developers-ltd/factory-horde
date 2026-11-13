@@ -41,7 +41,7 @@ echo "== Weight calculation"
 cat "$DATA/control/weight-calculation.json" 2>/dev/null || echo "none yet"
 echo
 
-echo "== Chain weights (mechanism $MECHANISM_ID, revealed)"
+echo "== Chain weights (mechanism $MECHANISM_ID): revealed row and pending commit-reveal commits"
 hotkey=$(wallet_address "$VALIDATOR_WALLET" hotkey)
 FH_NETUID=$NETUID FH_MECHANISM=$MECHANISM_ID FH_HOTKEY=$hotkey FH_NETWORK=$BITTENSOR_NETWORK \
   /root/.local/share/uv/tools/bittensor/bin/python -B - <<'PY'
@@ -59,8 +59,16 @@ async def main() -> None:
         uid = graph["hotkeys"].index(os.environ["FH_HOTKEY"])
         weights = await client.read("weights", netuid=netuid, mechid=int(os.environ["FH_MECHANISM"]))
         row = {graph["hotkeys"][target]: value for target, value in dict(weights.get(uid, {})).items()}
+        commits = await client.read("timelocked_weight_commits", netuid=netuid, mechid=int(os.environ["FH_MECHANISM"]))
+        pending = [
+            {"commit_block": commit["commit_block"], "reveals_at": str(commit["reveals_at"])}
+            for entries in commits.values()
+            for commit in entries
+            if commit["hotkey"] == os.environ["FH_HOTKEY"]
+        ]
         print(json.dumps({"block": graph["block"], "uid": uid, "permit": graph["validator_permit"][uid],
-                          "last_update": graph["last_update"][uid], "weights_by_hotkey": row}))
+                          "last_update": graph["last_update"][uid], "revealed_weights_by_hotkey": row,
+                          "pending_commits": pending}))
 
 
 asyncio.run(main())
