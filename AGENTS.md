@@ -27,6 +27,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
+- `refinery/` — scripts and guide that deploy one validator and one miner server to the Refinery
+  development chain (subnet 11)
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures

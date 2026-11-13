@@ -19,12 +19,19 @@ compose ps --format '{{.Service}}: {{.Status}}'
 jq -c '{revision, health, applied_at}' "$INSTALL_DIR/applied-release.json"
 
 echo "== Readiness"
-compose exec -T validator /opt/venv/bin/python -c \
-  "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:9101/readyz').read().decode())" || true
+compose exec -T validator /opt/venv/bin/python -c "
+import urllib.error, urllib.request
+try:
+    print(urllib.request.urlopen('http://127.0.0.1:9101/readyz', timeout=5).read().decode())
+except urllib.error.HTTPError as error:
+    print(error.code, error.read().decode())" || true
 
 echo "== Latest rounds"
 find "$DATA/rounds" -name round.json -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -3 | cut -d' ' -f2- |
-  while read -r round; do jq -c '{round_id, state, created_at} | with_entries(select(.value != null))' "$round" 2>/dev/null || echo "$round"; done
+  while read -r round; do
+    jq -c '{round: .plan.sequence, stage, start: .plan.deadlines.start, round_end: .plan.deadlines.round_end,
+            miners: (.plan.cohort | length), unresolved: (.unresolved_jobs | length), completed_at}' "$round"
+  done
 
 echo "== Latest accepted results"
 find "$DATA/rounds" -name result.json -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -5 | cut -d' ' -f2- |
