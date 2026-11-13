@@ -3485,7 +3485,7 @@
       "gridPos": {
         "x": 0,
         "y": 104,
-        "w": 8,
+        "w": 12,
         "h": 8
       },
       "id": 47,
@@ -3564,93 +3564,12 @@
         }
       },
       "gridPos": {
-        "x": 8,
+        "x": 12,
         "y": 104,
-        "w": 8,
+        "w": 12,
         "h": 8
       },
       "id": 48,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Network",
-      "description": "eth0 is the public interface, eth1 the Refinery VLAN.",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(node_network_receive_bytes_total{job=\"host\",device=~\"eth.*\"}[$__rate_interval])",
-          "legendFormat": "{{device}} receive",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(node_network_transmit_bytes_total{job=\"host\",device=~\"eth.*\"}[$__rate_interval])",
-          "legendFormat": "{{device}} transmit",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 10,
-            "showPoints": "never",
-            "spanNulls": false,
-            "axisSoftMin": 0,
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": [],
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "gridPos": {
-        "x": 16,
-        "y": 104,
-        "w": 8,
-        "h": 8
-      },
-      "id": 49,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

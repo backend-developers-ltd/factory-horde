@@ -4,12 +4,12 @@ This folder deploys FactoryHorde to the Refinery development chain (`ws://10.0.0
 
 | | Validator server | Miner server |
 | --- | --- | --- |
-| Runs | Pylon (validator identity), validator, Prometheus, node-exporter, systemd host executor, 15-minute release updater | Pylon (miner identity), systemd timer running the one-shot submitter |
+| Runs | Pylon (validator identity), validator, Prometheus, node-exporter, Grafana behind Caddy, systemd host executor, 15-minute release updater | Pylon (miner identity), systemd timer running the one-shot submitter |
 | Holds | Validator coldkey (root) and a runtime copy of its hotkey | Miner coldkey (root) and a runtime copy of its hotkey |
 | Executes factory and judge containers | Yes; the executor pulls the submitted image from GHCR | No |
 | Account | Non-root `factoryhorde` operator; the installer refuses root | root |
 
-The servers never connect to each other. The miner publishes an image digest as an on-chain commitment through its Pylon; the validator reads commitments from the chain and pulls the image from GHCR. Both Pylons listen on loopback only.
+The servers never connect to each other. The miner publishes an image digest as an on-chain commitment through its Pylon; the validator reads commitments from the chain and pulls the image from GHCR. Both Pylons listen on loopback only. The validator's only public service is Grafana on ports 80 and 443.
 
 ## Set up a server
 
@@ -35,6 +35,7 @@ Order does not matter: the validator admits a miner from the first round that st
 2. Creates the `factoryhorde` operator with Docker access and copies only the hotkey and public coldkey file to `/home/factoryhorde/wallets`.
 3. Writes the Refinery settings into `/home/factoryhorde/factory-horde/.env`, with dispatch and weights enabled.
 4. Runs [`installer/install.sh`](../installer/README.md) as the operator with `--ref $RELEASE_REF`, granting sudo only for that run. The installer downloads the checksummed release assets from GitHub, installs the `factory-horde-refinery-executor` systemd unit, starts the common Compose application with the published validator image, and adds the cron updater and its single restart grant. Later runs use the installed `update_compose.sh`.
+5. Runs [`validator/setup-monitoring.sh`](validator/setup-monitoring.sh), described under [Monitoring](#monitoring).
 
 ### What the miner setup does
 
@@ -63,11 +64,30 @@ refinery/miner/status.sh       # Pylon, submission timer, last submission, miner
 | Validator logs | `sudo -u factoryhorde docker compose --project-name factory-horde-refinery --env-file /home/factoryhorde/factory-horde/.env -f /home/factoryhorde/factory-horde/envs/deployed/docker-compose.yml logs -f validator` |
 | Executor logs | `journalctl -u factory-horde-refinery-executor -f` |
 | Updater log | `/home/factoryhorde/factory-horde/update.log` |
+| Grafana and Caddy logs | `docker compose --project-name factory-horde-refinery-monitoring logs -f` |
 | Round evidence | `/home/factoryhorde/factory-horde/data/rounds/<date>/round-*/<miner hotkey>/` (generated files, judge report, accepted result) |
 | Submission log | `journalctl -u factory-horde-submit.service` |
 | Submit now | `systemctl start factory-horde-submit.service` |
 
 Do not delete files under `data/` to force a rerun: recovery relies on them and never redraws an accepted score.
+
+## Monitoring
+
+`validator/setup-monitoring.sh` starts Grafana and Caddy from [`validator/monitoring/docker-compose.yml`](validator/monitoring/docker-compose.yml) as the root-run Compose project `factory-horde-refinery-monitoring`. Grafana joins the validator application's network and reads its Prometheus, which scrapes the validator (including executor metrics it forwards), Pylon and node-exporter every 15 seconds. Caddy serves Grafana at `https://<public IP>/` and redirects HTTP to HTTPS. It obtains a Let's Encrypt certificate for the IP address (six-day `shortlived` profile, renewed automatically), so ports 80 and 443 must be reachable from the internet. The address defaults to the source address of the default route; set `GRAFANA_ADDRESS` in `refinery.env` to override it.
+
+Log in as `admin` with `GRAFANA_ADMIN_PASSWORD` from `/root/factory-horde-monitoring/.env`, which the script generates once and applies on every run. Anonymous access and sign-up are disabled.
+
+The provisioned dashboard **FactoryHorde validator** is Grafana's home page. Grafana rereads [`factory-horde-validator.json`](validator/monitoring/grafana/dashboards/factory-horde-validator.json) every minute, so pulling a new revision updates it without a rerun; changes saved in the UI are not kept. Its sections are:
+
+- **Status:** readiness, scrape targets, round phase, active and unresolved jobs, usable scores, age of the latest usable round and validator uptime.
+- **Liveness:** when each pipeline step last happened (chain beat, commitment discovery, round admission, image pull, container start, job completion, accepted judge score, weight calculation, Pylon acknowledgement and on-chain weight commit), a timeline of these events, observation ages and individual readiness checks.
+- **Rounds and weights:** round phase over time, discovery, coordinator and result events, job gauges and the weight pipeline.
+- **Host executor:** Docker operations, errors and latency.
+- **Pylon and chain:** subtensor operations and Pylon API requests with latency.
+- **Validator internals:** shared-record I/O, handler latency, process memory and CPU, readiness samples.
+- **Server:** CPU, memory, load and disk from node-exporter.
+
+The validator does not export per-miner scores, weights or evaluated image digests as metrics, so the dashboard shows pipeline activity but not individual miners. Event counts come from Prometheus `increase` and are approximate, and the Last activity panel looks back seven days. Prometheus keeps up to 1 GB of samples. node-exporter runs in the application's bridge network, so the Server section shows no host network traffic.
 
 ## Subnet requirements
 
@@ -88,6 +108,8 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 | `fund-from-alice.sh` | Transfer development TAO from `//Alice` to an address |
 | `wallet.sh` | Create, fund, register and (validator) stake a wallet, idempotently |
 | `validator/setup.sh`, `validator/status.sh` | Validator installation/update and status |
+| `validator/setup-monitoring.sh` | Grafana and Caddy installation/update |
+| `validator/monitoring/` | Grafana and Caddy Compose file, Caddyfile, Grafana provisioning and dashboard |
 | `miner/setup.sh`, `miner/status.sh` | Miner installation/update and status |
 | `miner/docker-compose.yml` | Miner Pylon |
 | `miner/submit.sh` | One submission with the published submitter image |
@@ -102,4 +124,4 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 - **Network access.** Both servers share the chain's private VLAN. Outside miners cannot reach the chain, which a real subnet would expose publicly.
 - **Miner operations.** The miner runs as root with an ad hoc Compose file and no monitoring or update mechanism. A real miner would run its own tooling and publish to its own GHCR namespace.
 - **Pylon EVM endpoints.** Both Pylons keep their default public mainnet EVM endpoints; FactoryHorde does not use EVM calls.
-- **Monitoring.** Prometheus listens on the validator's loopback only, with no alerting or remote write.
+- **Monitoring.** Prometheus listens on the validator's loopback only, with no alerting or remote write. Grafana uses a single local admin account on a bare IP address with a short-lived certificate.
