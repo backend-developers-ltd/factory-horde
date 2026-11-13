@@ -61,6 +61,11 @@ configuration promotion, subnet-12 deployment and emissions changes remain outsi
 the prototype. The promotion commands below describe a separate, later authorized
 operator release; they are not part of localnet acceptance.
 
+The owner-operated Refinery validator does not consume these operator assets. It runs from a git checkout
+with `envs/production`, `setup-prod.sh` and `deploy.sh`; see [the Refinery guide](../refinery/README.md).
+Its Compose file includes `envs/deployed/docker-compose.yml`, so the pinning rule and the digests pinned
+there apply to it unchanged.
+
 ## Branches and what they do
 
 Two independent branches drive the deploy. They are **not** the same thing —

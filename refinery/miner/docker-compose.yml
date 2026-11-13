@@ -1,5 +1,7 @@
-# Miner-side Pylon with a single "miner" identity. Started by refinery/miner/setup.sh with the
-# generated /root/factory-horde-miner/.env.
+# Miner-side Pylon with a single "miner" identity. Started by refinery/miner/setup.sh; settings come
+# from the .env next to this file.
+name: factory-horde-miner
+
 services:
   pylon:
     # bittensor-pylon:2.3.4, same digest as envs/deployed/docker-compose.yml
@@ -15,8 +17,8 @@ services:
       PYLON_IDENTITIES: '["miner"]'
       PYLON_BITTENSOR_WALLET_PATH: /wallets
       PYLON_DATABASE_PATH: /data/pylon.db
-      PYLON_ID_MINER_WALLET_NAME: "${MINER_WALLET:?}"
-      PYLON_ID_MINER_HOTKEY_NAME: default
+      PYLON_ID_MINER_WALLET_NAME: "${BITTENSOR_WALLET_NAME:?}"
+      PYLON_ID_MINER_HOTKEY_NAME: "${BITTENSOR_WALLET_HOTKEY_NAME:-default}"
       PYLON_ID_MINER_NETUID: "${NETUID:?}"
       PYLON_ID_MINER_TOKEN: "${MINER_PYLON_TOKEN:?}"
       PYLON_METRICS_TOKEN: "${PYLON_METRICS_TOKEN:?}"
@@ -24,7 +26,7 @@ services:
       PYLON_ENVIRONMENT: "${ENVIRONMENT:?}"
       OTEL_SDK_DISABLED: "true"
     volumes:
-      - "${MINER_RUNTIME_WALLETS:?}:/wallets:ro"
+      - "${HOST_WALLET_DIR:?}:/wallets:ro"
       - pylon-data:/data
     healthcheck:
       test:

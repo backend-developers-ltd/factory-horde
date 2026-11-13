@@ -4,7 +4,7 @@ datasources:
     uid: prometheus
     type: prometheus
     access: proxy
-    # The validator application's Prometheus, reached over its Compose network.
+    # Prometheus from the same Compose project.
     url: http://prometheus:9090
     isDefault: true
     editable: false
