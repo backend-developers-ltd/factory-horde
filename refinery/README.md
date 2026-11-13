@@ -55,7 +55,7 @@ Order does not matter: the validator admits a miner from the first round that st
 
 ```bash
 refinery/validator/status.sh   # services, readiness, latest rounds/results, weight calculation, pending and revealed chain weights
-refinery/miner/status.sh       # Pylon, submission timer, last submission, miner UID and incentive
+refinery/miner/status.sh       # Pylon, submission timer, last submission, miner UID, incentive and emission
 ```
 
 | Task | Command |
@@ -69,14 +69,13 @@ refinery/miner/status.sh       # Pylon, submission timer, last submission, miner
 
 Do not delete files under `data/` to force a rerun: recovery relies on them and never redraws an accepted score.
 
-## Subnet 11
+## Subnet requirements
 
-This deployment changes no subnet setting; the current values are intended. Read on 13 November 2026:
+The deployment changes no subnet setting. It expects subnet 11 to allow registration and to permit a single miner to receive all weight (minimum one weight, maximum weight 1.0).
 
-- Registration is allowed, minimum one weight and maximum weight 1.0, so a single miner can receive all weight.
-- **Commit-reveal is enabled** with a reveal period of one tempo (360 blocks, about 72 minutes). Pylon detects this and commits and reveals the validator's weights itself. Revealed weights appear about 72–144 minutes after a commit, and miner incentive changes at the epoch after that. The first weight opportunity needs a completed round with an accepted score.
-- UIDs 0–3 belong to an earlier hello-world deployment and cannot be removed individually. Their keys are inactive, so Yuma consensus ignores their stake once they have not set weights for 5000 blocks (about 16.7 hours). Until the last of them goes inactive, the miner's incentive can stay at zero although the validator's weights are correct. FactoryHorde ignores them because they publish no factory image.
-- Burned registration must be MEV-shielded with btcli 11.3.0; `wallet.sh` submits it that way.
+- **Commit-reveal.** When the subnet has commit-reveal enabled, Pylon detects it and commits and reveals the validator's weights itself. Committed weights appear in the chain's weights after `commit_reveal_period` tempos; `validator/status.sh` lists commits still waiting for their reveal. The first weight opportunity needs a completed round with an accepted score.
+- **Registration.** btcli 11.3.0 only submits burned registration MEV-shielded; `wallet.sh` does so.
+- **Other UIDs.** The validator only evaluates registered hotkeys that commit a valid factory image; other UIDs on the subnet are ignored.
 
 ## Files
 
@@ -96,12 +95,11 @@ This deployment changes no subnet setting; the current values are intended. Read
 ## Differences from a real deployment
 
 - **Development chain and keys.** Refinery is a private development chain. Wallets are funded from the public `//Alice` key, coldkeys are stored unencrypted, and recovery words are written to `/root`. A real deployment uses funded, encrypted coldkeys kept off the servers, with only hotkeys on the hosts.
-- **Release selection.** The validator follows a fixed commit on this feature branch instead of a reviewed `deploy-config-*` branch, so the cron updater never moves to a new release. The branch also regenerates master's stale release manifest, without which the installer rejects master.
-- **Images.** The validator, submitter, factory and judge are the published prototype candidate images (`envs/candidate/release.json`). They predate later source fixes and passed acceptance only on an isolated local chain; this is their first run on a shared chain, and the first with commit-reveal weights.
+- **Release selection.** The validator follows a fixed commit on this feature branch instead of a reviewed `deploy-config-*` branch, so the cron updater never moves to a new release.
+- **Images.** The validator, submitter, factory and judge are the published prototype candidate images (`envs/candidate/release.json`). They predate later source fixes, and their acceptance tests ran on an isolated local chain with direct weights.
 - **Mining.** The miner resubmits one fixed baseline image instead of building and publishing improved factories. The baseline factory writes a fixed greeting and the judge draws a random score, so scores and weights carry no quality signal.
 - **Round length.** Rounds last 30 minutes instead of the default two hours (60/5/55 minutes).
 - **Network access.** Both servers share the chain's private VLAN. Outside miners cannot reach the chain, which a real subnet would expose publicly.
-- **Subnet state.** Subnet 11 is shared with inactive hello-world UIDs that hold most of the stake, and the FactoryHorde validator has about 1.5 alpha. Incentive therefore reflects the validator's weights only once those UIDs are inactive.
 - **Miner operations.** The miner runs as root with an ad hoc Compose file and no monitoring or update mechanism. A real miner would run its own tooling and publish to its own GHCR namespace.
 - **Pylon EVM endpoints.** Both Pylons keep their default public mainnet EVM endpoints; FactoryHorde does not use EVM calls.
 - **Monitoring.** Prometheus listens on the validator's loopback only, with no alerting or remote write.
