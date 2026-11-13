@@ -133,7 +133,7 @@
     },
     {
       "type": "stat",
-      "title": "Scrape targets",
+      "title": "Targets",
       "description": "Prometheus scrape health per target: validator, Pylon and node-exporter.",
       "targets": [
         {
@@ -203,7 +203,7 @@
       "gridPos": {
         "x": 3,
         "y": 1,
-        "w": 6,
+        "w": 5,
         "h": 4
       },
       "id": 3,
@@ -266,7 +266,7 @@
         "showPercentChange": false
       },
       "gridPos": {
-        "x": 9,
+        "x": 8,
         "y": 1,
         "w": 3,
         "h": 4
@@ -279,7 +279,7 @@
     },
     {
       "type": "stat",
-      "title": "Active jobs",
+      "title": "Active",
       "description": "Factory and judge jobs currently held.",
       "targets": [
         {
@@ -331,7 +331,7 @@
         "showPercentChange": false
       },
       "gridPos": {
-        "x": 12,
+        "x": 11,
         "y": 1,
         "w": 2,
         "h": 4
@@ -344,7 +344,7 @@
     },
     {
       "type": "stat",
-      "title": "Unresolved jobs",
+      "title": "Unresolved",
       "description": "Jobs whose outcome is not yet known; old unresolved jobs hold new round slots.",
       "targets": [
         {
@@ -400,7 +400,7 @@
         "showPercentChange": false
       },
       "gridPos": {
-        "x": 14,
+        "x": 13,
         "y": 1,
         "w": 2,
         "h": 4
@@ -413,7 +413,7 @@
     },
     {
       "type": "stat",
-      "title": "Blocked next round",
+      "title": "Blocked",
       "description": "1 when unresolved work blocks the next round from starting.",
       "targets": [
         {
@@ -481,7 +481,7 @@
         "showPercentChange": false
       },
       "gridPos": {
-        "x": 16,
+        "x": 15,
         "y": 1,
         "w": 2,
         "h": 4
@@ -494,7 +494,7 @@
     },
     {
       "type": "stat",
-      "title": "Usable scores",
+      "title": "Scores",
       "description": "Accepted scores in the latest usable completed round, i.e. miners that can receive weight.",
       "targets": [
         {
@@ -550,7 +550,7 @@
         "showPercentChange": false
       },
       "gridPos": {
-        "x": 18,
+        "x": 17,
         "y": 1,
         "w": 2,
         "h": 4
@@ -563,7 +563,7 @@
     },
     {
       "type": "stat",
-      "title": "Usable round age",
+      "title": "Last usable round",
       "description": "Time since the latest usable completed round. With 30-minute rounds this should stay below about an hour.",
       "targets": [
         {
@@ -602,7 +602,8 @@
           },
           "color": {
             "mode": "thresholds"
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
@@ -623,9 +624,9 @@
         "showPercentChange": false
       },
       "gridPos": {
-        "x": 20,
+        "x": 19,
         "y": 1,
-        "w": 2,
+        "w": 3,
         "h": 4
       },
       "id": 9,
@@ -636,7 +637,7 @@
     },
     {
       "type": "stat",
-      "title": "Validator uptime",
+      "title": "Uptime",
       "description": "Time since the validator process started.",
       "targets": [
         {
@@ -880,14 +881,14 @@
     {
       "type": "timeseries",
       "title": "Activity timeline",
-      "description": "Pipeline events per time bucket (Prometheus `increase`, so counts are approximate).",
+      "description": "Pipeline events per 5-minute bucket (at least; Prometheus `increase`, so counts are approximate).",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_discovery_total{outcome=\"accepted_submission\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_discovery_total{outcome=\"accepted_submission\"}[$__rate_interval])))",
           "legendFormat": "Submission accepted",
           "refId": "A"
         },
@@ -896,7 +897,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_discovery_total{outcome=\"rejected_submission\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_discovery_total{outcome=\"rejected_submission\"}[$__rate_interval])))",
           "legendFormat": "Submission rejected",
           "refId": "B"
         },
@@ -905,7 +906,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_executor_operations_total{operation=\"pull\",outcome=\"ok\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_executor_operations_total{operation=\"pull\",outcome=\"ok\"}[$__rate_interval])))",
           "legendFormat": "Image pulled",
           "refId": "C"
         },
@@ -914,7 +915,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_executor_operations_total{operation=\"start\",outcome=\"ok\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_executor_operations_total{operation=\"start\",outcome=\"ok\"}[$__rate_interval])))",
           "legendFormat": "Container started",
           "refId": "D"
         },
@@ -923,7 +924,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_file_transport_total{operation=\"poll\",outcome=~\"success|failure\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_file_transport_total{operation=\"poll\",outcome=~\"success|failure\"}[$__rate_interval])))",
           "legendFormat": "Job finished",
           "refId": "E"
         },
@@ -932,7 +933,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_result_operations_total{operation=\"finalize\",outcome=\"ok\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_result_operations_total{operation=\"finalize\",outcome=\"ok\"}[$__rate_interval])))",
           "legendFormat": "Judge score accepted",
           "refId": "F"
         },
@@ -941,7 +942,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_weighing_total{outcome=\"calculated\"}[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_weighing_total{outcome=\"calculated\"}[$__rate_interval])))",
           "legendFormat": "Weights calculated",
           "refId": "G"
         },
@@ -950,7 +951,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_pylon_submissions_total[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_pylon_submissions_total[$__rate_interval])))",
           "legendFormat": "Weights sent to Pylon",
           "refId": "H"
         }
@@ -1001,7 +1002,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 0,
         "y": 11,
@@ -1328,7 +1329,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (outcome)(increase(factory_horde_discovery_total[$__rate_interval]))",
+          "expr": "round(sum by (outcome)(increase(factory_horde_discovery_total[$__rate_interval])))",
           "legendFormat": "{{outcome}}",
           "refId": "A"
         }
@@ -1379,7 +1380,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 0,
         "y": 32,
@@ -1402,7 +1403,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (event)(increase(factory_horde_coordinator_total[$__rate_interval]))",
+          "expr": "round(sum by (event)(increase(factory_horde_coordinator_total[$__rate_interval])))",
           "legendFormat": "{{event}}",
           "refId": "A"
         }
@@ -1453,7 +1454,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 8,
         "y": 32,
@@ -1476,7 +1477,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (operation, outcome)(increase(factory_horde_result_operations_total{operation!=\"query\"}[$__rate_interval]))",
+          "expr": "round(sum by (operation, outcome)(increase(factory_horde_result_operations_total{operation!=\"query\"}[$__rate_interval])))",
           "legendFormat": "{{operation}} {{outcome}}",
           "refId": "A"
         }
@@ -1527,7 +1528,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 16,
         "y": 32,
@@ -1650,7 +1651,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (outcome)(increase(factory_horde_weight_gate_total[$__rate_interval]))",
+          "expr": "round(sum by (outcome)(increase(factory_horde_weight_gate_total[$__rate_interval])))",
           "legendFormat": "gate {{outcome}}",
           "refId": "A"
         },
@@ -1659,7 +1660,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (outcome)(increase(factory_horde_weighing_total[$__rate_interval]))",
+          "expr": "round(sum by (outcome)(increase(factory_horde_weighing_total[$__rate_interval])))",
           "legendFormat": "weighing {{outcome}}",
           "refId": "B"
         },
@@ -1668,7 +1669,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_pylon_submissions_total[$__rate_interval]))",
+          "expr": "round(sum(increase(factory_horde_pylon_submissions_total[$__rate_interval])))",
           "legendFormat": "Pylon ack",
           "refId": "C"
         },
@@ -1677,7 +1678,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (status)(increase(pylon_apply_weights_job_duration_seconds_count[$__rate_interval]))",
+          "expr": "round(sum by (status)(increase(pylon_apply_weights_job_duration_seconds_count[$__rate_interval])))",
           "legendFormat": "Pylon apply job {{status}}",
           "refId": "D"
         }
@@ -1728,7 +1729,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 8,
         "y": 40,
@@ -1840,7 +1841,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (operation, outcome)(increase(factory_horde_executor_operations_total[$__rate_interval]))",
+          "expr": "round(sum by (operation, outcome)(increase(factory_horde_executor_operations_total[$__rate_interval])))",
           "legendFormat": "{{operation}} {{outcome}}",
           "refId": "A"
         }
@@ -1891,7 +1892,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 0,
         "y": 49,
@@ -1914,7 +1915,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (operation, outcome)(increase(factory_horde_executor_operations_total{outcome!=\"ok\"}[$__rate_interval]))",
+          "expr": "round(sum by (operation, outcome)(increase(factory_horde_executor_operations_total{outcome!=\"ok\"}[$__rate_interval])))",
           "legendFormat": "{{operation}} {{outcome}}",
           "refId": "A"
         }
@@ -1965,7 +1966,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 8,
         "y": 49,
@@ -2761,7 +2762,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (outcome)(increase(factory_horde_health_checks_total[$__rate_interval]))",
+          "expr": "round(sum by (outcome)(increase(factory_horde_health_checks_total[$__rate_interval])))",
           "legendFormat": "{{outcome}}",
           "refId": "A"
         }
@@ -2828,7 +2829,7 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
+      "interval": "5m",
       "gridPos": {
         "x": 16,
         "y": 83,
