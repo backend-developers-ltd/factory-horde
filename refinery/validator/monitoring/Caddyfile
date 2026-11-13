@@ -4,6 +4,8 @@
 	cert_issuer acme {
 		profile shortlived
 	}
+	# TLS clients send no SNI for an IP address; select its certificate by default.
+	default_sni {$GRAFANA_ADDRESS}
 }
 
 {$GRAFANA_ADDRESS} {
