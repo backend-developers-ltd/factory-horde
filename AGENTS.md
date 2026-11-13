@@ -24,11 +24,20 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);
   operator promotion would use `deploy-config-production`, with this compose file and the installer
   scripts as the operator-critical files; no production configuration branch has been promoted
+- `envs/production/` — owner-operated production deployment, currently the Refinery validator server:
+  `.env.template` (the server's single settings file is its copy `envs/production/.env`), a Compose
+  file that includes `envs/deployed/docker-compose.yml` and adds Grafana behind Caddy, the Caddyfile,
+  Grafana provisioning and the dashboard
+- `setup-prod.sh`, `deploy.sh`, `bin/` — production deployment from one server checkout:
+  `bin/prepare-os.sh` installs host software, `setup-prod.sh` creates the service account, `.env` and the
+  root `.env`/`docker-compose.yml` links, `deploy.sh` installs the `factory-horde-executor` unit from the
+  checkout and starts the single Compose project `factory-horde`, `bin/status.sh` reports status
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
-- `refinery/` — scripts and guide that deploy one validator and one miner server to the Refinery
-  development chain (subnet 11), plus Grafana with a validator dashboard behind Caddy on the validator
+- `refinery/` — guide for the validator and miner servers on the Refinery development chain
+  (subnet 11), development-chain wallet helpers and the miner server's Pylon/submission setup with
+  its own `refinery/miner/.env`
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures
@@ -94,6 +103,12 @@ Use those workflows within V2's sequential tasks. Build an immutable candidate a
 do not promote configuration to active operators, deploy to subnet 12 or change emissions for this prototype.
 For task 17, the user explicitly selected this existing VM on 2 October 2026: do not create or prepare another
 VM. Use a separate localnet installation here and report that environment scope accurately.
+
+The production deployment follows the direct-deployment layout of `cookiecutter-rt-django`: one git checkout
+per server, one settings file created from a committed template, one Compose project. It does not use the
+installer, its release manifest or the cron updater; those stay the operator distribution path. Keep it that
+way: no second copy of repository files on the server, no additional settings files, and executor settings
+rendered into the systemd unit without the Pylon or Grafana secrets. `refinery/README.md` is its guide.
 
 # Knowledge base
 

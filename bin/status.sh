@@ -1,25 +1,21 @@
 #!/usr/bin/env bash
-# Usage: refinery/validator/status.sh
-# Read-only validator status: services, readiness, latest rounds and accepted scores, and the
-# validator's on-chain weight row.
-# shellcheck source=../lib.sh
-. "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
-require_root
+# Usage: bin/status.sh
+# Read-only status of the production validator: services, readiness, latest rounds and accepted
+# scores, the weight calculation and the validator's on-chain weight row.
+set -euo pipefail
 
-INSTALL_DIR=/home/factoryhorde/factory-horde
-DATA=$INSTALL_DIR/data
-compose() {
-  sudo -u factoryhorde docker compose --project-name factory-horde-refinery --env-file "$INSTALL_DIR/.env" \
-    -f "$INSTALL_DIR/envs/deployed/docker-compose.yml" "$@"
-}
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+[[ $EUID -eq 0 ]] || { echo "Run as root." >&2; exit 1; }
+# shellcheck source=../envs/production/.env.template
+. ./.env
+DATA=$FACTORY_HORDE_DATA_ROOT
 
-echo "== Services"
-systemctl is-active factory-horde-refinery-executor | sed 's/^/executor: /'
-compose ps --format '{{.Service}}: {{.Status}}'
-jq -c '{revision, health, applied_at}' "$INSTALL_DIR/applied-release.json"
+echo "== Services ($(git rev-parse --short HEAD 2>/dev/null || echo unknown))"
+systemctl is-active factory-horde-executor | sed 's/^/executor: /' || true
+docker compose ps --format '{{.Service}}: {{.Status}}'
 
 echo "== Readiness"
-compose exec -T validator /opt/venv/bin/python -c "
+docker compose exec -T validator /opt/venv/bin/python -c "
 import urllib.error, urllib.request
 try:
     print(urllib.request.urlopen('http://127.0.0.1:9101/readyz', timeout=5).read().decode())
@@ -42,8 +38,7 @@ cat "$DATA/control/weight-calculation.json" 2>/dev/null || echo "none yet"
 echo
 
 echo "== Chain weights (mechanism $MECHANISM_ID): revealed row and pending commit-reveal commits"
-hotkey=$(wallet_address "$VALIDATOR_WALLET" hotkey)
-FH_NETUID=$NETUID FH_MECHANISM=$MECHANISM_ID FH_HOTKEY=$hotkey FH_NETWORK=$BITTENSOR_NETWORK \
+FH_NETUID=$NETUID FH_MECHANISM=$MECHANISM_ID FH_HOTKEY=$VALIDATOR_HOTKEY FH_NETWORK=$BITTENSOR_NETWORK \
   /root/.local/share/uv/tools/bittensor/bin/python -B - <<'PY'
 import asyncio
 import json

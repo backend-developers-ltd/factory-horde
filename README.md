@@ -50,7 +50,8 @@ coverage; the immutable candidate above predates them.
 - [Baseline factory](miner/factory/README.md) and [judge](judge/README.md): separate published fixture images.
 - [Installer](installer/README.md): the standalone host executor, common Compose stack and coherent updates.
 - [Localnet](localnet/README.md): isolated chain, source-build development and real-container acceptance tools.
-- [Refinery](refinery/README.md): validator and miner servers on the shared Refinery development chain.
+- [Refinery](refinery/README.md): the production-type validator deployment (`envs/production`, `setup-prod.sh`,
+  `deploy.sh`) and the miner server on the shared Refinery development chain.
 - [File protocol](spec/file-protocol.md) and [design](subnet_design.md): ownership, durable records and execution policy.
 
 There are two independent uv projects, `validator/` and `miner/`, with Python 3.14

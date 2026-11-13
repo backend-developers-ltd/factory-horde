@@ -5,3 +5,9 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.template
+# Production deployment state in the server checkout (setup-prod.sh, deploy.sh).
+/docker-compose.yml
+/data/
+/wallets/
+/refinery/miner/wallets/
