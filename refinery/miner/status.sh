@@ -11,7 +11,7 @@ docker compose --project-name factory-horde-miner --env-file "$MINER_HOME/.env" 
   -f "$REFINERY_DIR/miner/docker-compose.yml" ps --format '{{.Service}}: {{.Status}}'
 
 echo "== Submission timer"
-systemctl list-timers factory-horde-submit.timer --no-pager | head -2
+systemctl list-timers factory-horde-submit.timer --no-pager --no-legend
 journalctl -u factory-horde-submit.service -n 3 --no-pager -o cat
 
 echo "== Chain"
