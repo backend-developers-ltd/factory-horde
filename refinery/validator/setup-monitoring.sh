@@ -30,6 +30,7 @@ env_file=$MONITORING_HOME/.env
 compose() { docker compose --project-name "$PROJECT" --env-file "$env_file" -f "$COMPOSE_FILE" "$@"; }
 log "Starting Grafana and Caddy for https://$address/."
 compose up -d --wait --wait-timeout 180
+compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
 # Grafana applies its admin password only when it creates its database; keep it in sync with .env.
 password=$(sed -n 's/^GRAFANA_ADMIN_PASSWORD=//p' "$env_file")
 compose exec -T grafana grafana cli --homepath /usr/share/grafana admin reset-admin-password "$password" >/dev/null

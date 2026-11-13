@@ -43,7 +43,7 @@ services:
     environment:
       GRAFANA_ADDRESS: "${GRAFANA_ADDRESS:?}"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy:/etc/caddy:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
