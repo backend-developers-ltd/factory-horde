@@ -1,0 +1,41 @@
+# Miner-side Pylon with a single "miner" identity. Started by refinery/miner/setup.sh with the
+# generated /root/factory-horde-miner/.env.
+services:
+  pylon:
+    # bittensor-pylon:2.3.4, same digest as envs/deployed/docker-compose.yml
+    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:2e7a3470b1ff6f4a72f53a075c1f215cd352a0d289387bad10f328825f396dbb
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PYLON_HOST_PORT:-8000}:8000"
+    environment:
+      PYLON_BITTENSOR_NETWORK: "${BITTENSOR_NETWORK:?}"
+      PYLON_BITTENSOR_ARCHIVE_NETWORK: "${BITTENSOR_NETWORK:?}"
+      PYLON_OPEN_ACCESS_TOKEN: "${PYLON_OPEN_ACCESS_TOKEN:?}"
+      PYLON_IDENTITIES: '["miner"]'
+      PYLON_BITTENSOR_WALLET_PATH: /wallets
+      PYLON_DATABASE_PATH: /data/pylon.db
+      PYLON_ID_MINER_WALLET_NAME: "${MINER_WALLET:?}"
+      PYLON_ID_MINER_HOTKEY_NAME: default
+      PYLON_ID_MINER_NETUID: "${NETUID:?}"
+      PYLON_ID_MINER_TOKEN: "${MINER_PYLON_TOKEN:?}"
+      PYLON_METRICS_TOKEN: "${PYLON_METRICS_TOKEN:?}"
+      PYLON_BLOCK_DURATION_SECONDS: "${BLOCK_DURATION_SECONDS:-12}"
+      PYLON_ENVIRONMENT: "${ENVIRONMENT:?}"
+      OTEL_SDK_DISABLED: "true"
+    volumes:
+      - "${MINER_RUNTIME_WALLETS:?}:/wallets:ro"
+      - pylon-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - /app/pylon_service/.venv/bin/python
+        - -c
+        - "import socket; socket.create_connection(('127.0.0.1', 8000), timeout=3).close()"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  pylon-data:
