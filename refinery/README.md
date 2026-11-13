@@ -54,7 +54,7 @@ Order does not matter: the validator admits a miner from the first round that st
 ## Operate
 
 ```bash
-refinery/validator/status.sh   # services, readiness, latest rounds/results, weight calculation, chain weights
+refinery/validator/status.sh   # services, readiness, latest rounds/results, weight calculation, pending and revealed chain weights
 refinery/miner/status.sh       # Pylon, submission timer, last submission, miner UID and incentive
 ```
 
