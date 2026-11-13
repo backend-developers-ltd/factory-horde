@@ -1,0 +1,14 @@
+{
+	# Let's Encrypt issues certificates for IP addresses only under its six-day "shortlived" profile;
+	# Caddy renews them automatically.
+	cert_issuer acme {
+		profile shortlived
+	}
+	# TLS clients send no SNI for an IP address; select its certificate by default.
+	default_sni {$GRAFANA_ADDRESS}
+}
+
+{$GRAFANA_ADDRESS} {
+	encode
+	reverse_proxy grafana:3000
+}

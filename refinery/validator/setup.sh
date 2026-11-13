@@ -69,4 +69,5 @@ fi
 systemctl is-active --quiet "$SERVICE" || die "$SERVICE is not active."
 sudo -u "$OPERATOR" docker compose --project-name "$PROJECT" --env-file "$env_file" \
   -f "$INSTALL_DIR/envs/deployed/docker-compose.yml" ps --format '{{.Service}}: {{.Status}}'
+"$REFINERY_DIR/validator/setup-monitoring.sh"
 log "Validator installed in $INSTALL_DIR. Status: refinery/validator/status.sh"
