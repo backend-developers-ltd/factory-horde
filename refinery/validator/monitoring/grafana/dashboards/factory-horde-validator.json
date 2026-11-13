@@ -716,7 +716,7 @@
     {
       "type": "stat",
       "title": "Last activity",
-      "description": "When each step of the validator pipeline last happened, looking back 7 days. Chain beats arrive every block; round steps once per 30-minute round; weights once per tempo (72 minutes). 'Container started' covers both factory and judge containers. 'Weights on chain' is Pylon's successful commit/set extrinsic.",
+      "description": "When each step of the validator pipeline last happened, looking back 7 days. Chain beats arrive every block; round steps once per 30-minute round; weights once per tempo (72 minutes). 'Container started' and 'Job finished' cover both factory and judge jobs. 'Weights on chain' is Pylon's successful commit/set extrinsic.",
       "targets": [
         {
           "datasource": {
@@ -778,8 +778,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max(last_over_time(timestamp(sum(increase(factory_horde_coordinator_total{event=~\"factory_.*\"}[2m])) > 0)[7d:1m])) * 1000",
-          "legendFormat": "Factory finished",
+          "expr": "max(last_over_time(timestamp(sum(increase(factory_horde_file_transport_total{operation=\"poll\",outcome=~\"success|failure\"}[2m])) > 0)[7d:1m])) * 1000",
+          "legendFormat": "Job finished",
           "refId": "F",
           "instant": true,
           "range": false
@@ -923,8 +923,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(factory_horde_coordinator_total{event=~\"factory_.*\"}[$__rate_interval]))",
-          "legendFormat": "Factory finished",
+          "expr": "sum(increase(factory_horde_file_transport_total{operation=\"poll\",outcome=~\"success|failure\"}[$__rate_interval]))",
+          "legendFormat": "Job finished",
           "refId": "E"
         },
         {
