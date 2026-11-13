@@ -75,7 +75,7 @@ Do not delete files under `data/` to force a rerun: recovery relies on them and 
 
 `validator/setup-monitoring.sh` starts Grafana and Caddy from [`validator/monitoring/docker-compose.yml`](validator/monitoring/docker-compose.yml) as the root-run Compose project `factory-horde-refinery-monitoring`. Grafana joins the validator application's network and reads its Prometheus, which scrapes the validator (including executor metrics it forwards), Pylon and node-exporter every 15 seconds. Caddy serves Grafana at `https://<public IP>/` and redirects HTTP to HTTPS. It obtains a Let's Encrypt certificate for the IP address (six-day `shortlived` profile, renewed automatically), so ports 80 and 443 must be reachable from the internet. The address defaults to the source address of the default route; set `GRAFANA_ADDRESS` in `refinery.env` to override it.
 
-Log in as `admin` with `GRAFANA_ADMIN_PASSWORD` from `/root/factory-horde-monitoring/.env`, which the script generates once and applies on every run. Anonymous access and sign-up are disabled.
+Its settings live in `/etc/factory-horde/grafana.env` (root-only), installed from the template [`validator/monitoring/grafana.env`](validator/monitoring/grafana.env). Log in as `admin` with `GRAFANA_ADMIN_PASSWORD` from that file, which the script generates once and applies on every run. Anonymous access and sign-up are disabled.
 
 The provisioned dashboard **FactoryHorde validator** is Grafana's home page. Grafana rereads [`factory-horde-validator.json`](validator/monitoring/grafana/dashboards/factory-horde-validator.json) every minute, so pulling a new revision updates it without a rerun; changes saved in the UI are not kept. Its sections are:
 
@@ -109,7 +109,7 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 | `wallet.sh` | Create, fund, register and (validator) stake a wallet, idempotently |
 | `validator/setup.sh`, `validator/status.sh` | Validator installation/update and status |
 | `validator/setup-monitoring.sh` | Grafana and Caddy installation/update |
-| `validator/monitoring/` | Grafana and Caddy Compose file, Caddyfile, Grafana provisioning and dashboard |
+| `validator/monitoring/` | Grafana and Caddy Compose file, settings template `grafana.env`, Caddyfile, Grafana provisioning and dashboard |
 | `miner/setup.sh`, `miner/status.sh` | Miner installation/update and status |
 | `miner/docker-compose.yml` | Miner Pylon |
 | `miner/submit.sh` | One submission with the published submitter image |

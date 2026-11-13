@@ -1,6 +1,6 @@
 # Grafana for the Refinery validator, published over HTTPS by Caddy on ports 80 and 443. Started by
-# refinery/validator/setup-monitoring.sh with /root/factory-horde-monitoring/.env. Grafana joins the
-# validator application's Compose network to query its Prometheus.
+# refinery/validator/setup-monitoring.sh with /etc/factory-horde/grafana.env (template: grafana.env).
+# Grafana joins the validator application's Compose network to query its Prometheus.
 services:
   grafana:
     # grafana:13.3.1
