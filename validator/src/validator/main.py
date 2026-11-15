@@ -36,7 +36,7 @@ from validator.coordinator import RoundCoordinator, RoundTick, RoundTiming
 from validator.discovery import freeze_via_pylon
 from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
-from validator.monitoring import MonitoringNode
+from validator.monitoring import MonitoringNode, read_chain_view
 from validator.otel import OtelSettings, setup_otel
 from validator.records import ImageReference, MinerHotkey
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
@@ -139,6 +139,9 @@ class Validator(NexusValidator):
             settings.metrics_host,
             settings.metrics_port,
             settings.observation_max_age_seconds,
+            partial(read_chain_view, settings.pylon_config(), settings.netuid, settings.validator_hotkey)
+            if settings.pylon_identity_name and settings.pylon_identity_token
+            else None,
         )
         self.connect(self.tasks.poll_clock.source, taps=(monitoring.sink,))
         self.connect(self.subnet_clock.source, taps=(monitoring.block,))

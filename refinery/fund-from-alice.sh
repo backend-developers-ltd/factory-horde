@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # Usage: refinery/fund-from-alice.sh SS58_ADDRESS AMOUNT_TAO
-# Transfers development TAO from the public //Alice key on Refinery. Each run transfers again.
-# shellcheck source=lib.sh
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-require_commands uv btcli
+# Transfers development TAO from the public //Alice key on Refinery (or the chain named by
+# BITTENSOR_NETWORK). Each run transfers again. Requires uv and btcli.
+set -euo pipefail
 
 destination="${1:?Usage: fund-from-alice.sh SS58_ADDRESS AMOUNT_TAO}"
 amount="${2:?Usage: fund-from-alice.sh SS58_ADDRESS AMOUNT_TAO}"
-[[ "$amount" =~ ^[0-9]+([.][0-9]{1,9})?$ && "$amount" =~ [1-9] ]] ||
-  die "Amount must be positive, with at most nine decimal places."
+network="${BITTENSOR_NETWORK:-ws://10.0.0.10:9944}"
+if [[ ! "$amount" =~ ^[0-9]+([.][0-9]{1,9})?$ || ! "$amount" =~ [1-9] ]]; then
+  echo "Amount must be positive, with at most nine decimal places." >&2
+  exit 1
+fi
 
 umask 077
 alice_dir=$(mktemp -d)
@@ -25,8 +27,8 @@ wallet.set_coldkey(keypair=key, encrypt=False, overwrite=False)
 wallet.set_coldkeypub(keypair=key, overwrite=False)
 PY
 
-log "Transferring $amount development TAO from //Alice to $destination."
-btcli wallet transfer "${CHAIN_ARGS[@]}" \
+echo "Transferring $amount development TAO from //Alice to $destination on $network." >&2
+btcli wallet transfer --network "$network" --fallback-endpoints none --archive-endpoints none \
   --wallet refinery-alice --wallet-path "$alice_dir" \
   --dest "$destination" --amount-tao "$amount" \
   --proxy-for self --signer wallet --no-mev-shield --no-prompt

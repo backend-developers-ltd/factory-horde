@@ -22,6 +22,31 @@ Docker socket, callback endpoint or registry credential. See
 for a complete token/configuration fixture. Python development uses `uv sync` inside
 `miner/`; `uv run miner --help` describes configuration.
 
+## Submitting from a server
+
+[`docker-compose.yml`](docker-compose.yml) runs a Pylon with one `miner` identity on
+loopback and offers the published submitter as a one-shot service. It reads `.env`
+beside it (never committed):
+
+| Setting | Meaning |
+| --- | --- |
+| `ENVIRONMENT`, `BITTENSOR_NETWORK`, `NETUID`, `BLOCK_DURATION_SECONDS` | Chain and subnet |
+| `BITTENSOR_WALLET_NAME`, `BITTENSOR_WALLET_HOTKEY_NAME`, `HOST_WALLET_DIR` | Registered miner wallet, mounted read-only into Pylon |
+| `MINER_PYLON_TOKEN`, `PYLON_OPEN_ACCESS_TOKEN`, `PYLON_METRICS_TOKEN` | Three distinct secrets, e.g. `openssl rand -hex 24` |
+| `FACTORY_IMAGE` | Default image to commit |
+| `PYLON_HOST_PORT`, `SUBMITTER_IMAGE` | Optional overrides (8000, the published submitter) |
+
+```sh
+cd miner
+docker compose up -d --wait             # Pylon
+docker compose run --rm submit          # commit FACTORY_IMAGE
+docker compose run --rm submit IMAGE    # commit another image once
+```
+
+The commitment stays on chain, so nothing needs to keep submitting; Pylon is only
+needed while a submission runs. [Refinery](../refinery/README.md) supplies a filled-in
+example of these settings.
+
 Current source selects Pylon client 2.3.1 and service 2.3.4. The submitter uses the
 explicit v1 commitment API. References are encoded as UTF-8 bytes, not supplied as
 strings interpreted as hexadecimal.

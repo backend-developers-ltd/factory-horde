@@ -9,10 +9,11 @@ from nexus.v1 import NexusException, ReceiveEvent, SubnetBuilder
 from prometheus_client import CollectorRegistry, generate_latest
 
 from validator.health import ExecutorHealth, ExecutorMetrics, OperationCount, OperationHistogram
-from validator.monitoring import HealthCollector, HealthSampler, MonitoringNode
+from validator.monitoring import ChainView, HealthCollector, HealthSampler, MonitoringNode
 from validator.records import request_for
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
+from validator.weighing import WeightCalculation
 
 from .test_coordinator import START, Fixture
 from .test_results import BEAT
@@ -78,6 +79,7 @@ def test_fresh_readiness_and_metrics_forward_executor_histograms(sampler: Health
     assert 'factory_horde_executor_operation_seconds_bucket{le="+Inf",operation="pull"} 1.0' in metrics
     assert "factory_horde_ready 1.0" in metrics
     assert "job_id=" not in metrics and "hotkey=" not in metrics and "round_id=" not in metrics
+    assert "factory_horde_round_sequence" not in metrics and "factory_horde_chain_view" not in metrics
 
 
 def test_stale_executor_and_failed_or_stale_docker_are_distinct(sampler: HealthSampler) -> None:
@@ -145,6 +147,43 @@ def test_latest_usable_round_includes_successful_zero_scores(sampler: HealthSamp
     assert snapshot.usable_scores == 1 and snapshot.usable_round_completed_at == completed
     assert snapshot.active_jobs == snapshot.unresolved_jobs == 0
     assert all(snapshot.checks.values())
+    sampler.repository.files.replace(
+        "control/weight-calculation.json",
+        WeightCalculation(
+            round_id=plan.round_id,
+            calculated_at=completed,
+            membership_block=1,
+            epoch_start=0,
+            epoch_end=360,
+            temperature=0.1,
+            uids={member.miner_hotkey: member.uid},
+            weights={member.miner_hotkey: 1.0},
+        ),
+    )
+    views = iter([ChainView(block=7, permit=True, last_update=5, incentives={member.miner_hotkey: 1.0})])
+    sampler.read_chain_view = lambda: next(views)
+    sampler.sample(completed)
+    registry = CollectorRegistry()
+    registry.register(HealthCollector(sampler))
+    metrics = generate_latest(registry).decode()
+    label = f'{{miner_hotkey="{member.miner_hotkey}"}}'
+    assert sampler.round_view is not None and sampler.round_view.scores is not None
+    score = sampler.round_view.scores[member.miner_hotkey]
+    for line in (
+        f"factory_horde_round_sequence {float(plan.sequence)}",
+        "factory_horde_round_miners 1.0",
+        f"factory_horde_usable_round_sequence {float(plan.sequence)}",
+        f"factory_horde_usable_score{label} {score}",
+        f"factory_horde_calculated_weight{label} 1.0",
+        "factory_horde_chain_validator_permit 1.0",
+        "factory_horde_chain_validator_last_update_block 5.0",
+        f"factory_horde_chain_incentive{label} 1.0",
+    ):
+        assert line in metrics
+    assert "job_id=" not in metrics and "round_id=" not in metrics
+    sampler.sample(completed + timedelta(seconds=30))
+    sampler.sample(completed + timedelta(seconds=61))
+    assert sampler.chain_view is None and "factory_horde_chain_view" not in generate_latest(registry).decode()
 
 
 def test_http_lifecycle_needs_current_chain_and_reconciliation_and_expires(sampler: HealthSampler) -> None:

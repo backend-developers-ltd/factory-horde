@@ -1223,6 +1223,527 @@
       }
     },
     {
+      "type": "stat",
+      "title": "Current round",
+      "description": "Round: number of the latest round. Miners: miners admitted to it. Scores from round: the latest completed round with accepted scores, which supplies the weights.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_round_sequence)",
+          "legendFormat": "Round",
+          "refId": "A",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_round_miners)",
+          "legendFormat": "Miners",
+          "refId": "B",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_usable_round_sequence)",
+          "legendFormat": "Scores from round",
+          "refId": "C",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "noValue": "No data",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 8,
+        "h": 4
+      },
+      "id": 49,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Round ends",
+      "description": "End of the latest round. The next round starts at its scheduled slot once this one is complete.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_round_end_timestamp_seconds) * 1000",
+          "legendFormat": "Round ends",
+          "refId": "A",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "mappings": [],
+          "noValue": "No data",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 32,
+        "w": 4,
+        "h": 4
+      },
+      "id": 50,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Chain and weights",
+      "description": "Read from the chain through Pylon about once a minute. Permit: the validator holds a validator permit. Last weight update: block of the validator's latest weight update on chain. Chain block: block of this reading. Weights calculated: time since the validator last calculated weights; submission and commit-reveal are in Weight pipeline below.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_chain_validator_permit)",
+          "legendFormat": "Permit",
+          "refId": "A",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_chain_validator_last_update_block)",
+          "legendFormat": "Last weight update",
+          "refId": "B",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_chain_view_block)",
+          "legendFormat": "Chain block",
+          "refId": "C",
+          "instant": true,
+          "range": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(factory_horde_weight_calculation_age_seconds)",
+          "legendFormat": "Weights calculated",
+          "refId": "D",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "noValue": "No data",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Permit"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "No",
+                        "color": "red",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Yes",
+                        "color": "green",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Weights calculated"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 4
+      },
+      "id": 51,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Accepted scores",
+      "description": "Accepted judge score of each miner in the latest usable round.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (miner_hotkey) (factory_horde_usable_score)",
+          "legendFormat": "{{miner_hotkey}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "id": 52,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Calculated weights",
+      "description": "Weight the validator last calculated for each miner. This is what it submits, not proof of what the chain holds.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (miner_hotkey) (factory_horde_calculated_weight)",
+          "legendFormat": "{{miner_hotkey}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "id": 53,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Chain incentive",
+      "description": "Incentive the chain currently reports for each miner, the on-chain effect of revealed weights. Miners with zero incentive are omitted.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max by (miner_hotkey) (factory_horde_chain_incentive)",
+          "legendFormat": "{{miner_hotkey}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "id": 54,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
       "type": "timeseries",
       "title": "Commitment discovery",
       "description": "Discovery snapshots and the miner submissions they accepted or rejected.",
@@ -1286,7 +1807,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 44,
         "w": 8,
         "h": 8
       },
@@ -1360,7 +1881,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 8,
-        "y": 32,
+        "y": 44,
         "w": 8,
         "h": 8
       },
@@ -1434,7 +1955,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 16,
-        "y": 32,
+        "y": 44,
         "w": 8,
         "h": 8
       },
@@ -1534,7 +2055,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 52,
         "w": 8,
         "h": 8
       },
@@ -1635,7 +2156,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 8,
-        "y": 40,
+        "y": 52,
         "w": 8,
         "h": 8
       },
@@ -1711,7 +2232,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 40,
+        "y": 52,
         "w": 8,
         "h": 8
       },
@@ -1728,7 +2249,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 60,
         "w": 24,
         "h": 1
       },
@@ -1798,7 +2319,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 0,
-        "y": 49,
+        "y": 61,
         "w": 8,
         "h": 8
       },
@@ -1872,7 +2393,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 8,
-        "y": 49,
+        "y": 61,
         "w": 8,
         "h": 8
       },
@@ -1944,7 +2465,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 49,
+        "y": 61,
         "w": 8,
         "h": 8
       },
@@ -1961,7 +2482,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 57,
+        "y": 69,
         "w": 24,
         "h": 1
       },
@@ -2029,7 +2550,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 58,
+        "y": 70,
         "w": 12,
         "h": 8
       },
@@ -2101,7 +2622,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 58,
+        "y": 70,
         "w": 12,
         "h": 8
       },
@@ -2173,7 +2694,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 66,
+        "y": 78,
         "w": 12,
         "h": 8
       },
@@ -2245,7 +2766,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 66,
+        "y": 78,
         "w": 12,
         "h": 8
       },
@@ -2262,7 +2783,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 74,
+        "y": 86,
         "w": 24,
         "h": 1
       },
@@ -2330,7 +2851,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 75,
+        "y": 87,
         "w": 8,
         "h": 8
       },
@@ -2402,7 +2923,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 75,
+        "y": 87,
         "w": 8,
         "h": 8
       },
@@ -2501,7 +3022,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 75,
+        "y": 87,
         "w": 8,
         "h": 8
       },
@@ -2573,7 +3094,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 83,
+        "y": 95,
         "w": 8,
         "h": 8
       },
@@ -2645,7 +3166,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 83,
+        "y": 95,
         "w": 8,
         "h": 8
       },
@@ -2735,7 +3256,7 @@
       "interval": "5m",
       "gridPos": {
         "x": 16,
-        "y": 83,
+        "y": 95,
         "w": 8,
         "h": 8
       },
@@ -2752,7 +3273,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 91,
+        "y": 103,
         "w": 24,
         "h": 1
       },
@@ -2813,7 +3334,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 92,
+        "y": 104,
         "w": 4,
         "h": 4
       },
@@ -2878,7 +3399,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 92,
+        "y": 104,
         "w": 4,
         "h": 4
       },
@@ -2952,7 +3473,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 92,
+        "y": 104,
         "w": 4,
         "h": 4
       },
@@ -3026,7 +3547,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 92,
+        "y": 104,
         "w": 4,
         "h": 4
       },
@@ -3092,7 +3613,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 92,
+        "y": 104,
         "w": 4,
         "h": 4
       },
@@ -3158,7 +3679,7 @@
       },
       "gridPos": {
         "x": 20,
-        "y": 92,
+        "y": 104,
         "w": 4,
         "h": 4
       },
@@ -3231,7 +3752,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 96,
+        "y": 108,
         "w": 8,
         "h": 8
       },
@@ -3321,7 +3842,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 96,
+        "y": 108,
         "w": 8,
         "h": 8
       },
@@ -3411,7 +3932,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 96,
+        "y": 108,
         "w": 8,
         "h": 8
       },
@@ -3484,7 +4005,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 104,
+        "y": 116,
         "w": 12,
         "h": 8
       },
@@ -3565,7 +4086,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 104,
+        "y": 116,
         "w": 12,
         "h": 8
       },

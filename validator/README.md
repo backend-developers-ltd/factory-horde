@@ -105,7 +105,17 @@ Metrics include `factory_horde_round_phase{phase}`, `active_jobs`, `unresolved_j
 eligibility is checked separately by the weight gate. Executor/Docker/chain/monitor
 age gauges expose stale observations. Interpret job/score gauges only when the
 `records` readiness check passes. Labels contain bounded operations/outcomes,
-checks and phases; identities stay in records and logs.
+checks and phases; job and round identities stay in records and logs.
+
+For dashboards the same endpoint exports `round_sequence`, `round_miners`,
+`round_start_timestamp_seconds`, `round_end_timestamp_seconds`,
+`usable_round_sequence`, `usable_score{miner_hotkey}`,
+`calculated_weight{miner_hotkey}` and `weight_calculation_age_seconds` from records.
+With Pylon identity credentials it also reads current neurons about once a minute and
+exports `chain_view_block`, `chain_validator_permit`,
+`chain_validator_last_update_block` and `chain_incentive{miner_hotkey}` (nonzero
+values only). A failed read removes these series and never affects readiness. Miner
+hotkeys are the only identity labels, bounded by the subnet's UIDs.
 
 `job_terminal` executor logs distinguish pull cancellation/failure from an inspected
 factory/judge exit. `job_unresolved` retains host uncertainty. Validator
