@@ -4,9 +4,7 @@
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 require_commands curl jq
-REFINERY_GENESIS=0xe185ddf8629910ec509d81f6568ccb227e6f2721747f7468d64261f8425ec0a9
-# The node serves JSON-RPC over HTTP on its WebSocket port.
-endpoint="${BITTENSOR_NETWORK/#ws/http}"
+endpoint="$CHAIN_RPC_URL"
 
 rpc() {
   local payload
@@ -23,7 +21,7 @@ rpc() {
 
 printf 'Checking Refinery RPC: %s\n' "$endpoint"
 genesis=$(rpc chain_getBlockHash '[0]' | jq -r .)
-[[ "$genesis" == "$REFINERY_GENESIS" ]] || die "Unexpected genesis $genesis; expected $REFINERY_GENESIS."
+[[ "$genesis" == "$CHAIN_GENESIS" ]] || die "Unexpected genesis $genesis; expected $CHAIN_GENESIS."
 printf 'Genesis %s matches Refinery.\n' "$genesis"
 for method in system_chain system_health chain_getHeader; do
   printf '\n%s\n' "$method"
