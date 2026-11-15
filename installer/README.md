@@ -71,7 +71,7 @@ requests, permanent stops, Docker identities and accepted scores remain in place
 Application updates similarly persist `application-activation.json` before replacing
 Compose assets. Pending activation survives interrupted replacement, failed Compose
 startup and preparation-only runs; it clears only after `docker compose up --wait`
-succeeds. An ordinary update retries activation even when asset bytes already match.
+succeeds. With the Grafana profile enabled, activation also recreates Grafana and Caddy to load their mounted provisioning and Caddyfile; a failure leaves activation pending for the next update. An ordinary update retries activation even when asset bytes already match.
 
 Executor shutdown interrupts local Docker CLI process groups, including a pull
 still waiting on the registry, and cancels queued workers. Interrupted calls remain

@@ -111,10 +111,10 @@ For dashboards the same endpoint exports `round_sequence`, `round_miners`,
 `round_start_timestamp_seconds`, `round_end_timestamp_seconds`,
 `usable_round_sequence`, `usable_score{miner_hotkey}`,
 `calculated_weight{miner_hotkey}` and `weight_calculation_age_seconds` from records.
-With Pylon identity credentials it also reads current neurons about once a minute and
+With Pylon identity credentials a separate Nexus actor reads current neurons about once a minute and
 exports `chain_view_block`, `chain_validator_permit`,
 `chain_validator_last_update_block` and `chain_incentive{miner_hotkey}` (nonzero
-values only). A failed read removes these series and never affects readiness. Miner
+values only). Reads use one attempt with a five-second read timeout and cannot block readiness sampling. Failed reads clear the view; observations older than two minutes are omitted at scrape time. Miner
 hotkeys are the only identity labels, bounded by the subnet's UIDs.
 
 `job_terminal` executor logs distinguish pull cancellation/failure from an inspected

@@ -28,7 +28,8 @@ from nexus.v1 import (
 )
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, Counter, Histogram, generate_latest
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily, HistogramMetricFamily, Metric
-from pylon_client.artanis import Config, PylonClient
+from pylon_client.artanis import Config, PylonClient, PylonTimeout
+from tenacity import Retrying, stop_after_attempt
 
 from validator.coordinator import RoundTick
 from validator.health import ExecutorHealth, ExecutorMetrics, Readiness, fresh
@@ -43,6 +44,8 @@ _latency = Histogram("factory_horde_health_check_seconds", "Application readines
 _submissions = Counter("factory_horde_pylon_submissions_total", "Pylon acknowledgements, not chain inclusion")
 _submission_latency = Histogram("factory_horde_submission_observation_seconds", "Acknowledgement recording duration")
 _CHAIN_VIEW_SECONDS = 60
+_chain_events = Counter("factory_horde_chain_view_total", "Dashboard chain reads", ("outcome",))
+_chain_latency = Histogram("factory_horde_chain_view_seconds", "Dashboard chain read duration")
 
 
 @dataclass(frozen=True)
@@ -73,6 +76,12 @@ def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None) -
     Raises:
         ValueError: The configured identity no longer selects this subnet.
     """
+    config = config.model_copy(
+        update={
+            "timeout": PylonTimeout(connect=3, read=5, write=3, pool=3),
+            "retry": Retrying(stop=stop_after_attempt(1), reraise=True),
+        }
+    )
     with PylonClient(config) as client:
         response = client.v1.identity.get_latest_neurons()
         if client.v1.identity.netuid != netuid:
@@ -86,25 +95,65 @@ def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None) -
     )
 
 
-class HealthSampler:
-    """Inspect records and real writable paths without Docker operations.
+@dataclass(frozen=True)
+class ChainSample:
+    """Disposable dashboard evidence, including failed observations."""
 
-    The optional chain view is one throttled Pylon read for dashboards; it never affects readiness.
+    observed_at: datetime
+    view: ChainView | None
+
+
+class ChainViewNode(Transform[datetime, ChainSample], ActorBuilder):
+    """Read dashboard chain state independently of readiness.
+
+    sink sink: polling tick
+    source ok: cached or refreshed dashboard observation
+    source error: unexpected actor failure
     """
 
-    def __init__(
-        self,
-        repository: ResultRepository,
-        dispatch_enabled: bool,
-        max_age: float,
-        chain_view: Callable[[], ChainView] | None = None,
-    ):
+    def __init__(self, read: Callable[[], ChainView]):
+        super().__init__("factory-horde-chain-view")
+        self.read = read
+
+    @override
+    def build_actor(self, *, pipe_to_bus: PipeToBus, context_store: ContextStore) -> ChainViewActor:
+        return ChainViewActor(self, pipe_to_bus, context_store)
+
+
+class ChainViewActor(TransformActor[datetime, ChainSample]):
+    """Nexus owns the bounded network read and its disposable cache."""
+
+    def __init__(self, spec: ChainViewNode, pipe_to_bus: PipeToBus, context_store: ContextStore):
+        super().__init__(spec, pipe_to_bus, context_store)
+        self.node = spec
+        self.sample: ChainSample | None = None
+
+    @override
+    def _transform(self, ctx: Context, payload: datetime) -> ChainSample:
+        now = datetime.now(UTC)
+        if self.sample is not None and fresh(self.sample.observed_at, now, _CHAIN_VIEW_SECONDS):
+            return self.sample
+        with _chain_latency.time():
+            try:
+                view = self.node.read()
+            except Exception as error:
+                _chain_events.labels("error").inc()
+                _logger.warning("chain_view_unavailable", error=str(error))
+                view = None
+            else:
+                _chain_events.labels("ok").inc()
+        self.sample = ChainSample(now, view)
+        return self.sample
+
+
+class HealthSampler:
+    """Inspect records and writable paths without Docker or network operations."""
+
+    def __init__(self, repository: ResultRepository, dispatch_enabled: bool, max_age: float):
         self.repository = repository
         self.dispatch_enabled = dispatch_enabled
         self.max_age = max_age
-        self.read_chain_view = chain_view
-        self.chain_view: ChainView | None = None
-        self.chain_view_at: datetime | None = None
+        self.chain_sample: ChainSample | None = None
         self.round_view: RoundView | None = None
         self.weights: WeightCalculation | None = None
         self.chain_at: datetime | None = None
@@ -117,7 +166,6 @@ class HealthSampler:
         """An unreadable component fails its check while other evidence stays visible."""
         with _latency.time():
             snapshot = self._sample(now)
-            self._sample_chain_view(now)
             previous = self.snapshot
             self.snapshot = snapshot
             _events.labels("ready" if all(snapshot.checks.values()) else "not_ready").inc()
@@ -128,19 +176,6 @@ class HealthSampler:
             ):
                 _logger.info("readiness_changed", **snapshot.model_dump(mode="json"))
             return snapshot
-
-    def _sample_chain_view(self, now: datetime) -> None:
-        """A failed read clears the view so dashboards never show stale chain state."""
-        if self.read_chain_view is None or (
-            self.chain_view_at is not None and 0 <= (now - self.chain_view_at).total_seconds() < _CHAIN_VIEW_SECONDS
-        ):
-            return
-        self.chain_view_at = now
-        try:
-            self.chain_view = self.read_chain_view()
-        except Exception as error:
-            self.chain_view = None
-            _logger.warning("chain_view_unavailable", error=str(error))
 
     def _sample(self, now: datetime) -> Readiness:
         files = self.repository.files
@@ -375,7 +410,8 @@ class HealthCollector:
                 "Age of the latest weight calculation",
                 (now - weights.calculated_at).total_seconds(),
             )
-        chain = self.sampler.chain_view
+        sample = self.sampler.chain_sample
+        chain = sample.view if sample and fresh(sample.observed_at, now, 2 * _CHAIN_VIEW_SECONDS) else None
         if chain is not None:
             yield gauge("chain_view_block", "Block of the latest chain view", chain.block)
             if chain.permit is not None and chain.last_update is not None:
@@ -392,6 +428,7 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
     sink round: coordinator reconciliation outcome
     sink failure: coordinator failure
     sink submission: Pylon acknowledgement, never independent chain proof
+    sink chain_view: optional dashboard observation
     source ok: current readiness snapshot
     source error: unexpected monitor failure
     """
@@ -403,11 +440,11 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
         host: str,
         port: int,
         max_age: float,
-        chain_view: Callable[[], ChainView] | None = None,
     ):
         super().__init__("factory-horde-monitoring")
-        self.sampler = HealthSampler(repository, dispatch_enabled, max_age, chain_view)
+        self.sampler = HealthSampler(repository, dispatch_enabled, max_age)
         self.host, self.port = host, port
+        self.chain_view = Sink[ChainSample](f"{self.id}-chain-view", owner_node=self)
         self.block = Sink[BlockBeat](f"{self.id}-block", owner_node=self)
         self.round = Sink[RoundTick](f"{self.id}-round", owner_node=self)
         self.failure = Sink[NexusException](f"{self.id}-failure", owner_node=self)
@@ -418,6 +455,7 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
         return NodeSinks(
             {
                 **super().sinks().sinks,
+                SinkName("chain_view"): self.chain_view,
                 SinkName("block"): self.block,
                 SinkName("round"): self.round,
                 SinkName("failure"): self.failure,
@@ -444,11 +482,17 @@ class MonitoringActor(TransformActor[datetime, Readiness]):
     def handlers(self) -> dict[Sink[Any], EventHandler]:
         return {
             **super().handlers(),
+            self.node.chain_view: self.handle_chain_view,
             self.node.block: self.handle_block,
             self.node.round: self.handle_round,
             self.node.failure: self.handle_failure,
             self.node.submission: self.handle_submission,
         }
+
+    def handle_chain_view(self, _ctx: Context, event: ReceiveEvent[ChainSample]) -> MessagesToSend:
+        """Receive dashboard evidence without performing network work."""
+        self.node.sampler.chain_sample = event.payload
+        return ()
 
     def handle_block(self, _ctx: Context, _event: ReceiveEvent[BlockBeat]) -> MessagesToSend:
         """Ignore retained chain files when establishing initial connectivity."""
