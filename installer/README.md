@@ -1,11 +1,28 @@
 # FactoryHorde operator installation
 
 The installer and updater use the common Compose application and one host systemd
-executor. The accepted topology is localnet only; the [immutable candidate](../envs/candidate/README.md)
-supplies published images and configuration. [End-to-end acceptance](../spec/evidence/task17-acceptance.json)
+executor. Historical localnet acceptance used the [immutable candidate](../envs/candidate/README.md). Refinery uses the same operator release path with its own chain settings and current published images. [End-to-end acceptance](../spec/evidence/task17-acceptance.json)
 passed in a separate installation on the existing user-selected VM. Follow the
 [packaged reproduction sequence](../localnet/README.md#packaged-candidate-acceptance-on-this-vm).
 No subnet-12 or production configuration is promoted by these instructions.
+
+## Published operator installation
+
+Build and promote images through [the deployment procedures](../knowledge/validator.deploy.md). On the operator host, select the configuration branch explicitly and resolve it once before downloading the installer. The installation directory is runtime state, not a Git checkout.
+
+```sh
+RELEASE_REF=deploy-config-production # use deploy-config-refinery for Refinery
+RELEASE_SHA=$(git ls-remote https://github.com/backend-developers-ltd/factory-horde.git "refs/heads/$RELEASE_REF" | cut -f1)
+test "${#RELEASE_SHA}" -eq 40
+RELEASE_URL="https://raw.githubusercontent.com/backend-developers-ltd/factory-horde/$RELEASE_SHA"
+BOOTSTRAP=$(mktemp -d)
+curl -fsSL "$RELEASE_URL/installer/install.sh" -o "$BOOTSTRAP/install.sh"
+curl -fsSL "$RELEASE_URL/installer/release.py" -o "$BOOTSTRAP/release.py"
+# Prepare a literal operator environment file before running this command.
+bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
+```
+
+The first installation validates and applies a complete release; subsequent cron runs follow the chosen configuration branch. To move an existing installation to a published branch, run its updater with `--ref deploy-config-refinery --source https://raw.githubusercontent.com/backend-developers-ltd/factory-horde`. If a release changes the manifest's asset set, bootstrap the new installer as above and rerun installation against the existing directory; its `.env`, wallet paths and data are preserved. Do not use `git pull` to update installed assets.
 
 ## Requirements and ownership
 
@@ -63,8 +80,7 @@ Configuration and updater assets come from the same verified selection. An uncha
 executor is not replaced/restarted unless activation is pending or the service is
 inactive. "Unchanged" compares against both the installed bytes and the hashes recorded
 in `applied-release.json`, so a source checkout that is its own installation
-(`install.sh <checkout> --ref snapshot --source file://<checkout>`, as on
-[Refinery](../refinery/README.md)) activates what a later `git pull` brought in. Before replacing executor inputs, `executor-activation.json` durably
+(`install.sh <checkout> --ref snapshot --source file://<checkout>`) activates what a later `git pull` brought in. Before replacing executor inputs, `executor-activation.json` durably
 records pending activation. Retrying an interrupted or failed update completes the
 restart even if installed bytes already match. Compatible detached workloads keep running;
 requests, permanent stops, Docker identities and accepted scores remain in place.

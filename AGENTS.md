@@ -31,8 +31,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
   the factory and judge images when their sources change
 - `refinery/` — only what is specific to the Refinery development chain (subnet 11): validator and
   miner `.env` examples, the `//Alice` funding script and a guide. Deployment itself is the generic
-  path: the validator through `installer/` (on Refinery the `ubuntu` operator's checkout in
-  `~/factory-horde` is both source and installation directory), a miner through
+  path: the validator through `installer/` (on Refinery the `ubuntu` operator installs into `~/factory-horde` from
+  `deploy-config-refinery`, following builds on `deploy-build-refinery`), a miner through
   `miner/docker-compose.yml`. Do not add Refinery-specific deployment or operation scripts
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation

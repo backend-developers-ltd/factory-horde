@@ -36,8 +36,24 @@ beside it (never committed):
 | `FACTORY_IMAGE` | Default image to commit |
 | `PYLON_HOST_PORT`, `SUBMITTER_IMAGE` | Optional overrides (8000, the published submitter) |
 
+For an operator installation, resolve the reviewed configuration branch once, download the Compose file and verify it against that release's manifest. Use `deploy-config-refinery` for the internal chain. Repeat this sequence for upgrades; retain `.env` and the Pylon volume.
+
 ```sh
-cd miner
+mkdir -p ~/factory-horde/miner
+cd ~/factory-horde/miner
+RELEASE_REF=deploy-config-production
+RELEASE_SHA=$(git ls-remote https://github.com/backend-developers-ltd/factory-horde.git "refs/heads/$RELEASE_REF" | cut -f1)
+test "${#RELEASE_SHA}" -eq 40
+RELEASE_URL="https://raw.githubusercontent.com/backend-developers-ltd/factory-horde/$RELEASE_SHA"
+curl -fsSL "$RELEASE_URL/installer/release-manifest.json" -o release-manifest.json
+curl -fsSL "$RELEASE_URL/miner/docker-compose.yml" -o docker-compose.yml.next
+printf '%s  %s\n' "$(jq -r '.files["miner/docker-compose.yml"]' release-manifest.json)" docker-compose.yml.next | sha256sum --check -
+# Prepare .env on first installation before validating the configuration.
+docker compose -f docker-compose.yml.next config --quiet
+mv docker-compose.yml.next docker-compose.yml
+```
+
+```sh
 docker compose up -d --wait             # Pylon
 docker compose run --rm submit          # commit FACTORY_IMAGE
 docker compose run --rm submit IMAGE    # commit another image once
