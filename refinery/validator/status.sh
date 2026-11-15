@@ -4,19 +4,17 @@
 # validator's on-chain weight row.
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
-require_root
-
-INSTALL_DIR=/home/factoryhorde/factory-horde
-DATA=$INSTALL_DIR/data
-compose() {
-  sudo -u factoryhorde docker compose --project-name factory-horde-refinery --env-file "$INSTALL_DIR/.env" \
-    -f "$INSTALL_DIR/envs/deployed/docker-compose.yml" "$@"
-}
+require_operator
+load_env
+cd "$REPO_ROOT"
+DATA=$FACTORY_HORDE_DATA_ROOT
+compose() { docker compose "$@"; }
 
 echo "== Services"
-systemctl is-active factory-horde-refinery-executor | sed 's/^/executor: /'
+systemctl is-active factory-horde-executor | sed 's/^/executor: /'
 compose ps --format '{{.Service}}: {{.Status}}'
-jq -c '{revision, health, applied_at}' "$INSTALL_DIR/applied-release.json"
+printf 'checkout: %s\n' "$(git rev-parse --short HEAD)"
+jq -c '{health, applied_at}' applied-release.json
 
 echo "== Readiness"
 compose exec -T validator /opt/venv/bin/python -c "
@@ -42,9 +40,8 @@ cat "$DATA/control/weight-calculation.json" 2>/dev/null || echo "none yet"
 echo
 
 echo "== Chain weights (mechanism $MECHANISM_ID): revealed row and pending commit-reveal commits"
-hotkey=$(wallet_address "$VALIDATOR_WALLET" hotkey)
-FH_NETUID=$NETUID FH_MECHANISM=$MECHANISM_ID FH_HOTKEY=$hotkey FH_NETWORK=$BITTENSOR_NETWORK \
-  /root/.local/share/uv/tools/bittensor/bin/python -B - <<'PY'
+FH_NETUID=$NETUID FH_MECHANISM=$MECHANISM_ID FH_HOTKEY=$VALIDATOR_HOTKEY FH_NETWORK=$BITTENSOR_NETWORK \
+  "$HOME/.local/share/uv/tools/bittensor/bin/python" -B - <<'PY'
 import asyncio
 import json
 import os

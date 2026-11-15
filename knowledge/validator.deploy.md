@@ -47,6 +47,10 @@ authenticated Pylon scraping and the validator's actor-owned metrics/readiness
 endpoint. Tracing, Alloy and remote-write are disabled. The inherited Alloy file is
 not an active service or an updater input.
 
+Grafana and Caddy are the opt-in `grafana` Compose profile of the same file (`COMPOSE_PROFILES=grafana`,
+`GRAFANA_ADDRESS`, `GRAFANA_ADMIN_PASSWORD` in `.env`), pinned by digest like every other service. Their
+Caddyfile, provisioning and dashboard under `envs/deployed/` are release assets.
+
 The maintained installer consumes `installer/release-manifest.json`, the standalone
 executor/checksum, common Compose and installer assets from one resolved Git
 revision. A moving `deploy-config-*` branch resolves once before downloading any
@@ -55,6 +59,10 @@ atomically replace the executor on its destination filesystem and restart its ex
 system unit. The operator's cron has only that restart sudo grant. A changed system
 unit requires installation privileges; unhealthy replacement requires ordinary
 repair and is not rolled back automatically. See [installer instructions](../installer/README.md).
+
+The Refinery validator uses the same installer with its own git checkout as both source and installation
+directory (`--ref snapshot --source file://<checkout>`), so `git pull` selects its release; see
+[the Refinery guide](../refinery/README.md).
 
 [Task 16's candidate](../envs/candidate/README.md) uses this build/promotion structure. Production
 configuration promotion, subnet-12 deployment and emissions changes remain outside

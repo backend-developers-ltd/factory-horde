@@ -21,14 +21,19 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
   `miner` is a one-shot Pylon submitter; the `bootstrap` dependency group holds the local-chain SDK
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
-- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);
+- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with Grafana
+  behind Caddy as the opt-in `grafana` Compose profile and its Caddyfile, provisioning and dashboard;
   operator promotion would use `deploy-config-production`, with this compose file and the installer
   scripts as the operator-critical files; no production configuration branch has been promoted
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
-- `refinery/` — scripts and guide that deploy one validator and one miner server to the Refinery
-  development chain (subnet 11), plus Grafana with a validator dashboard behind Caddy on the validator
+- `refinery/` — guide and scripts for the validator and miner servers on the Refinery development
+  chain (subnet 11). Both run as the `ubuntu` operator from one checkout in `~/factory-horde`. The
+  validator checkout is its own installation: `refinery/validator/setup.sh` runs `installer/install.sh`
+  in place, so its only settings file is the root `.env` (from `refinery/validator/.env.example`) and
+  its only Compose file is `envs/deployed/docker-compose.yml`. The miner's Pylon and settings are
+  `refinery/miner/docker-compose.yml` and the `.env` beside it
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures
@@ -72,7 +77,9 @@ Completed executor jobs leave normal polling after durable terminal publication;
 rebuilds that knowledge through retained-record reconciliation. Application activation intent
 is persisted before replacing Compose assets and cleared only after successful Compose startup.
 Updater executor activation intent survives replacement/restart failures and requires health
-from a process started during the activation attempt before it is cleared.
+from a process started during the activation attempt before it is cleared. `applied-release.json`
+records the applied manifest and executor hashes, so an installation that is its own source checkout
+(`--source file://<checkout> --ref snapshot` into that checkout) still activates pulled changes.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.
@@ -155,6 +162,8 @@ Skip for higher level tasks that do not touch the code.
 ### Observability
 
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
+`COMPOSE_PROFILES=grafana` adds pinned Grafana with the provisioned validator dashboard and Caddy, which
+publishes it over HTTPS at `GRAFANA_ADDRESS`; both are release assets. Refinery enables the profile.
 Prometheus scrapes node-exporter, the validator on port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
 Local configuration generates separate identity/open-access/metrics tokens. No remote-write
 or tracing sidecar runs, and no upstream credentials are needed.

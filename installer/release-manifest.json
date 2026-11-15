@@ -1,13 +1,17 @@
 {
   "files": {
-    "envs/deployed/docker-compose.yml": "0482c7e2d6f1ef7efe9ccb48ef16343e994676ff9e245241f9277aab8a809d4f",
+    "envs/deployed/caddy/Caddyfile": "f716dfa57877ac2782cbb077348464006e2e69eb28672fe263682728452f3f13",
+    "envs/deployed/docker-compose.yml": "1fb5619951aecd991068b584461bb19377f99e0bc6ae3f0bf5b8a339c43fba49",
+    "envs/deployed/grafana/dashboards/factory-horde-validator.json": "f3b49e50af46036a530a1f003aaaf6ab0cc12b1fbe1e0bac5cfa8e5f305f08ba",
+    "envs/deployed/grafana/provisioning/dashboards/dashboards.yml": "187d00b8b4e3224060ab78dee04a3d6d200024bdf9bfcaa67729f3fa8e6b8cbb",
+    "envs/deployed/grafana/provisioning/datasources/prometheus.yml": "1b60622046a90d9e45a1659f2bf40022336bc92abac3ce08f7d919507c44531f",
     "executor/executor.py": "c42943058b655798c0388bdcbf8f831c3306b142f7f2f17c7eb26dc07bcef26d",
     "executor/executor.sha256": "9720217101b17341e5c8baaaf32577a4569265122c73fe325c61290513b0b7de",
     "installer/factory-horde-executor.service": "34c2f1705b9eb3694a8a048643f695b561366a66af058dd7724e6d9a5496c93d",
     "installer/install-executor.sh": "87f7de9bf302841ed276352610eb98e2aabecff83ef01fc00cf17c749fb8d37b",
     "installer/install.sh": "f3a543ceb1dd8d415d8cd871692b7c20a9c6b258511fb1b7bae5167374c12301",
     "installer/prepare-data-root.sh": "e974c61be9c36e09c3336e14049808ad098caa1eec0ae8f59e67e34b4aa6aa8f",
-    "installer/release.py": "8c4f8d35674f228e35c726f04515016b320bb5e0e26e218e44c72e61c66023d5",
+    "installer/release.py": "93f7428800ddf6816d52b3e307487f969f09d5c8aa3184917af5baff78d6c0ba",
     "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
     "localnet/compose.yml": "e009ba4de3363d4719a16233166e6dbc91df84ae020fe65d1dafddad109a21df"
   },

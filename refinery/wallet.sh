@@ -1,24 +1,31 @@
 #!/usr/bin/env bash
-# Usage: refinery/wallet.sh WALLET validator|miner
-# Idempotently prepares a wallet on subnet NETUID: create, fund from //Alice, register, and for a
-# validator add initial stake. Steps that are already satisfied are skipped.
+# Usage: refinery/wallet.sh validator|miner
+# Idempotently prepares this server's wallet (BITTENSOR_WALLET_NAME in HOST_WALLET_DIR) on subnet
+# NETUID: create, fund from //Alice, register, and for a validator add initial stake. Steps that
+# are already satisfied are skipped.
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-require_root
+require_operator
 require_commands btcli jq
+load_env
 
-wallet="${1:?Usage: wallet.sh WALLET validator|miner}"
-role="${2:?Usage: wallet.sh WALLET validator|miner}"
+role="${1:?Usage: wallet.sh validator|miner}"
 [[ $role == validator || $role == miner ]] || die "Role must be validator or miner."
+wallet=$BITTENSOR_WALLET_NAME
+WALLET_ARGS=(--wallet "$wallet" --wallet-hotkey "$BITTENSOR_WALLET_HOTKEY_NAME" --wallet-path "$HOST_WALLET_DIR")
+# Development funding from //Alice: top up to FUND_TAO when the free balance drops below
+# MIN_BALANCE_TAO. VALIDATOR_STAKE_TAO is added only when the validator hotkey has no stake.
+MIN_BALANCE_TAO=${MIN_BALANCE_TAO:-10}
+FUND_TAO=${FUND_TAO:-100}
+VALIDATOR_STAKE_TAO=${VALIDATOR_STAKE_TAO:-1}
 
-if [[ ! -f "$WALLET_PATH/$wallet/hotkeys/default" ]]; then
-  recovery="/root/$wallet-recovery.txt"
+if [[ ! -f "$HOST_WALLET_DIR/$wallet/hotkeys/$BITTENSOR_WALLET_HOTKEY_NAME" ]]; then
+  recovery="$HOME/$wallet-recovery.txt"
   log "Creating wallet $wallet; recovery words go to $recovery."
-  (umask 077; btcli wallet create --wallet "$wallet" --wallet-hotkey default \
-    --wallet-path "$WALLET_PATH" --no-password > "$recovery" 2>&1)
+  (umask 077; btcli wallet create "${WALLET_ARGS[@]}" --no-password > "$recovery" 2>&1)
 fi
-coldkey=$(wallet_address "$wallet" coldkey)
-hotkey=$(wallet_address "$wallet" hotkey)
+coldkey=$(wallet_address coldkey)
+hotkey=$(wallet_address hotkey)
 
 uid() { metagraph | jq -r --arg hk "$hotkey" '.hotkeys | index($hk) // empty'; }
 
@@ -31,8 +38,7 @@ if [[ -z "$(uid)" ]]; then
   log "Registering $wallet hotkey $hotkey on subnet $NETUID."
   # btcli requires burned registration to be MEV-shielded; do not add --no-mev-shield.
   btcli subnets register "${CHAIN_ARGS[@]}" --netuid "$NETUID" \
-    --wallet "$wallet" --wallet-hotkey default --wallet-path "$WALLET_PATH" \
-    --proxy-for self --signer wallet --no-prompt
+    "${WALLET_ARGS[@]}" --proxy-for self --signer wallet --no-prompt
   for _ in $(seq 20); do [[ -n "$(uid)" ]] && break; sleep 15; done
   [[ -n "$(uid)" ]] || die "Registration of $hotkey did not appear on chain."
 fi
@@ -42,7 +48,7 @@ if [[ $role == validator ]]; then
   if [[ "$stake" == 0 ]]; then
     log "Adding $VALIDATOR_STAKE_TAO TAO stake to $hotkey."
     btcli stake add "${CHAIN_ARGS[@]}" --netuid "$NETUID" --amount-tao "$VALIDATOR_STAKE_TAO" \
-      --wallet "$wallet" --wallet-hotkey default --wallet-path "$WALLET_PATH" --hotkey "$hotkey" \
+      "${WALLET_ARGS[@]}" --hotkey "$hotkey" \
       --slippage-protection --rate-tolerance 0.05 --proxy-for self --signer wallet --no-mev-shield --no-prompt
   fi
 fi

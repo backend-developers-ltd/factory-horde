@@ -4,19 +4,13 @@
 set -euo pipefail
 
 REFINERY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export REPO_ROOT
 REPO_ROOT="$(dirname "$REFINERY_DIR")"
-WALLET_PATH=/root/.bittensor/wallets
-export PATH="/root/.local/bin:$PATH"
-
-# shellcheck source=refinery.env
-. "$REFINERY_DIR/refinery.env"
-CHAIN_ARGS=(--network "$BITTENSOR_NETWORK" --fallback-endpoints none --archive-endpoints none)
+export PATH="$HOME/.local/bin:$PATH"
 
 log() { printf '[refinery] %s\n' "$*" >&2; }
 die() { printf '[refinery] ERROR: %s\n' "$*" >&2; exit 1; }
 
-require_root() { [[ $EUID -eq 0 ]] || die "Run as root."; }
+require_operator() { [[ $EUID -ne 0 ]] || die "Run as the operator account (ubuntu), not as root."; }
 
 require_commands() {
   local command
@@ -25,30 +19,31 @@ require_commands() {
   done
 }
 
-# SS58 address of a wallet's coldkey ("coldkey") or default hotkey ("hotkey").
+# Load this server's settings: the validator's .env in the checkout root, else the miner's.
+load_env() {
+  local file=$REPO_ROOT/.env
+  [[ -f $file ]] || file=$REFINERY_DIR/miner/.env
+  [[ -f $file ]] || die "No .env yet; run this server's setup.sh first."
+  # shellcheck source=/dev/null
+  . "$file"
+  CHAIN_ARGS=(--network "$BITTENSOR_NETWORK" --fallback-endpoints none --archive-endpoints none)
+}
+
+# Create an env file from its committed example on first use, then fill KEY=VALUE pairs left empty.
+create_env() {
+  local file=$1 example=$2 key
+  shift 2
+  [[ -f $file ]] && return
+  install -m 0600 "$example" "$file"
+  for key in "$@"; do sed -i "s|^${key%%=*}=\$|$key|" "$file"; done
+  log "Created $file from $example."
+}
+
+# SS58 address of this server's coldkey ("coldkey") or hotkey ("hotkey").
 wallet_address() {
-  local file="$WALLET_PATH/$1/coldkeypub.txt"
-  [[ $2 == hotkey ]] && file="$WALLET_PATH/$1/hotkeys/defaultpub.txt"
+  local file="$HOST_WALLET_DIR/$BITTENSOR_WALLET_NAME/coldkeypub.txt"
+  [[ $1 == hotkey ]] && file="$HOST_WALLET_DIR/$BITTENSOR_WALLET_NAME/hotkeys/${BITTENSOR_WALLET_HOTKEY_NAME}pub.txt"
   jq -er .ss58Address "$file"
 }
 
 metagraph() { btcli subnets metagraph "$NETUID" "${CHAIN_ARGS[@]}" --json; }
-
-# Set KEY=VALUE in an env file, replacing an existing assignment.
-set_env() {
-  local file=$1 key=$2 value=$3
-  touch "$file"
-  if grep -q "^$key=" "$file"; then
-    sed -i "s|^$key=.*|$key=$value|" "$file"
-  else
-    printf '%s=%s\n' "$key" "$value" >> "$file"
-  fi
-}
-
-# Copy only a wallet's hotkey and public coldkey into a runtime wallet directory for Pylon.
-install_runtime_wallet() {
-  local wallet=$1 destination=$2 owner=$3
-  install -d -o "$owner" -g "$owner" -m 0700 "$destination" "$destination/$wallet" "$destination/$wallet/hotkeys"
-  install -o "$owner" -g "$owner" -m 0600 "$WALLET_PATH/$wallet/coldkeypub.txt" "$destination/$wallet/coldkeypub.txt"
-  install -o "$owner" -g "$owner" -m 0600 "$WALLET_PATH/$wallet/hotkeys/default" "$destination/$wallet/hotkeys/default"
-}

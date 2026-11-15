@@ -5,12 +5,10 @@
 # factory-horde-submit systemd timer.
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
-require_root
+require_operator
+load_env
 
-MINER_HOME=/root/factory-horde-miner
 image="${1:-$FACTORY_IMAGE}"
-MINER_PYLON_TOKEN=$(sed -n 's/^MINER_PYLON_TOKEN=//p' "$MINER_HOME/.env")
-PYLON_HOST_PORT=$(sed -n 's/^PYLON_HOST_PORT=//p' "$MINER_HOME/.env")
 export PYLON_IDENTITY_TOKEN="$MINER_PYLON_TOKEN"
 
 docker run --rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges \

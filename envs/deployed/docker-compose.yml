@@ -135,8 +135,72 @@ services:
         exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.size=1GB
     depends_on: [pylon, node-exporter]
 
+  # Optional dashboards, started only with COMPOSE_PROFILES=grafana in .env; that profile also needs
+  # GRAFANA_ADDRESS and GRAFANA_ADMIN_PASSWORD. Caddy is the only service published beyond loopback.
+  grafana:
+    # grafana:13.3.1
+    image: docker.io/grafana/grafana@sha256:0615ec4fbd4072004b7d86b46ded63013a74b7d6eb1119273dd89e8fa25c13cf
+    platform: linux/amd64
+    profiles: [grafana]
+    restart: unless-stopped
+    # The operator account owns the provisioning files below.
+    user: "${CONTAINER_UID:?}:${CONTAINER_GID:?}"
+    environment:
+      GF_SERVER_ROOT_URL: "https://${GRAFANA_ADDRESS:-}/"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-}"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/factory-horde-validator.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    # Grafana would otherwise fall back to its well-known default password.
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        [ -n "$${GF_SECURITY_ADMIN_PASSWORD}" ] || { echo "GRAFANA_ADMIN_PASSWORD is required" >&2; exit 1; }
+        exec /run.sh
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3000/api/health]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    depends_on: [prometheus]
+
+  caddy:
+    # caddy:2.11.9
+    image: docker.io/library/caddy@sha256:e40b94d0a43b5ff69cb20568d73f10c70703df7b0ffc2298eb3d723cdc9d0bd1
+    platform: linux/amd64
+    profiles: [grafana]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      GRAFANA_ADDRESS: "${GRAFANA_ADDRESS:-}"
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      grafana:
+        condition: service_healthy
+
 volumes:
   pylon-data:
   prometheus-data:
+  grafana-data:
+  caddy-data:
+  caddy-config:
 
 # Tracing and external remote-write are deliberately disabled. No upstream credentials are required.

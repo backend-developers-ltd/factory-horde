@@ -40,6 +40,10 @@ ASSETS = (
     "installer/prepare-data-root.sh",
     "installer/factory-horde-executor.service",
     "envs/deployed/docker-compose.yml",
+    "envs/deployed/caddy/Caddyfile",
+    "envs/deployed/grafana/provisioning/datasources/prometheus.yml",
+    "envs/deployed/grafana/provisioning/dashboards/dashboards.yml",
+    "envs/deployed/grafana/dashboards/factory-horde-validator.json",
     "localnet/compose.yml",
 )
 EXECUTOR_KEYS = (
@@ -596,11 +600,19 @@ def apply_release(
         pending = (
             activation_path.exists() and object_value(json.loads(activation_path.read_bytes())).get("pending") is True
         )
+        previous: dict[str, object] = {}
+        if (directory / "applied-release.json").exists():
+            previous = object_value(json.loads((directory / "applied-release.json").read_bytes()))
         executor_bytes = (stage / "executor/executor.py").read_bytes()
+        executor_sha256 = hashlib.sha256(executor_bytes).hexdigest()
+        manifest_sha256 = hashlib.sha256(metadata).hexdigest()
         env_bytes = environment({key: config[key] for key in EXECUTOR_KEYS})
+        # Installed bytes already match when the installation is its own source checkout, so the
+        # last applied release also decides whether the running executor/application is current.
         activate = (
             install
             or pending
+            or previous.get("executor_sha256") != executor_sha256
             or any(
                 not path.exists() or path.read_bytes() != content
                 for path, content in (
@@ -615,9 +627,6 @@ def apply_release(
         executor_changed = atomic_write(directory / "executor/executor.py", executor_bytes, 0o555)
         env_changed = atomic_write(directory / "executor/executor.env", env_bytes, 0o600)
         application_activation_path = directory / "application-activation.json"
-        previous: dict[str, object] = {}
-        if (directory / "applied-release.json").exists():
-            previous = object_value(json.loads((directory / "applied-release.json").read_bytes()))
         config_sha256 = hashlib.sha256((directory / ".env").read_bytes()).hexdigest()
         application_pending = (
             application_activation_path.exists()
@@ -628,6 +637,7 @@ def apply_release(
             or application_pending
             or previous.get("application_started") is not True
             or previous.get("config_sha256") != config_sha256
+            or previous.get("manifest_sha256") != manifest_sha256
             or any(
                 not (directory / name).exists() or (directory / name).read_bytes() != (stage / name).read_bytes()
                 for name in ASSETS
@@ -654,7 +664,8 @@ def apply_release(
         state: dict[str, object] = {
             "revision": revision,
             "source": installation.selection.source,
-            "manifest_sha256": hashlib.sha256(metadata).hexdigest(),
+            "manifest_sha256": manifest_sha256,
+            "executor_sha256": executor_sha256,
             "applied_at": started.isoformat(),
             "executor_changed": executor_changed,
             "health": "checking",

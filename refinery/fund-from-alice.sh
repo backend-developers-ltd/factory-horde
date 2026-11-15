@@ -4,6 +4,7 @@
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 require_commands uv btcli
+load_env
 
 destination="${1:?Usage: fund-from-alice.sh SS58_ADDRESS AMOUNT_TAO}"
 amount="${2:?Usage: fund-from-alice.sh SS58_ADDRESS AMOUNT_TAO}"

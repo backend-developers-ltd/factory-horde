@@ -411,3 +411,65 @@ def test_retry_activates_application_after_assets_already_match(
         prepare_only=False,
     )
     assert len(starts) == before + 1
+
+
+def test_checkout_installed_in_place_activates_pulled_changes(
+    source: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    env = source / ".env"
+    env.write_text("ENVIRONMENT=localnet\nNETUID=2\nBITTENSOR_NETWORK=ws://subtensor:9944\n")
+    config = release.configuration(env, source, application=True, localnet=True)
+    env.write_bytes(release.environment(config))
+    installation = release.Installation(
+        "factory-horde-test",
+        "test",
+        True,
+        release.Selection("snapshot", source.as_uri()),
+        {key: config[key] for key in release.IDENTITY_KEYS},
+    )
+    unit = tmp_path / "unit.service"
+    unit.write_bytes(release.unit_content(source, source, config))
+
+    def path(value: str) -> Path:
+        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+
+    def prepare(*args: object) -> None:
+        pass
+
+    def active(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    def health(*args: object, **kwargs: object) -> dict[str, object]:
+        return {"pid": 456}
+
+    calls: list[str] = []
+
+    def run(args: release.Sequence[str], *, quiet: bool = False) -> str:
+        if "--protocol-version" in args:
+            return str(release.PROTOCOL)
+        calls.extend(word for word in ("restart", "up") if word in args)
+        return ""
+
+    def update() -> list[str]:
+        calls.clear()
+        release.apply_release(source, installation, config, install=False, application=True, prepare_only=False)
+        return sorted(calls)
+
+    def pull(name: str) -> None:
+        target = source / name
+        target.chmod(0o755)
+        target.write_bytes(target.read_bytes() + b"\n")
+        release.manifest(source, check=False)
+
+    monkeypatch.setattr(release, "Path", path)
+    monkeypatch.setattr(release, "prepare_system_files", prepare)
+    monkeypatch.setattr(release.subprocess, "run", active)
+    monkeypatch.setattr(release, "check_health", health)
+    monkeypatch.setattr(release, "run", run)
+    assert update() == ["restart", "up"]
+    assert update() == []
+    pull("envs/deployed/grafana/dashboards/factory-horde-validator.json")
+    assert update() == ["up"]
+    pull("executor/executor.py")
+    assert update() == ["restart", "up"]
+    assert update() == []
