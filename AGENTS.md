@@ -164,13 +164,17 @@ Skip for higher level tasks that do not touch the code.
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
 `COMPOSE_PROFILES=grafana` adds pinned Grafana with the provisioned validator dashboard and Caddy, which
 publishes it over HTTPS at `GRAFANA_ADDRESS`; both are release assets. Refinery enables the profile.
+Grafana's password is not configuration: it starts as `admin` / `admin` and the operator changes it in Grafana.
 Prometheus scrapes node-exporter, the validator on port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
 Local configuration generates separate identity/open-access/metrics tokens. No remote-write
 or tracing sidecar runs, and no upstream credentials are needed.
 
 `monitoring.py` owns `/metrics`, `/livez` and `/readyz` through a Nexus actor, including server shutdown.
 Readiness requires fresh runtime chain/executor/Docker observations, compatible records, writable paths and
-reconciliation. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
+reconciliation. The same collector exports the latest round's number, cohort size and window, per-miner
+accepted scores and calculated weights from records, and the validator's permit, last weight update and
+per-miner incentive from one throttled Pylon neuron read that never affects readiness. Miner hotkeys are
+the only identity labels; job and round IDs stay in records. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
 termination. The same validator scrape path forwards executor counters/histograms. There is no textfile collector
 or executor HTTP server. Record I/O counters and latency histograms live in
 `validator/src/validator/record_files.py`. The selected Nexus revision has no

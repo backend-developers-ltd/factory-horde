@@ -187,25 +187,29 @@ control/result paths. Pylon acknowledgement is not independent chain proof.
 
 `COMPOSE_PROFILES=grafana` in `.env` adds Grafana with the provisioned validator
 dashboard and Caddy, which serves it over HTTPS on ports 80 and 443 at
-`GRAFANA_ADDRESS`. The profile requires `GRAFANA_ADMIN_PASSWORD`; without the profile
-neither service starts. The Caddyfile, provisioning and dashboard are release assets
+`GRAFANA_ADDRESS`. Without the profile neither service starts. The Caddyfile, provisioning and dashboard are release assets
 under `envs/deployed/`. Caddy obtains a Let's Encrypt certificate for `GRAFANA_ADDRESS`
 (for a bare IP address the six-day `shortlived` profile, renewed automatically), so
-ports 80 and 443 must be reachable from the internet. Log in as `admin`; anonymous
-access and sign-up are disabled. Grafana applies the password only when it creates its
-database.
+ports 80 and 443 must be reachable from the internet. Anonymous access and sign-up are
+disabled.
+
+**Grafana's first login is `admin` / `admin`, and it is reachable from the internet.**
+Log in right after the first start and set a new password when Grafana asks for one.
+The password lives in Grafana's database, not in `.env`; change it later under the
+profile menu, or reset a lost one with
+`docker compose exec grafana grafana cli admin reset-admin-password <new password>`.
 
 The provisioned dashboard **FactoryHorde validator** is Grafana's home page. Grafana rereads [`factory-horde-validator.json`](../envs/deployed/grafana/dashboards/factory-horde-validator.json) every minute, so an updated release shows up without a restart; changes saved in the UI are not kept. Its sections are:
 
 - **Status:** readiness, scrape targets, round phase, active and unresolved jobs, usable scores, age of the latest usable round and validator uptime.
 - **Liveness:** when each pipeline step last happened (chain beat, commitment discovery, round admission, image pull, container start, job completion, accepted judge score, weight calculation, Pylon acknowledgement and on-chain weight commit), a timeline of these events, observation ages and individual readiness checks.
-- **Rounds and weights:** round phase over time, discovery, coordinator and result events, job gauges and the weight pipeline.
+- **Rounds and weights:** round phase over time, the current round's number, cohort size and end, each miner's accepted score, calculated weight and on-chain incentive, the validator's permit and last weight update, discovery, coordinator and result events, job gauges and the weight pipeline.
 - **Host executor:** Docker operations, errors and latency.
 - **Pylon and chain:** subtensor operations and Pylon API requests with latency.
 - **Validator internals:** shared-record I/O, handler latency, process memory and CPU, readiness samples.
 - **Server:** CPU, memory, load and disk from node-exporter.
 
-The validator does not export per-miner scores, weights or evaluated image digests as metrics, so the dashboard shows pipeline activity but not individual miners. Event counts come from Prometheus `increase` and are approximate, and the Last activity panel looks back seven days. Prometheus keeps up to 1 GB of samples. node-exporter runs in the application's bridge network, so the Server section shows no host network traffic.
+Per-miner series are labelled with the miner hotkey. The permit, last weight update and incentive come from one Pylon neuron read a minute; Pylon does not expose the weights stored on chain or pending commit-reveal commits, so the dashboard shows calculated weights and the resulting incentive instead. Evaluated image digests stay in the records. Event counts come from Prometheus `increase` and are approximate, and the Last activity panel looks back seven days. Prometheus keeps up to 1 GB of samples. node-exporter runs in the application's bridge network, so the Server section shows no host network traffic.
 
 Trace export, Alloy and remote-write remain disabled; no upstream credentials are
 required. See [validator operations](../validator/README.md), the

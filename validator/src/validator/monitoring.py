@@ -2,7 +2,8 @@
 
 import json
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, override
@@ -27,27 +28,85 @@ from nexus.v1 import (
 )
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, Counter, Histogram, generate_latest
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily, HistogramMetricFamily, Metric
+from pylon_client.artanis import Config, PylonClient
 
 from validator.coordinator import RoundTick
 from validator.health import ExecutorHealth, ExecutorMetrics, Readiness, fresh
 from validator.records import Record, StopRequest, is_job_filename
 from validator.result_records import JobResult, ResultProjection
 from validator.result_repository import ResultRepository
+from validator.weighing import WeightCalculation
 
 _logger = structlog.get_logger(__name__)
 _events = Counter("factory_horde_health_checks_total", "Application readiness observations", ("outcome",))
 _latency = Histogram("factory_horde_health_check_seconds", "Application readiness sampling duration")
 _submissions = Counter("factory_horde_pylon_submissions_total", "Pylon acknowledgements, not chain inclusion")
 _submission_latency = Histogram("factory_horde_submission_observation_seconds", "Acknowledgement recording duration")
+_CHAIN_VIEW_SECONDS = 60
+
+
+@dataclass(frozen=True)
+class RoundView:
+    """Latest round and its usable scores for dashboards; never part of readiness."""
+
+    sequence: int
+    miners: int
+    start: datetime
+    end: datetime
+    usable_sequence: int | None = None
+    scores: Mapping[str, float] | None = None
+
+
+@dataclass(frozen=True)
+class ChainView:
+    """What the chain reports for this subnet through Pylon; no weight row is available there."""
+
+    block: int
+    permit: bool | None
+    last_update: int | None
+    incentives: Mapping[str, float]
+
+
+def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None) -> ChainView:
+    """Read current neurons with the public identity API.
+
+    Raises:
+        ValueError: The configured identity no longer selects this subnet.
+    """
+    with PylonClient(config) as client:
+        response = client.v1.identity.get_latest_neurons()
+        if client.v1.identity.netuid != netuid:
+            raise ValueError("Pylon identity belongs to a different subnet")
+    own = next((n for n in response.neurons.values() if n.hotkey == validator_hotkey), None)
+    return ChainView(
+        block=response.block.number,
+        permit=None if own is None else bool(own.validator_permit),
+        last_update=None if own is None else int(own.last_update),
+        incentives={str(n.hotkey): float(n.incentive) for n in response.neurons.values() if n.incentive > 0},
+    )
 
 
 class HealthSampler:
-    """Inspect records and real writable paths without issuing Docker or chain operations."""
+    """Inspect records and real writable paths without Docker operations.
 
-    def __init__(self, repository: ResultRepository, dispatch_enabled: bool, max_age: float):
+    The optional chain view is one throttled Pylon read for dashboards; it never affects readiness.
+    """
+
+    def __init__(
+        self,
+        repository: ResultRepository,
+        dispatch_enabled: bool,
+        max_age: float,
+        chain_view: Callable[[], ChainView] | None = None,
+    ):
         self.repository = repository
         self.dispatch_enabled = dispatch_enabled
         self.max_age = max_age
+        self.read_chain_view = chain_view
+        self.chain_view: ChainView | None = None
+        self.chain_view_at: datetime | None = None
+        self.round_view: RoundView | None = None
+        self.weights: WeightCalculation | None = None
         self.chain_at: datetime | None = None
         self.coordinator_at: datetime | None = None
         self.coordinator_errors: tuple[str, ...] = ()
@@ -58,6 +117,7 @@ class HealthSampler:
         """An unreadable component fails its check while other evidence stays visible."""
         with _latency.time():
             snapshot = self._sample(now)
+            self._sample_chain_view(now)
             previous = self.snapshot
             self.snapshot = snapshot
             _events.labels("ready" if all(snapshot.checks.values()) else "not_ready").inc()
@@ -68,6 +128,19 @@ class HealthSampler:
             ):
                 _logger.info("readiness_changed", **snapshot.model_dump(mode="json"))
             return snapshot
+
+    def _sample_chain_view(self, now: datetime) -> None:
+        """A failed read clears the view so dashboards never show stale chain state."""
+        if self.read_chain_view is None or (
+            self.chain_view_at is not None and 0 <= (now - self.chain_view_at).total_seconds() < _CHAIN_VIEW_SECONDS
+        ):
+            return
+        self.chain_view_at = now
+        try:
+            self.chain_view = self.read_chain_view()
+        except Exception as error:
+            self.chain_view = None
+            _logger.warning("chain_view_unavailable", error=str(error))
 
     def _sample(self, now: datetime) -> Readiness:
         files = self.repository.files
@@ -175,10 +248,27 @@ class HealthSampler:
                     "usable_round_completed_at": completed_at,
                 }
             )
+            self.round_view = (
+                RoundView(
+                    sequence=rounds[-1].plan.sequence,
+                    miners=len(rounds[-1].plan.cohort),
+                    start=rounds[-1].plan.deadlines.start,
+                    end=rounds[-1].plan.deadlines.round_end,
+                    usable_sequence=usable[0].sequence if usable else None,
+                    scores={r.miner_hotkey: r.score for r in usable[1]} if usable else None,
+                )
+                if rounds
+                else None
+            )
+            try:
+                self.weights = files.read("control/weight-calculation.json", WeightCalculation)
+            except FileNotFoundError:
+                self.weights = None
             checks["records"] = True
             checks["job_observations"] = observed
             checks["reconciled"] = checks["reconciled"] and not blocked
         except (OSError, ValueError) as error:
+            self.round_view = self.weights = None
             errors.append(f"records: {error}")
         try:
             for path in sorted(paths):
@@ -190,7 +280,10 @@ class HealthSampler:
 
 
 class HealthCollector:
-    """Bounded application gauges and executor metrics on the single validator scrape path."""
+    """Application gauges and executor metrics on the single validator scrape path.
+
+    Only miner hotkeys label series, bounded by the subnet's UIDs; job and round identities stay in records.
+    """
 
     def __init__(self, sampler: HealthSampler):
         self.sampler = sampler
@@ -234,6 +327,7 @@ class HealthCollector:
                 "Age in seconds; -1 means absent",
                 value=(now - observed).total_seconds() if observed else -1,
             )
+        yield from self._detail(now)
         metrics = self.sampler.executor_metrics
         if metrics is None:
             return
@@ -252,6 +346,43 @@ class HealthCollector:
             )
         yield histogram
 
+    def _detail(self, now: datetime) -> Iterable[Metric]:
+        """Latest round, scores, calculated weights and chain view; absent evidence yields no series."""
+
+        def gauge(name: str, text: str, value: float) -> Metric:
+            return GaugeMetricFamily("factory_horde_" + name, text, value=value)
+
+        def by_miner(name: str, text: str, values: Mapping[str, float]) -> Metric:
+            family = GaugeMetricFamily("factory_horde_" + name, text, labels=["miner_hotkey"])
+            for hotkey, value in sorted(values.items()):
+                family.add_metric([hotkey], value)
+            return family
+
+        view = self.sampler.round_view
+        if view is not None:
+            yield gauge("round_sequence", "Latest persisted round number", view.sequence)
+            yield gauge("round_miners", "Miners admitted to the latest round", view.miners)
+            yield gauge("round_start_timestamp_seconds", "Latest round start", view.start.timestamp())
+            yield gauge("round_end_timestamp_seconds", "Latest round end", view.end.timestamp())
+            if view.usable_sequence is not None and view.scores is not None:
+                yield gauge("usable_round_sequence", "Round that supplies current scores", view.usable_sequence)
+                yield by_miner("usable_score", "Accepted score in the latest usable round", view.scores)
+        weights = self.sampler.weights
+        if weights is not None:
+            yield by_miner("calculated_weight", "Latest calculated weight, not chain inclusion", weights.weights)
+            yield gauge(
+                "weight_calculation_age_seconds",
+                "Age of the latest weight calculation",
+                (now - weights.calculated_at).total_seconds(),
+            )
+        chain = self.sampler.chain_view
+        if chain is not None:
+            yield gauge("chain_view_block", "Block of the latest chain view", chain.block)
+            if chain.permit is not None and chain.last_update is not None:
+                yield gauge("chain_validator_permit", "Validator permit on chain", int(chain.permit))
+                yield gauge("chain_validator_last_update_block", "Validator's last weight update", chain.last_update)
+            yield by_miner("chain_incentive", "Nonzero incentive on chain", chain.incentives)
+
 
 class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
     """Own sampling and an HTTP server with read-only operational endpoints.
@@ -265,9 +396,17 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
     source error: unexpected monitor failure
     """
 
-    def __init__(self, repository: ResultRepository, dispatch_enabled: bool, host: str, port: int, max_age: float):
+    def __init__(
+        self,
+        repository: ResultRepository,
+        dispatch_enabled: bool,
+        host: str,
+        port: int,
+        max_age: float,
+        chain_view: Callable[[], ChainView] | None = None,
+    ):
         super().__init__("factory-horde-monitoring")
-        self.sampler = HealthSampler(repository, dispatch_enabled, max_age)
+        self.sampler = HealthSampler(repository, dispatch_enabled, max_age, chain_view)
         self.host, self.port = host, port
         self.block = Sink[BlockBeat](f"{self.id}-block", owner_node=self)
         self.round = Sink[RoundTick](f"{self.id}-round", owner_node=self)

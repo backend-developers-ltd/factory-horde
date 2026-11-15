@@ -34,9 +34,11 @@ Follow the [installer instructions](../installer/README.md) with the checkout as
 ```bash
 cd ~/factory-horde
 install -m 0600 refinery/validator.env.example .env
-# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, GRAFANA_ADDRESS and GRAFANA_ADMIN_PASSWORD in .env.
+# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY and GRAFANA_ADDRESS in .env.
 installer/install.sh "$PWD" --ref snapshot --source "file://$PWD"
 ```
+
+**Change the Grafana password straight away.** Grafana starts with the login `admin` / `admin` and is reachable from the internet: open `https://GRAFANA_ADDRESS/`, log in and set a new password when Grafana asks for one.
 
 `.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `grafana` profile enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and whatever `git pull` brings in within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.
 

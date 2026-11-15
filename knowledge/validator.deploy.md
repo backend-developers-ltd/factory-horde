@@ -48,8 +48,9 @@ endpoint. Tracing, Alloy and remote-write are disabled. The inherited Alloy file
 not an active service or an updater input.
 
 Grafana and Caddy are the opt-in `grafana` Compose profile of the same file (`COMPOSE_PROFILES=grafana`,
-`GRAFANA_ADDRESS`, `GRAFANA_ADMIN_PASSWORD` in `.env`), pinned by digest like every other service. Their
-Caddyfile, provisioning and dashboard under `envs/deployed/` are release assets.
+`GRAFANA_ADDRESS` in `.env`), pinned by digest like every other service. Their
+Caddyfile, provisioning and dashboard under `envs/deployed/` are release assets. Grafana's first login is
+`admin` / `admin` and must be changed in Grafana right after the first start.
 
 The maintained installer consumes `installer/release-manifest.json`, the standalone
 executor/checksum, common Compose and installer assets from one resolved Git
