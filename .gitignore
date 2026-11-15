@@ -5,7 +5,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
-# State of an installation whose directory is this checkout (refinery/validator/setup.sh).
+# State of an installation whose directory is this checkout (installer/README.md).
 /data/
 /installation.json
 /applied-release.json

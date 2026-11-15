@@ -18,6 +18,7 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `validator/` — Nexus-based subnet validator (own `pyproject.toml`, `uv.lock`, `.venv`); also holds the
   production `Dockerfile`
 - `miner/` — submission tooling and baseline factory assets (own `pyproject.toml`, `uv.lock`, `.venv`);
+  `docker-compose.yml` runs a miner's Pylon and the published one-shot submitter;
   `miner` is a one-shot Pylon submitter; the `bootstrap` dependency group holds the local-chain SDK
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
@@ -28,12 +29,11 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
-- `refinery/` — guide and scripts for the validator and miner servers on the Refinery development
-  chain (subnet 11). Both run as the `ubuntu` operator from one checkout in `~/factory-horde`. The
-  validator checkout is its own installation: `refinery/validator/setup.sh` runs `installer/install.sh`
-  in place, so its only settings file is the root `.env` (from `refinery/validator/.env.example`) and
-  its only Compose file is `envs/deployed/docker-compose.yml`. The miner's Pylon and settings are
-  `refinery/miner/docker-compose.yml` and the `.env` beside it
+- `refinery/` — only what is specific to the Refinery development chain (subnet 11): validator and
+  miner `.env` examples, the `//Alice` funding script and a guide. Deployment itself is the generic
+  path: the validator through `installer/` (on Refinery the `ubuntu` operator's checkout in
+  `~/factory-horde` is both source and installation directory), a miner through
+  `miner/docker-compose.yml`. Do not add Refinery-specific deployment or operation scripts
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures

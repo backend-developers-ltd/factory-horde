@@ -1,5 +1,5 @@
-# Miner-side Pylon with a single "miner" identity. Started by refinery/miner/setup.sh with the
-# .env beside this file (created from .env.example).
+# A miner's Pylon with a single "miner" identity, and the one-shot submitter that publishes
+# FACTORY_IMAGE through it. Settings come from the .env beside this file; see README.md.
 name: factory-horde-miner
 services:
   pylon:
@@ -37,6 +37,27 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
+
+  # Not started by "up". Run: docker compose run --rm submit [IMAGE]
+  submit:
+    # Published prototype submitter; a source build may override this reference.
+    image: "${SUBMITTER_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-submitter-prototype@sha256:260ae682875e7dc93797838f42b255bb62a9ad46169fab3eefaccef59090cf29}"
+    platform: linux/amd64
+    profiles: [submit]
+    environment:
+      PYLON_ADDRESS: http://pylon:8000
+      PYLON_IDENTITY: miner
+      PYLON_IDENTITY_TOKEN: "${MINER_PYLON_TOKEN:?}"
+      NETUID: "${NETUID:?}"
+    command: ["${FACTORY_IMAGE:-}"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      pylon:
+        condition: service_healthy
 
 volumes:
   pylon-data:
