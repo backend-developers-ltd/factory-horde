@@ -142,6 +142,14 @@ def test_env_parser_does_not_execute_expansions_and_preserves_literal_values(tmp
     assert not (tmp_path / "marker").exists()
 
 
+def test_refinery_example_survives_installer_encoding_without_a_credential(tmp_path: Path) -> None:
+    config = release.read_env(REPO / "refinery/validator.env.example")
+    assert " " in config["TASK_SPECIFICATION"] and config["CLAUDE_CODE_OAUTH_TOKEN"] == ""
+    path = tmp_path / ".env"
+    path.write_bytes(release.environment(config))
+    assert release.read_env(path) == config
+
+
 def test_symlink_destinations_and_unsafe_system_names_are_rejected(tmp_path: Path) -> None:
     original = tmp_path / "original"
     original.write_text("keep")
@@ -179,6 +187,9 @@ def test_clean_localnet_configuration_generates_isolated_paths_and_distinct_toke
     tokens = [value for key, value in config.items() if "TOKEN" in key]
     assert len(tokens) == len(set(tokens)) == 8
     assert all(len(value) == 48 for value in tokens)
+    workload = ("EXECUTOR_TMP_SIZE", "EXECUTOR_FACTORY_NETWORK", "EXECUTOR_INFERENCE_URL")
+    assert set(workload) < set(release.EXECUTOR_KEYS)
+    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080"]
     path.write_bytes(release.environment(config))
     assert release.configuration(path, tmp_path / "installation", application=True, localnet=True) == config
     config["HOST_WALLET_DIR"] = str(tmp_path / "outside-wallets")

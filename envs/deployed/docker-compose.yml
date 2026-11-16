@@ -58,6 +58,8 @@ services:
       VALIDATOR_EVALUATION_WINDOW: "${EVALUATION_SECONDS:-3300}"
       VALIDATOR_JUDGE_STOP_RESERVE: "${JUDGE_STOP_RESERVE_SECONDS:-300}"
       VALIDATOR_STOP_GRACE_SECONDS: "${STOP_GRACE_SECONDS:-60}"
+      # Empty keeps the validator's built-in specification.
+      VALIDATOR_SPECIFICATION: "${TASK_SPECIFICATION:-}"
       VALIDATOR_WEIGHTS_ENABLED: "${VALIDATOR_WEIGHTS_ENABLED:-false}"
       VALIDATOR_WEIGHT_TEMPERATURE: "${WEIGHT_TEMPERATURE:-0.1}"
       VALIDATOR_WEIGHT_TEMPO: "${SUBNET_TEMPO:-360}"
@@ -194,6 +196,70 @@ services:
     depends_on:
       grafana:
         condition: service_healthy
+
+  # Optional inference proxy, started only with COMPOSE_PROFILES=inference in .env. It holds the Claude
+  # credential and is the only service factories can reach on the internal network that the executor
+  # attaches them to (EXECUTOR_FACTORY_NETWORK). Factories on that network can also reach each other,
+  # and the proxy applies no per-factory quota.
+  inference-proxy:
+    # caddy:2.11.9
+    image: docker.io/library/caddy@sha256:e40b94d0a43b5ff69cb20568d73f10c70703df7b0ffc2298eb3d723cdc9d0bd1
+    platform: linux/amd64
+    profiles: [inference]
+    restart: unless-stopped
+    environment:
+      # Compose interpolates inactive profiles too, so the entrypoint requires the token instead.
+      CLAUDE_CODE_OAUTH_TOKEN: "${CLAUDE_CODE_OAUTH_TOKEN:-}"
+    networks: [default, inference]
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /data
+      - /config
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        : "$${CLAUDE_CODE_OAUTH_TOKEN:?}"
+        cat > /tmp/Caddyfile <<'EOF'
+        {
+          auto_https off
+          admin off
+        }
+        :8080 {
+          handle /healthz {
+            respond 200
+          }
+          handle /v1/messages* {
+            reverse_proxy https://api.anthropic.com {
+              header_up Authorization "Bearer {env.CLAUDE_CODE_OAUTH_TOKEN}"
+              header_up -x-api-key
+              flush_interval -1
+            }
+          }
+          handle {
+            respond 404
+          }
+        }
+        EOF
+        exec caddy run --config /tmp/Caddyfile --adapter caddyfile
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/healthz]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+networks:
+  inference:
+    name: "${EXECUTOR_FACTORY_NETWORK:-factory-horde-inference}"
+    internal: true
+    # Without a host address on the bridge, factories cannot reach services bound on the host
+    # either. Requires Docker Engine 28 or newer.
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
 
 volumes:
   pylon-data:

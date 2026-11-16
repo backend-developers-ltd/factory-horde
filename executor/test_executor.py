@@ -2,6 +2,7 @@
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -27,6 +28,7 @@ from .executor import (
     Request,
     Settings,
     encode,
+    main,
     now,
     object_value,
     parse,
@@ -672,3 +674,138 @@ def test_terminal_publication_failure_stays_scheduled_until_repaired(
         executor.poll(pool)
         assert not executor.active
     assert status(executor, job_request).execution == "never_started"
+
+
+class RecordingDocker(Docker):
+    """Captures the create command instead of contacting a daemon."""
+
+    arguments: tuple[str, ...] = ()
+
+    @override
+    def require(self, *args: str, timeout: float = 30) -> str:
+        self.arguments = args
+        return "a" * 64
+
+
+def create_arguments(executor: Executor, request: Request, settings: Settings) -> tuple[str, ...]:
+    docker = RecordingDocker(settings, executor.files, executor.metrics, executor.shutdown)
+    docker.create(request)
+    return docker.arguments
+
+
+def values(arguments: tuple[str, ...], flag: str) -> list[str]:
+    return [arguments[index + 1] for index, argument in enumerate(arguments) if argument == flag]
+
+
+@pytest.fixture
+def judge_request(executor: Executor, job_request: Request) -> Request:
+    value = parse((FIXTURES / "judge-request.json").read_bytes())
+    value.update(created_at=now(), deadline=(datetime.now(UTC) + timedelta(minutes=5)).isoformat())
+    request = Request.load(value, str(value["job_id"]) + ".json")
+    assert request.report_dir is not None
+    (executor.files.root / request.report_dir).mkdir()
+    return request
+
+
+def test_default_workloads_stay_offline_without_environment(
+    executor: Executor, job_request: Request, judge_request: Request
+) -> None:
+    for request in (job_request, judge_request):
+        arguments = create_arguments(executor, request, executor.settings)
+        assert values(arguments, "--network") == ["none"]
+        assert values(arguments, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=64m"]
+        assert "--env" not in arguments and arguments[-1] == request.image
+
+
+def test_only_factories_join_the_inference_network(
+    executor: Executor, job_request: Request, judge_request: Request
+) -> None:
+    settings = Settings(
+        executor.settings.root,
+        os.getuid(),
+        os.getgid(),
+        tmp_size="1g",
+        factory_network="factory-horde-inference",
+        inference_url="http://proxy.example:8080",
+    )
+    factory = create_arguments(executor, job_request, settings)
+    assert values(factory, "--network") == ["factory-horde-inference"]
+    assert values(factory, "--env") == [
+        "ANTHROPIC_BASE_URL=http://proxy.example:8080",
+        "CLAUDE_CODE_OAUTH_TOKEN=inference-proxy",
+    ]
+    assert values(factory, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and factory[-1] == job_request.image
+    judge = create_arguments(executor, judge_request, settings)
+    assert values(judge, "--network") == ["none"] and "--env" not in judge
+    assert values(judge, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"]
+    unchanged = create_arguments(executor, job_request, executor.settings)
+    assert [a for a in factory if a not in unchanged] == [
+        "factory-horde-inference",
+        "/tmp:rw,nosuid,nodev,size=1g",
+        "--env",
+        "ANTHROPIC_BASE_URL=http://proxy.example:8080",
+        "--env",
+        "CLAUDE_CODE_OAUTH_TOKEN=inference-proxy",
+    ]
+
+
+WORKLOAD_KEYS = ("EXECUTOR_FACTORY_NETWORK", "EXECUTOR_INFERENCE_URL", "EXECUTOR_TMP_SIZE")
+
+
+def run_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, environment: dict[str, str]) -> list[Settings]:
+    seen: list[Settings] = []
+
+    def run(executor: Executor) -> None:
+        seen.append(executor.settings)
+
+    def keep_handlers(_number: int, _handler: object) -> None:
+        pass
+
+    monkeypatch.setattr(Executor, "run", run)
+    monkeypatch.setattr(signal, "signal", keep_handlers)
+    monkeypatch.setattr(sys, "argv", ["executor.py", "--root", str(tmp_path)])
+    for key in WORKLOAD_KEYS:
+        monkeypatch.delenv(key, raising=False)
+    for key, value in environment.items():
+        monkeypatch.setenv(key, value)
+    main()
+    return seen
+
+
+def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (default,) = run_main(tmp_path, monkeypatch, {})
+    assert (default.factory_network, default.inference_url, default.tmp_size) == (
+        "",
+        "http://inference-proxy:8080",
+        "64m",
+    )
+    configured = ("factory-horde-inference", "https://proxy.example/base", "1g")
+    (settings,) = run_main(tmp_path, monkeypatch, dict(zip(WORKLOAD_KEYS, configured, strict=True)))
+    assert (settings.factory_network, settings.inference_url, settings.tmp_size) == configured
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("EXECUTOR_FACTORY_NETWORK", "host"),
+        ("EXECUTOR_FACTORY_NETWORK", "bridge"),
+        ("EXECUTOR_FACTORY_NETWORK", "none"),
+        ("EXECUTOR_FACTORY_NETWORK", "container:other"),
+        ("EXECUTOR_FACTORY_NETWORK", "--privileged"),
+        ("EXECUTOR_FACTORY_NETWORK", "name=inference,alias=other"),
+        ("EXECUTOR_FACTORY_NETWORK", "two words"),
+        ("EXECUTOR_INFERENCE_URL", ""),
+        ("EXECUTOR_INFERENCE_URL", "inference-proxy:8080"),
+        ("EXECUTOR_INFERENCE_URL", "http://inference-proxy:8080 --privileged"),
+        ("EXECUTOR_TMP_SIZE", ""),
+        ("EXECUTOR_TMP_SIZE", "0m"),
+        ("EXECUTOR_TMP_SIZE", "64"),
+        ("EXECUTOR_TMP_SIZE", "64m,exec"),
+    ],
+)
+def test_invalid_workload_settings_are_rejected_at_startup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, value: str
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        run_main(tmp_path, monkeypatch, {key: value})
+    assert error.value.code == 2 and not list(tmp_path.iterdir())

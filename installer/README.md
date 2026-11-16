@@ -31,7 +31,7 @@ cron, sudo, Git and Bash. Run installation as the non-root operator with Docker
 access. `install.sh` takes an explicit environment file and release selection;
 there is no default public network or subnet. The operator owns the installation,
 shared data and workload output with matching numeric UID/GID. Default resources
-are 512 MiB, one CPU, 128 PIDs, 32 executor workers and two-second polling.
+are 512 MiB, one CPU, 128 PIDs, a 64 MiB `/tmp`, 32 executor workers and two-second polling.
 
 The installation directory defaults its data root to `<installation>/data` and
 mounts that root into the validator at `/var/lib/factory-horde`. Choosing
@@ -41,7 +41,7 @@ mounts that root into the validator at `/var/lib/factory-horde`. Choosing
 contain letters, numbers, slashes, dots, underscores and hyphens, with no symlinks.
 
 The executor runs from `<installation>/executor/executor.py`, with only its resource
-settings in `executor.env`. It has no package installation or virtual environment.
+and factory network settings in `executor.env`. It has no package installation or virtual environment.
 Its system unit uses the configured operator/primary group, Docker supplementary
 group, `UMask=0027`, a read-only system/home view and writes only under its data
 root. Docker access grants host-level control and belongs to the trusted executor.
@@ -189,6 +189,20 @@ It validates the source manifest and installs next to the configured data root,
 without installing an application cron job. Use the full installer for candidate
 acceptance. `prepare-data-root.sh /absolute/data/root` remains the independent
 ownership/permissions preparation command.
+
+## Task specification and inference proxy
+
+`TASK_SPECIFICATION` in `.env` is the task text given to every factory in new rounds. Write it on one line in single quotes, without `$` or backticks. Unset or empty keeps the built-in greeting task, and a round that is already admitted keeps the text it started with.
+
+Workloads run without a network by default. Factories that call Claude need the inference proxy, which three settings enable together:
+
+- `COMPOSE_PROFILES=inference` (or `grafana,inference`) starts the `inference-proxy` service and creates the internal Docker network `factory-horde-inference`. This profile requires Docker Engine 28 or newer.
+- `CLAUDE_CODE_OAUTH_TOKEN` is a Claude subscription token created with `claude setup-token`. It stays in `.env` on the validator host, readable only by the operator, and reaches only the proxy container. It is never written to `executor.env` or given to a factory.
+- `EXECUTOR_FACTORY_NETWORK=factory-horde-inference` makes the executor attach factory containers to that network and give them `ANTHROPIC_BASE_URL` (`EXECUTOR_INFERENCE_URL`, default `http://inference-proxy:8080`) and the placeholder `CLAUDE_CODE_OAUTH_TOKEN=inference-proxy`. Judges stay without a network. The same variable names the network in Compose, so one value keeps both sides in step.
+
+The network has no route to the internet or to the host. The proxy forwards only `/v1/messages*` to `https://api.anthropic.com`, replaces the `Authorization` header with the real token and answers 404 for any other path. Factories that run at the same time share the network and can reach each other, and the proxy applies no per-factory quota, so every factory in a round draws on the same subscription.
+
+Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory containers and those factories fail without a score.
 
 ## Monitoring and recovery
 
