@@ -2,7 +2,8 @@
 
 import json
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, override
@@ -27,27 +28,134 @@ from nexus.v1 import (
 )
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, Counter, Histogram, generate_latest
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily, HistogramMetricFamily, Metric
+from pylon_client.artanis import Config, PylonClient, PylonTimeout
+from tenacity import Retrying, stop_after_attempt
 
 from validator.coordinator import RoundTick
 from validator.health import ExecutorHealth, ExecutorMetrics, Readiness, fresh
 from validator.records import Record, StopRequest, is_job_filename
 from validator.result_records import JobResult, ResultProjection
 from validator.result_repository import ResultRepository
+from validator.weighing import WeightCalculation
 
 _logger = structlog.get_logger(__name__)
 _events = Counter("factory_horde_health_checks_total", "Application readiness observations", ("outcome",))
 _latency = Histogram("factory_horde_health_check_seconds", "Application readiness sampling duration")
 _submissions = Counter("factory_horde_pylon_submissions_total", "Pylon acknowledgements, not chain inclusion")
 _submission_latency = Histogram("factory_horde_submission_observation_seconds", "Acknowledgement recording duration")
+_CHAIN_VIEW_SECONDS = 60
+_chain_events = Counter("factory_horde_chain_view_total", "Dashboard chain reads", ("outcome",))
+_chain_latency = Histogram("factory_horde_chain_view_seconds", "Dashboard chain read duration")
+
+
+@dataclass(frozen=True)
+class RoundView:
+    """Latest round and its usable scores for dashboards; never part of readiness."""
+
+    sequence: int
+    miners: int
+    start: datetime
+    end: datetime
+    usable_sequence: int | None = None
+    scores: Mapping[str, float] | None = None
+
+
+@dataclass(frozen=True)
+class ChainView:
+    """What the chain reports for this subnet through Pylon; no weight row is available there."""
+
+    block: int
+    permit: bool | None
+    last_update: int | None
+    incentives: Mapping[str, float]
+
+
+def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None) -> ChainView:
+    """Read current neurons with the public identity API.
+
+    Raises:
+        ValueError: The configured identity no longer selects this subnet.
+    """
+    config = config.model_copy(
+        update={
+            "timeout": PylonTimeout(connect=3, read=5, write=3, pool=3),
+            "retry": Retrying(stop=stop_after_attempt(1), reraise=True),
+        }
+    )
+    with PylonClient(config) as client:
+        response = client.v1.identity.get_latest_neurons()
+        if client.v1.identity.netuid != netuid:
+            raise ValueError("Pylon identity belongs to a different subnet")
+    own = next((n for n in response.neurons.values() if n.hotkey == validator_hotkey), None)
+    return ChainView(
+        block=response.block.number,
+        permit=None if own is None else bool(own.validator_permit),
+        last_update=None if own is None else int(own.last_update),
+        incentives={str(n.hotkey): float(n.incentive) for n in response.neurons.values() if n.incentive > 0},
+    )
+
+
+@dataclass(frozen=True)
+class ChainSample:
+    """Disposable dashboard evidence, including failed observations."""
+
+    observed_at: datetime
+    view: ChainView | None
+
+
+class ChainViewNode(Transform[datetime, ChainSample], ActorBuilder):
+    """Read dashboard chain state independently of readiness.
+
+    sink sink: polling tick
+    source ok: cached or refreshed dashboard observation
+    source error: unexpected actor failure
+    """
+
+    def __init__(self, read: Callable[[], ChainView]):
+        super().__init__("factory-horde-chain-view")
+        self.read = read
+
+    @override
+    def build_actor(self, *, pipe_to_bus: PipeToBus, context_store: ContextStore) -> ChainViewActor:
+        return ChainViewActor(self, pipe_to_bus, context_store)
+
+
+class ChainViewActor(TransformActor[datetime, ChainSample]):
+    """Nexus owns the bounded network read and its disposable cache."""
+
+    def __init__(self, spec: ChainViewNode, pipe_to_bus: PipeToBus, context_store: ContextStore):
+        super().__init__(spec, pipe_to_bus, context_store)
+        self.node = spec
+        self.sample: ChainSample | None = None
+
+    @override
+    def _transform(self, ctx: Context, payload: datetime) -> ChainSample:
+        now = datetime.now(UTC)
+        if self.sample is not None and fresh(self.sample.observed_at, now, _CHAIN_VIEW_SECONDS):
+            return self.sample
+        with _chain_latency.time():
+            try:
+                view = self.node.read()
+            except Exception as error:
+                _chain_events.labels("error").inc()
+                _logger.warning("chain_view_unavailable", error=str(error))
+                view = None
+            else:
+                _chain_events.labels("ok").inc()
+        self.sample = ChainSample(now, view)
+        return self.sample
 
 
 class HealthSampler:
-    """Inspect records and real writable paths without issuing Docker or chain operations."""
+    """Inspect records and writable paths without Docker or network operations."""
 
     def __init__(self, repository: ResultRepository, dispatch_enabled: bool, max_age: float):
         self.repository = repository
         self.dispatch_enabled = dispatch_enabled
         self.max_age = max_age
+        self.chain_sample: ChainSample | None = None
+        self.round_view: RoundView | None = None
+        self.weights: WeightCalculation | None = None
         self.chain_at: datetime | None = None
         self.coordinator_at: datetime | None = None
         self.coordinator_errors: tuple[str, ...] = ()
@@ -175,10 +283,27 @@ class HealthSampler:
                     "usable_round_completed_at": completed_at,
                 }
             )
+            self.round_view = (
+                RoundView(
+                    sequence=rounds[-1].plan.sequence,
+                    miners=len(rounds[-1].plan.cohort),
+                    start=rounds[-1].plan.deadlines.start,
+                    end=rounds[-1].plan.deadlines.round_end,
+                    usable_sequence=usable[0].sequence if usable else None,
+                    scores={r.miner_hotkey: r.score for r in usable[1]} if usable else None,
+                )
+                if rounds
+                else None
+            )
+            try:
+                self.weights = files.read("control/weight-calculation.json", WeightCalculation)
+            except FileNotFoundError:
+                self.weights = None
             checks["records"] = True
             checks["job_observations"] = observed
             checks["reconciled"] = checks["reconciled"] and not blocked
         except (OSError, ValueError) as error:
+            self.round_view = self.weights = None
             errors.append(f"records: {error}")
         try:
             for path in sorted(paths):
@@ -190,7 +315,10 @@ class HealthSampler:
 
 
 class HealthCollector:
-    """Bounded application gauges and executor metrics on the single validator scrape path."""
+    """Application gauges and executor metrics on the single validator scrape path.
+
+    Only miner hotkeys label series, bounded by the subnet's UIDs; job and round identities stay in records.
+    """
 
     def __init__(self, sampler: HealthSampler):
         self.sampler = sampler
@@ -234,6 +362,7 @@ class HealthCollector:
                 "Age in seconds; -1 means absent",
                 value=(now - observed).total_seconds() if observed else -1,
             )
+        yield from self._detail(now)
         metrics = self.sampler.executor_metrics
         if metrics is None:
             return
@@ -252,6 +381,44 @@ class HealthCollector:
             )
         yield histogram
 
+    def _detail(self, now: datetime) -> Iterable[Metric]:
+        """Latest round, scores, calculated weights and chain view; absent evidence yields no series."""
+
+        def gauge(name: str, text: str, value: float) -> Metric:
+            return GaugeMetricFamily("factory_horde_" + name, text, value=value)
+
+        def by_miner(name: str, text: str, values: Mapping[str, float]) -> Metric:
+            family = GaugeMetricFamily("factory_horde_" + name, text, labels=["miner_hotkey"])
+            for hotkey, value in sorted(values.items()):
+                family.add_metric([hotkey], value)
+            return family
+
+        view = self.sampler.round_view
+        if view is not None:
+            yield gauge("round_sequence", "Latest persisted round number", view.sequence)
+            yield gauge("round_miners", "Miners admitted to the latest round", view.miners)
+            yield gauge("round_start_timestamp_seconds", "Latest round start", view.start.timestamp())
+            yield gauge("round_end_timestamp_seconds", "Latest round end", view.end.timestamp())
+            if view.usable_sequence is not None and view.scores is not None:
+                yield gauge("usable_round_sequence", "Round that supplies current scores", view.usable_sequence)
+                yield by_miner("usable_score", "Accepted score in the latest usable round", view.scores)
+        weights = self.sampler.weights
+        if weights is not None:
+            yield by_miner("calculated_weight", "Latest calculated weight, not chain inclusion", weights.weights)
+            yield gauge(
+                "weight_calculation_age_seconds",
+                "Age of the latest weight calculation",
+                (now - weights.calculated_at).total_seconds(),
+            )
+        sample = self.sampler.chain_sample
+        chain = sample.view if sample and fresh(sample.observed_at, now, 2 * _CHAIN_VIEW_SECONDS) else None
+        if chain is not None:
+            yield gauge("chain_view_block", "Block of the latest chain view", chain.block)
+            if chain.permit is not None and chain.last_update is not None:
+                yield gauge("chain_validator_permit", "Validator permit on chain", int(chain.permit))
+                yield gauge("chain_validator_last_update_block", "Validator's last weight update", chain.last_update)
+            yield by_miner("chain_incentive", "Nonzero incentive on chain", chain.incentives)
+
 
 class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
     """Own sampling and an HTTP server with read-only operational endpoints.
@@ -261,6 +428,7 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
     sink round: coordinator reconciliation outcome
     sink failure: coordinator failure
     sink submission: Pylon acknowledgement, never independent chain proof
+    sink chain_view: optional dashboard observation
     source ok: current readiness snapshot
     source error: unexpected monitor failure
     """
@@ -269,6 +437,7 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
         super().__init__("factory-horde-monitoring")
         self.sampler = HealthSampler(repository, dispatch_enabled, max_age)
         self.host, self.port = host, port
+        self.chain_view = Sink[ChainSample](f"{self.id}-chain-view", owner_node=self)
         self.block = Sink[BlockBeat](f"{self.id}-block", owner_node=self)
         self.round = Sink[RoundTick](f"{self.id}-round", owner_node=self)
         self.failure = Sink[NexusException](f"{self.id}-failure", owner_node=self)
@@ -279,6 +448,7 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
         return NodeSinks(
             {
                 **super().sinks().sinks,
+                SinkName("chain_view"): self.chain_view,
                 SinkName("block"): self.block,
                 SinkName("round"): self.round,
                 SinkName("failure"): self.failure,
@@ -305,11 +475,17 @@ class MonitoringActor(TransformActor[datetime, Readiness]):
     def handlers(self) -> dict[Sink[Any], EventHandler]:
         return {
             **super().handlers(),
+            self.node.chain_view: self.handle_chain_view,
             self.node.block: self.handle_block,
             self.node.round: self.handle_round,
             self.node.failure: self.handle_failure,
             self.node.submission: self.handle_submission,
         }
+
+    def handle_chain_view(self, _ctx: Context, event: ReceiveEvent[ChainSample]) -> MessagesToSend:
+        """Receive dashboard evidence without performing network work."""
+        self.node.sampler.chain_sample = event.payload
+        return ()
 
     def handle_block(self, _ctx: Context, _event: ReceiveEvent[BlockBeat]) -> MessagesToSend:
         """Ignore retained chain files when establishing initial connectivity."""

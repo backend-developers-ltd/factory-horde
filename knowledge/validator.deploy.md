@@ -47,6 +47,11 @@ authenticated Pylon scraping and the validator's actor-owned metrics/readiness
 endpoint. Tracing, Alloy and remote-write are disabled. The inherited Alloy file is
 not an active service or an updater input.
 
+Grafana and Caddy are the opt-in `grafana` Compose profile of the same file (`COMPOSE_PROFILES=grafana`,
+`GRAFANA_ADDRESS` in `.env`), pinned by digest like every other service. Their
+Caddyfile, provisioning and dashboard under `envs/deployed/` are release assets. Grafana's first login is
+`admin` / `admin` and must be changed in Grafana right after the first start.
+
 The maintained installer consumes `installer/release-manifest.json`, the standalone
 executor/checksum, common Compose and installer assets from one resolved Git
 revision. A moving `deploy-config-*` branch resolves once before downloading any
@@ -55,6 +60,8 @@ atomically replace the executor on its destination filesystem and restart its ex
 system unit. The operator's cron has only that restart sudo grant. A changed system
 unit requires installation privileges; unhealthy replacement requires ordinary
 repair and is not rolled back automatically. See [installer instructions](../installer/README.md).
+
+Refinery uses `deploy-build-refinery` for image builds and `deploy-config-refinery` for operator releases. Its servers consume published assets without a source checkout, using the same installer, configuration and promotion flow as production; see [the Refinery guide](../refinery/README.md).
 
 [Task 16's candidate](../envs/candidate/README.md) uses this build/promotion structure. Production
 configuration promotion, subnet-12 deployment and emissions changes remain outside
@@ -92,7 +99,8 @@ environments substitute `<env>` consistently.
 2. Fast-forward push the source branch to `deploy-build-<env>`:
 
    ```sh
-   git push origin master:deploy-build-production
+   git branch --show-current
+   git push origin HEAD:deploy-build-production
    ```
 
    The `build-validator.yml` workflow (triggered on `deploy-build-*`) builds
@@ -136,12 +144,14 @@ stack.
    Bring up the full stack and confirm validator and pylon are healthy. This
    is where you decide whether this particular image is promotable.
 
-3. On `master`, edit `envs/deployed/docker-compose.yml`, the `validator`
+3. On a feature branch, edit `envs/deployed/docker-compose.yml`, the `validator`
    service's `image:` field:
 
    ```yaml
    image: <image_registry>/<github_org>/<image_basename>-${ENVIRONMENT:?}@sha256:<digest>
    ```
+
+   For a submitter release, pin the published submitter digest in `miner/docker-compose.yml` as part of the same configuration release. Miner operators download and verify that file from the selected revision, then run the new submitter on demand; see [miner installation](../miner/README.md#submitting-from-a-server).
 
 4. Regenerate/check release metadata after changing any listed asset:
 
@@ -150,11 +160,11 @@ stack.
    env -u UV_EXCLUDE_NEWER uv run --project validator python installer/release.py manifest "$PWD" --check
    ```
 
-   Commit (e.g. `chore(deploy): pin production validator to <digest-prefix>`), push
-   `master`, then fast-forward `master` → `deploy-config-production`:
+   Commit (e.g. `chore(deploy): pin production validator to <digest-prefix>`), open a PR against `master`, and promote the reviewed release commit to `deploy-config-production`. Confirm the current branch before every push; never push directly to `master`:
 
    ```sh
-   git push origin master:deploy-config-production
+   git branch --show-current
+   git push origin HEAD:deploy-config-production
    ```
 
    From this point, the cron-driven `update_compose.sh` on operator hosts will
@@ -206,7 +216,7 @@ validator needs a newer pylon than the one the template ships with.
    For pylon, confirm basic health endpoints respond and that the validator
    can talk to it under the operator's open-access token.
 
-4. On `master`, edit `envs/deployed/docker-compose.yml`, the relevant service's
+4. On a feature branch, edit `envs/deployed/docker-compose.yml`, the relevant service's
    `image:` field:
 
    ```yaml
@@ -214,11 +224,11 @@ validator needs a newer pylon than the one the template ships with.
    ```
 
 5. Regenerate/check the release manifest as in Procedure 2, step 4.
-   Commit (e.g. `chore(deploy): pin production pylon to <digest-prefix>`), push
-   `master`, then fast-forward `master` → `deploy-config-production`:
+   Commit (e.g. `chore(deploy): pin production pylon to <digest-prefix>`), open a PR against `master`, then promote the reviewed release commit:
 
    ```sh
-   git push origin master:deploy-config-production
+   git branch --show-current
+   git push origin HEAD:deploy-config-production
    ```
 
 If procedure 2 needs an accompanying service bump, run procedure 3 first

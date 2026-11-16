@@ -2,7 +2,6 @@
 
 import json
 import os
-import re
 import shutil
 import subprocess
 from dataclasses import replace
@@ -292,7 +291,7 @@ def test_activation_health_rejects_fresh_heartbeat_from_old_process(
     assert polls == [1]
 
 
-@pytest.mark.parametrize("failure", ["replacement", "compose", "prepare_only"])
+@pytest.mark.parametrize("failure", ["replacement", "compose", "prepare_only", "mounted_config"])
 def test_retry_activates_application_after_assets_already_match(
     source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
@@ -324,6 +323,9 @@ def test_retry_activates_application_after_assets_already_match(
     def health(*args: object, **kwargs: object) -> dict[str, object]:
         return {"pid": 456}
 
+    if failure == "mounted_config":
+        config["COMPOSE_PROFILES"] = "grafana"
+        env.write_bytes(release.environment(config))
     failing = False
     starts: list[tuple[str, ...]] = []
 
@@ -332,7 +334,7 @@ def test_retry_activates_application_after_assets_already_match(
             return str(release.PROTOCOL)
         if "up" in args:
             starts.append(tuple(args))
-            if failing and failure == "compose":
+            if failing and (failure == "compose" or failure == "mounted_config" and "--force-recreate" in args):
                 raise release.ReleaseError("Compose activation failed")
         return ""
 
@@ -359,9 +361,14 @@ def test_retry_activates_application_after_assets_already_match(
         application=True,
         prepare_only=False,
     )
-    assert len(starts) == 1
+    activation_calls = 2 if failure == "mounted_config" else 1
+    assert len(starts) == activation_calls
+    if failure == "mounted_config":
+        compose_name = "envs/deployed/caddy/Caddyfile"
+        assert starts[-1][-2:] == ("grafana", "caddy")
+        assert "--force-recreate" in starts[-1]
     candidate = source / compose_name
-    candidate.write_text(re.sub(r"sha256:[0-9a-f]{64}", "sha256:" + "1" * 64, candidate.read_text(), count=1))
+    candidate.write_text(candidate.read_text() + "\n# Updated release configuration\n")
     release.manifest(source, check=False)
     failing = True
     if failure == "prepare_only":
@@ -398,7 +405,7 @@ def test_retry_activates_application_after_assets_already_match(
         application=True,
         prepare_only=False,
     )
-    assert len(starts) == before + 1
+    assert len(starts) == before + activation_calls
     assert json.loads(marker.read_bytes())["pending"] is False
     state = json.loads((destination / "applied-release.json").read_bytes())
     assert state["health"] == "healthy" and state["application_started"] is True
@@ -410,4 +417,4 @@ def test_retry_activates_application_after_assets_already_match(
         application=True,
         prepare_only=False,
     )
-    assert len(starts) == before + 1
+    assert len(starts) == before + activation_calls

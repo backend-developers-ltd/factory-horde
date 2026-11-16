@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Event, Thread
 
 import httpx
 import pytest
@@ -9,10 +10,11 @@ from nexus.v1 import NexusException, ReceiveEvent, SubnetBuilder
 from prometheus_client import CollectorRegistry, generate_latest
 
 from validator.health import ExecutorHealth, ExecutorMetrics, OperationCount, OperationHistogram
-from validator.monitoring import HealthCollector, HealthSampler, MonitoringNode
+from validator.monitoring import ChainSample, ChainView, ChainViewNode, HealthCollector, HealthSampler, MonitoringNode
 from validator.records import request_for
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
+from validator.weighing import WeightCalculation
 
 from .test_coordinator import START, Fixture
 from .test_results import BEAT
@@ -78,6 +80,7 @@ def test_fresh_readiness_and_metrics_forward_executor_histograms(sampler: Health
     assert 'factory_horde_executor_operation_seconds_bucket{le="+Inf",operation="pull"} 1.0' in metrics
     assert "factory_horde_ready 1.0" in metrics
     assert "job_id=" not in metrics and "hotkey=" not in metrics and "round_id=" not in metrics
+    assert "factory_horde_round_sequence" not in metrics and "factory_horde_chain_view" not in metrics
 
 
 def test_stale_executor_and_failed_or_stale_docker_are_distinct(sampler: HealthSampler) -> None:
@@ -145,6 +148,43 @@ def test_latest_usable_round_includes_successful_zero_scores(sampler: HealthSamp
     assert snapshot.usable_scores == 1 and snapshot.usable_round_completed_at == completed
     assert snapshot.active_jobs == snapshot.unresolved_jobs == 0
     assert all(snapshot.checks.values())
+    sampler.repository.files.replace(
+        "control/weight-calculation.json",
+        WeightCalculation(
+            round_id=plan.round_id,
+            calculated_at=completed,
+            membership_block=1,
+            epoch_start=0,
+            epoch_end=360,
+            temperature=0.1,
+            uids={member.miner_hotkey: member.uid},
+            weights={member.miner_hotkey: 1.0},
+        ),
+    )
+    sampler.chain_sample = ChainSample(
+        datetime.now(UTC), ChainView(block=7, permit=True, last_update=5, incentives={member.miner_hotkey: 1.0})
+    )
+    sampler.sample(completed)
+    registry = CollectorRegistry()
+    registry.register(HealthCollector(sampler))
+    metrics = generate_latest(registry).decode()
+    label = f'{{miner_hotkey="{member.miner_hotkey}"}}'
+    assert sampler.round_view is not None and sampler.round_view.scores is not None
+    score = sampler.round_view.scores[member.miner_hotkey]
+    for line in (
+        f"factory_horde_round_sequence {float(plan.sequence)}",
+        "factory_horde_round_miners 1.0",
+        f"factory_horde_usable_round_sequence {float(plan.sequence)}",
+        f"factory_horde_usable_score{label} {score}",
+        f"factory_horde_calculated_weight{label} 1.0",
+        "factory_horde_chain_validator_permit 1.0",
+        "factory_horde_chain_validator_last_update_block 5.0",
+        f"factory_horde_chain_incentive{label} 1.0",
+    ):
+        assert line in metrics
+    assert "job_id=" not in metrics and "round_id=" not in metrics
+    sampler.chain_sample = ChainSample(datetime.now(UTC) - timedelta(seconds=121), sampler.chain_sample.view)
+    assert "factory_horde_chain_view" not in generate_latest(registry).decode()
 
 
 def test_http_lifecycle_needs_current_chain_and_reconciliation_and_expires(sampler: HealthSampler) -> None:
@@ -183,3 +223,37 @@ def test_http_lifecycle_needs_current_chain_and_reconciliation_and_expires(sampl
     finally:
         actor.on_stop()
     assert actor.thread is not None and not actor.thread.is_alive()
+
+
+def test_slow_dashboard_read_does_not_block_readiness(sampler: HealthSampler) -> None:
+    entered, release = Event(), Event()
+
+    def read() -> ChainView:
+        entered.set()
+        if not release.wait(5):
+            raise TimeoutError("Test did not release the dashboard query")
+        raise OSError("Pylon unavailable")
+
+    node = ChainViewNode(read)
+    builder = SubnetBuilder(nodes=[node])
+    actor = node.build_actor(pipe_to_bus=builder.pipe_to_bus, context_store=builder.context_store)
+    with builder.context_store.create_context() as ctx:
+        event = ReceiveEvent(ctx_id=ctx.id, target=node.sink, payload=datetime.now(UTC))
+        thread = Thread(target=lambda: actor.handle(ctx, event))
+        thread.start()
+        try:
+            assert entered.wait(2)
+            now = datetime.now(UTC)
+            executor_health(sampler, now)
+            sampler.chain_at = sampler.coordinator_at = now
+            assert all(sampler.sample(now).checks.values())
+            assert thread.is_alive()
+        finally:
+            release.set()
+            thread.join(timeout=5)
+        assert not thread.is_alive()
+        assert actor.sample is not None and actor.sample.view is None
+        # Failed reads are also throttled, independently of the polling frequency.
+        entered.clear()
+        assert actor.handle(ctx, event)
+        assert not entered.is_set()

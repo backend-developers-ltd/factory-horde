@@ -18,15 +18,22 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `validator/` — Nexus-based subnet validator (own `pyproject.toml`, `uv.lock`, `.venv`); also holds the
   production `Dockerfile`
 - `miner/` — submission tooling and baseline factory assets (own `pyproject.toml`, `uv.lock`, `.venv`);
+  `docker-compose.yml` runs a miner's Pylon and the published one-shot submitter;
   `miner` is a one-shot Pylon submitter; the `bootstrap` dependency group holds the local-chain SDK
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
-- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon);
+- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with Grafana
+  behind Caddy as the opt-in `grafana` Compose profile and its Caddyfile, provisioning and dashboard;
   operator promotion would use `deploy-config-production`, with this compose file and the installer
   scripts as the operator-critical files; no production configuration branch has been promoted
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
+- `refinery/` — only what is specific to the Refinery development chain (subnet 11): validator and
+  miner `.env` examples, the `//Alice` funding script and a guide. Deployment itself is the generic
+  path: the validator through `installer/` (on Refinery the `ubuntu` operator installs into `~/factory-horde` from
+  `deploy-config-refinery`, following builds on `deploy-build-refinery`), a miner through
+  `miner/docker-compose.yml`. Do not add Refinery-specific deployment or operation scripts
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures
@@ -153,13 +160,19 @@ Skip for higher level tasks that do not touch the code.
 ### Observability
 
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
+`COMPOSE_PROFILES=grafana` adds pinned Grafana with the provisioned validator dashboard and Caddy, which
+publishes it over HTTPS at `GRAFANA_ADDRESS`; both are release assets. Refinery enables the profile.
+Grafana's password is not configuration: it starts as `admin` / `admin` and the operator changes it in Grafana.
 Prometheus scrapes node-exporter, the validator on port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
 Local configuration generates separate identity/open-access/metrics tokens. No remote-write
 or tracing sidecar runs, and no upstream credentials are needed.
 
 `monitoring.py` owns `/metrics`, `/livez` and `/readyz` through a Nexus actor, including server shutdown.
 Readiness requires fresh runtime chain/executor/Docker observations, compatible records, writable paths and
-reconciliation. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
+reconciliation. The same collector exports the latest round's number, cohort size and window, per-miner
+accepted scores and calculated weights from records, and the validator's permit, last weight update and
+per-miner incentive from a separate Nexus actor with a throttled, bounded Pylon neuron read that never blocks readiness. Miner hotkeys are
+the only identity labels; job and round IDs stay in records. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
 termination. The same validator scrape path forwards executor counters/histograms. There is no textfile collector
 or executor HTTP server. Record I/O counters and latency histograms live in
 `validator/src/validator/record_files.py`. The selected Nexus revision has no

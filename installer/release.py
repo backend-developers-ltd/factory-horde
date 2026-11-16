@@ -40,7 +40,12 @@ ASSETS = (
     "installer/prepare-data-root.sh",
     "installer/factory-horde-executor.service",
     "envs/deployed/docker-compose.yml",
+    "envs/deployed/caddy/Caddyfile",
+    "envs/deployed/grafana/provisioning/datasources/prometheus.yml",
+    "envs/deployed/grafana/provisioning/dashboards/dashboards.yml",
+    "envs/deployed/grafana/dashboards/factory-horde-validator.json",
     "localnet/compose.yml",
+    "miner/docker-compose.yml",
 )
 EXECUTOR_KEYS = (
     "CONTAINER_UID",
@@ -631,7 +636,7 @@ def apply_release(
             or any(
                 not (directory / name).exists() or (directory / name).read_bytes() != (stage / name).read_bytes()
                 for name in ASSETS
-                if name.endswith(".yml")
+                if not name.startswith(("installer/", "executor/"))
             )
         )
         if activate_application:
@@ -679,6 +684,25 @@ def apply_release(
                 )
             if application and not prepare_only and activate_application:
                 run(compose(directory, installation, "up", "-d", "--wait", "--wait-timeout", "180"), quiet=True)
+                if "grafana" in config.get("COMPOSE_PROFILES", "").split(","):
+                    # Bind-mounted configuration changes do not change Compose's service hash.
+                    # Keep activation pending until both consumers have loaded the selected files.
+                    run(
+                        compose(
+                            directory,
+                            installation,
+                            "up",
+                            "-d",
+                            "--no-deps",
+                            "--force-recreate",
+                            "--wait",
+                            "--wait-timeout",
+                            "180",
+                            "grafana",
+                            "caddy",
+                        ),
+                        quiet=True,
+                    )
                 atomic_write(application_activation_path, json_bytes({"pending": False, "revision": revision}))
             state.update(
                 health="healthy", executor_pid=health["pid"], application_started=application and not prepare_only
