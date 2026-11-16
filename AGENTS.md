@@ -78,8 +78,7 @@ rebuilds that knowledge through retained-record reconciliation. Application acti
 is persisted before replacing Compose assets and cleared only after successful Compose startup.
 Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared. `applied-release.json`
-records the applied manifest and executor hashes, so an installation that is its own source checkout
-(`--source file://<checkout> --ref snapshot` into that checkout) still activates pulled changes.
+records the applied manifest and executor hashes, which also decide whether activation is needed.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

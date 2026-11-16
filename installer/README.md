@@ -79,8 +79,7 @@ fsynced, renamed atomically and directory-fsynced before the service restarts.
 Configuration and updater assets come from the same verified selection. An unchanged
 executor is not replaced/restarted unless activation is pending or the service is
 inactive. "Unchanged" compares against both the installed bytes and the hashes recorded
-in `applied-release.json`, so a source checkout that is its own installation
-(`install.sh <checkout> --ref snapshot --source file://<checkout>`) activates what a later `git pull` brought in. Before replacing executor inputs, `executor-activation.json` durably
+in `applied-release.json`. Before replacing executor inputs, `executor-activation.json` durably
 records pending activation. Retrying an interrupted or failed update completes the
 restart even if installed bytes already match. Compatible detached workloads keep running;
 requests, permanent stops, Docker identities and accepted scores remain in place.
