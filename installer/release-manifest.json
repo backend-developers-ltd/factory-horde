@@ -1,17 +1,14 @@
 {
   "files": {
-    "envs/deployed/caddy/Caddyfile": "f716dfa57877ac2782cbb077348464006e2e69eb28672fe263682728452f3f13",
-    "envs/deployed/docker-compose.yml": "bec93b53d868b87473236517c12791f84375f5c67ca11ac9aab2213d2adfeadd",
-    "envs/deployed/grafana/dashboards/factory-horde-validator.json": "1684f3b6ceab734ed86c33d4af84fdd2d01c3b0ea5bb6e5a4f0d85e54e3e69e3",
-    "envs/deployed/grafana/provisioning/dashboards/dashboards.yml": "187d00b8b4e3224060ab78dee04a3d6d200024bdf9bfcaa67729f3fa8e6b8cbb",
-    "envs/deployed/grafana/provisioning/datasources/prometheus.yml": "1b60622046a90d9e45a1659f2bf40022336bc92abac3ce08f7d919507c44531f",
+    "envs/deployed/alloy/config.alloy": "a65c5249cb6c471d9808c3c27dc5354b5bc7cc4f32e7fdccddeefd3c02041089",
+    "envs/deployed/docker-compose.yml": "aa8f5b74e67b1f595ce75fe1a454912f2c1ef0e46f4ef68ff757a89b5af4231b",
     "executor/executor.py": "c42943058b655798c0388bdcbf8f831c3306b142f7f2f17c7eb26dc07bcef26d",
     "executor/executor.sha256": "9720217101b17341e5c8baaaf32577a4569265122c73fe325c61290513b0b7de",
     "installer/factory-horde-executor.service": "34c2f1705b9eb3694a8a048643f695b561366a66af058dd7724e6d9a5496c93d",
     "installer/install-executor.sh": "87f7de9bf302841ed276352610eb98e2aabecff83ef01fc00cf17c749fb8d37b",
     "installer/install.sh": "f3a543ceb1dd8d415d8cd871692b7c20a9c6b258511fb1b7bae5167374c12301",
     "installer/prepare-data-root.sh": "e974c61be9c36e09c3336e14049808ad098caa1eec0ae8f59e67e34b4aa6aa8f",
-    "installer/release.py": "a40009cddb83134786ea2cde396ce5bdd7775a71c15118bdffe9a0592fc4d7dc",
+    "installer/release.py": "ef27c5c72140f27d3ccce1e6bbaa1d22e138a25055bc90da6047709df214d7ff",
     "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
     "localnet/compose.yml": "e009ba4de3363d4719a16233166e6dbc91df84ae020fe65d1dafddad109a21df",
     "miner/docker-compose.yml": "698b97ac9b82d5907f7905327b8a4ba7b97464210d8147aa23981657b1670a12"

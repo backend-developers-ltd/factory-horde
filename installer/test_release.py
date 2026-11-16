@@ -324,7 +324,7 @@ def test_retry_activates_application_after_assets_already_match(
         return {"pid": 456}
 
     if failure == "mounted_config":
-        config["COMPOSE_PROFILES"] = "grafana"
+        config["COMPOSE_PROFILES"] = "alloy"
         env.write_bytes(release.environment(config))
     failing = False
     starts: list[tuple[str, ...]] = []
@@ -364,8 +364,8 @@ def test_retry_activates_application_after_assets_already_match(
     activation_calls = 2 if failure == "mounted_config" else 1
     assert len(starts) == activation_calls
     if failure == "mounted_config":
-        compose_name = "envs/deployed/caddy/Caddyfile"
-        assert starts[-1][-2:] == ("grafana", "caddy")
+        compose_name = "envs/deployed/alloy/config.alloy"
+        assert starts[-1][-1] == "alloy"
         assert "--force-recreate" in starts[-1]
     candidate = source / compose_name
     candidate.write_text(candidate.read_text() + "\n# Updated release configuration\n")
