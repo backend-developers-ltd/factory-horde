@@ -608,8 +608,6 @@ def apply_release(
         executor_sha256 = hashlib.sha256(executor_bytes).hexdigest()
         manifest_sha256 = hashlib.sha256(metadata).hexdigest()
         env_bytes = environment({key: config[key] for key in EXECUTOR_KEYS})
-        # Installed bytes already match when the installation is its own source checkout, so the
-        # last applied release also decides whether the running executor/application is current.
         activate = (
             install
             or pending
