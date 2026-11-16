@@ -1,7 +1,7 @@
 {
   "files": {
     "envs/deployed/alloy/config.alloy": "a65c5249cb6c471d9808c3c27dc5354b5bc7cc4f32e7fdccddeefd3c02041089",
-    "envs/deployed/docker-compose.yml": "a4a0628feb4653be866bb16b0c3962f2ba719f185663be75bfc301d1e35f5acc",
+    "envs/deployed/docker-compose.yml": "e74418698ffb429bcc2076e1bed17fa8f8c4f25b388bce16d2977400828257a7",
     "executor/executor.py": "b687d91150d456f10ca529c0e39be1a2f66322f5def65205554c52aaee3420b6",
     "executor/executor.sha256": "ce9cec0b79257a5f2daaa9cebcb83546af2dccc39a285f868198bcf2e71be37e",
     "installer/factory-horde-executor.service": "34c2f1705b9eb3694a8a048643f695b561366a66af058dd7724e6d9a5496c93d",
@@ -11,7 +11,7 @@
     "installer/release.py": "83900fa3af071c799549c1b796d9c9c503b95f10bb33965c45113a7a8e101688",
     "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
     "localnet/compose.yml": "e009ba4de3363d4719a16233166e6dbc91df84ae020fe65d1dafddad109a21df",
-    "miner/docker-compose.yml": "698b97ac9b82d5907f7905327b8a4ba7b97464210d8147aa23981657b1670a12"
+    "miner/docker-compose.yml": "785bcecd54f93e0ec03fc13670a73b7d629370ffe487d3ddafd445add6436260"
   },
   "platform": "linux/amd64",
   "protocol": 1,
