@@ -12,13 +12,20 @@ The current deployment has one validator server and one miner server, both Ubunt
 
 ## Wallets
 
-Refinery wallets are created on the server that uses them and funded from `//Alice`. The wallet setup commands below assume the funding script has been copied from a reviewed source revision into `refinery/fund-from-alice.sh`; that helper is not part of the runtime installation. This needs uv and btcli (`uv tool install --python /usr/bin/python3.14 'bittensor==11.3.0'`). For the validator wallet:
+Refinery wallets are created on the server that uses them and funded from `//Alice` with `fund-from-alice.sh`, downloaded from the selected configuration release; the helper is not part of the runtime installation. This needs uv, jq and btcli (`uv tool install --python /usr/bin/python3.14 'bittensor==11.3.0'`). For the validator wallet:
 
 ```bash
+RELEASE_REF=deploy-config-refinery
+RELEASE_SHA=$(git ls-remote https://github.com/backend-developers-ltd/factory-horde.git "refs/heads/$RELEASE_REF" | cut -f1)
+test "${#RELEASE_SHA}" -eq 40
+RELEASE_URL="https://raw.githubusercontent.com/backend-developers-ltd/factory-horde/$RELEASE_SHA"
+FUND=$(mktemp)
+curl -fsSL "$RELEASE_URL/refinery/fund-from-alice.sh" -o "$FUND"
+
 CHAIN=(--network ws://10.0.0.10:9944 --fallback-endpoints none --archive-endpoints none)
 WALLET=(--wallet factory-horde-validator --wallet-hotkey default --wallet-path ~/.bittensor/wallets)
 btcli wallet create "${WALLET[@]}" --no-password
-refinery/fund-from-alice.sh "$(jq -r .ss58Address ~/.bittensor/wallets/factory-horde-validator/coldkeypub.txt)" 100
+bash "$FUND" "$(jq -r .ss58Address ~/.bittensor/wallets/factory-horde-validator/coldkeypub.txt)" 100
 btcli subnets register "${CHAIN[@]}" --netuid 11 "${WALLET[@]}" --proxy-for self --signer wallet --no-prompt
 HOTKEY=$(jq -r .ss58Address ~/.bittensor/wallets/factory-horde-validator/hotkeys/defaultpub.txt)
 btcli stake add "${CHAIN[@]}" --netuid 11 --amount-tao 1 "${WALLET[@]}" --hotkey "$HOTKEY" \
