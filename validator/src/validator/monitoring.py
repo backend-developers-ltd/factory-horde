@@ -433,14 +433,7 @@ class MonitoringNode(Transform[datetime, Readiness], ActorBuilder):
     source error: unexpected monitor failure
     """
 
-    def __init__(
-        self,
-        repository: ResultRepository,
-        dispatch_enabled: bool,
-        host: str,
-        port: int,
-        max_age: float,
-    ):
+    def __init__(self, repository: ResultRepository, dispatch_enabled: bool, host: str, port: int, max_age: float):
         super().__init__("factory-horde-monitoring")
         self.sampler = HealthSampler(repository, dispatch_enabled, max_age)
         self.host, self.port = host, port

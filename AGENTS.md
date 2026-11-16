@@ -77,8 +77,7 @@ Completed executor jobs leave normal polling after durable terminal publication;
 rebuilds that knowledge through retained-record reconciliation. Application activation intent
 is persisted before replacing Compose assets and cleared only after successful Compose startup.
 Updater executor activation intent survives replacement/restart failures and requires health
-from a process started during the activation attempt before it is cleared. `applied-release.json`
-records the applied manifest and executor hashes, which also decide whether activation is needed.
+from a process started during the activation attempt before it is cleared.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.
