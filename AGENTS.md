@@ -22,8 +22,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
   `miner` is a one-shot Pylon submitter; the `bootstrap` dependency group holds the local-chain SDK
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
-- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with Grafana
-  behind Caddy as the opt-in `grafana` Compose profile and its Caddyfile, provisioning and dashboard;
+- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with the opt-in
+  `alloy` Compose profile and its `alloy/config.alloy`, which push metrics to the company monitoring stack;
   operator promotion would use `deploy-config-production`, with this compose file and the installer
   scripts as the operator-critical files; no production configuration branch has been promoted
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
@@ -162,12 +162,13 @@ Skip for higher level tasks that do not touch the code.
 ### Observability
 
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
-`COMPOSE_PROFILES=grafana` adds pinned Grafana with the provisioned validator dashboard and Caddy, which
-publishes it over HTTPS at `GRAFANA_ADDRESS`; both are release assets. Refinery enables the profile.
-Grafana's password is not configuration: it starts as `admin` / `admin` and the operator changes it in Grafana.
 Prometheus scrapes node-exporter, the validator on port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
-Local configuration generates separate identity/open-access/metrics tokens. No remote-write
-or tracing sidecar runs, and no upstream credentials are needed.
+Local configuration generates separate identity/open-access/metrics tokens. `COMPOSE_PROFILES=alloy` adds
+pinned Grafana Alloy, which scrapes the same targets and pushes OTLP to the company monitoring stack's
+gateway (`METRICS_UPSTREAM_URL`, default `https://alloy.reef.pl`) with `METRICS_UPSTREAM_USER`/`_PASSWORD`;
+dashboards live in the central Grafana. The gateway stamps identity labels from the inventory in
+`prometheus-grafana-monitoring`, so the Alloy config sets none. Refinery enables the profile. No remote-write
+or tracing sidecar runs.
 
 `monitoring.py` owns `/metrics`, `/livez` and `/readyz` through a Nexus actor, including server shutdown.
 Readiness requires fresh runtime chain/executor/Docker observations, compatible records, writable paths and
@@ -197,7 +198,7 @@ attributes **deliberately carry no operator hotkey** — the observability proxy
 the structlog processors in `logging_config.py` stamp the same attributes onto every log line so logs
 and traces correlate.
 
-Tracing export is explicitly disabled in common Compose. The inherited Alloy config is unused;
+Tracing export is explicitly disabled in common Compose. The Alloy config handles metrics only;
 the updater downloads only the checksummed common application/executor assets.
 
 #### Structured logging

@@ -44,13 +44,12 @@ semver.
 
 The prototype currently uses pinned official Prometheus and node-exporter images,
 authenticated Pylon scraping and the validator's actor-owned metrics/readiness
-endpoint. Tracing, Alloy and remote-write are disabled. The inherited Alloy file is
-not an active service or an updater input.
+endpoint. Tracing and remote-write are disabled.
 
-Grafana and Caddy are the opt-in `grafana` Compose profile of the same file (`COMPOSE_PROFILES=grafana`,
-`GRAFANA_ADDRESS` in `.env`), pinned by digest like every other service. Their
-Caddyfile, provisioning and dashboard under `envs/deployed/` are release assets. Grafana's first login is
-`admin` / `admin` and must be changed in Grafana right after the first start.
+Grafana Alloy is the opt-in `alloy` Compose profile of the same file (`COMPOSE_PROFILES=alloy`,
+`METRICS_UPSTREAM_USER`/`METRICS_UPSTREAM_PASSWORD` in `.env`), pinned by digest like every other service.
+It scrapes the same targets as Prometheus and pushes OTLP to the company monitoring stack, whose central
+Grafana holds the dashboards. Its `envs/deployed/alloy/config.alloy` is a release asset.
 
 The maintained installer consumes `installer/release-manifest.json`, the standalone
 executor/checksum, common Compose and installer assets from one resolved Git

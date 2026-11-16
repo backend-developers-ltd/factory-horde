@@ -4,7 +4,7 @@ Refinery is a private development chain (`ws://10.0.0.10:9944`); FactoryHorde us
 
 | File | Purpose |
 | --- | --- |
-| [`validator.env.example`](validator.env.example) | Validator settings for the chain, subnet, round windows, task, inference proxy and Grafana |
+| [`validator.env.example`](validator.env.example) | Validator settings for the chain, subnet, round windows, task, inference proxy and metrics push |
 | [`miner.env.example`](miner.env.example) | Miner settings for the chain, subnet and the committed factory image |
 | [`fund-from-alice.sh`](fund-from-alice.sh) | Transfers development TAO from the chain's public `//Alice` key to an address |
 
@@ -41,13 +41,13 @@ Follow [published operator installation](../installer/README.md#published-operat
 ```bash
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
-# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN and GRAFANA_ADDRESS in operator.env.
+# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD in operator.env.
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
-**Change the Grafana password straight away.** Grafana starts with the login `admin` / `admin` and is reachable from the internet: open `https://GRAFANA_ADDRESS/`, log in and set a new password when Grafana asks for one.
+The metrics login comes from the company monitoring stack: see [monitoring](../installer/README.md#monitoring-and-recovery) for how it is created and registered. Metrics then appear in the central Grafana under the deployment's `client_server_group` and `host`.
 
-`.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `grafana` and `inference` profiles enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and releases promoted to `deploy-config-refinery` within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.
+`.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `alloy` and `inference` profiles enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and releases promoted to `deploy-config-refinery` within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.
 
 Rounds last 60 minutes: 30 minutes generation, 5 minutes stop confirmation and 25 minutes evaluation. Every factory gets the task in `TASK_SPECIFICATION`, a small command-line to-do list manager in Python.
 
@@ -89,4 +89,4 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 - **Round length.** Rounds last 60 minutes (30/5/25 minutes) instead of the default two hours (60/5/55 minutes).
 - **Network access.** Both servers share the chain's private VLAN. Outside miners cannot reach the chain, which a real subnet would expose publicly.
 - **Pylon EVM endpoints.** Both Pylons keep their default public mainnet EVM endpoints; FactoryHorde does not use EVM calls.
-- **Monitoring.** Prometheus listens on the validator's loopback only, with no alerting or remote write. Grafana uses a single local admin account on a bare IP address with a short-lived certificate.
+- **Monitoring.** Alloy pushes metrics to the company monitoring stack; only its generic host and silence alerts apply, with no FactoryHorde-specific rules. The local Prometheus listens on the validator's loopback only.
