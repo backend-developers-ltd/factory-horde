@@ -40,10 +40,7 @@ ASSETS = (
     "installer/prepare-data-root.sh",
     "installer/factory-horde-executor.service",
     "envs/deployed/docker-compose.yml",
-    "envs/deployed/caddy/Caddyfile",
-    "envs/deployed/grafana/provisioning/datasources/prometheus.yml",
-    "envs/deployed/grafana/provisioning/dashboards/dashboards.yml",
-    "envs/deployed/grafana/dashboards/factory-horde-validator.json",
+    "envs/deployed/alloy/config.alloy",
     "localnet/compose.yml",
     "miner/docker-compose.yml",
 )
@@ -684,9 +681,9 @@ def apply_release(
                 )
             if application and not prepare_only and activate_application:
                 run(compose(directory, installation, "up", "-d", "--wait", "--wait-timeout", "180"), quiet=True)
-                if "grafana" in config.get("COMPOSE_PROFILES", "").split(","):
+                if "alloy" in config.get("COMPOSE_PROFILES", "").split(","):
                     # Bind-mounted configuration changes do not change Compose's service hash.
-                    # Keep activation pending until both consumers have loaded the selected files.
+                    # Keep activation pending until Alloy has loaded the selected file.
                     run(
                         compose(
                             directory,
@@ -698,8 +695,7 @@ def apply_release(
                             "--wait",
                             "--wait-timeout",
                             "180",
-                            "grafana",
-                            "caddy",
+                            "alloy",
                         ),
                         quiet=True,
                     )
