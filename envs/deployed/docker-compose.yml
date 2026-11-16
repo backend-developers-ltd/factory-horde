@@ -38,7 +38,7 @@ services:
 
   validator:
     # Published application release; isolated source builds may explicitly override this reference.
-    image: "${VALIDATOR_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-validator-${ENVIRONMENT:?}@sha256:acbcba42f8be74d0dc793ec10c58c0982fbcc2cdb46685b14cfeea394be64084}"
+    image: "${VALIDATOR_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-validator-${ENVIRONMENT:?}@sha256:2c4168ceb426cc0ee7c68b1d9159318d68d6b20bd98c260b53c2fb428eecbab1}"
     platform: linux/amd64
     restart: unless-stopped
     user: "${CONTAINER_UID:?}:${CONTAINER_GID:?}"

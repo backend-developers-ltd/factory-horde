@@ -1,7 +1,7 @@
 {
   "files": {
     "envs/deployed/caddy/Caddyfile": "f716dfa57877ac2782cbb077348464006e2e69eb28672fe263682728452f3f13",
-    "envs/deployed/docker-compose.yml": "2f7f2e6470960fd799a54c452d74f69ecee16a08ebe90570bdda372e7a22daf0",
+    "envs/deployed/docker-compose.yml": "bec93b53d868b87473236517c12791f84375f5c67ca11ac9aab2213d2adfeadd",
     "envs/deployed/grafana/dashboards/factory-horde-validator.json": "1684f3b6ceab734ed86c33d4af84fdd2d01c3b0ea5bb6e5a4f0d85e54e3e69e3",
     "envs/deployed/grafana/provisioning/dashboards/dashboards.yml": "187d00b8b4e3224060ab78dee04a3d6d200024bdf9bfcaa67729f3fa8e6b8cbb",
     "envs/deployed/grafana/provisioning/datasources/prometheus.yml": "1b60622046a90d9e45a1659f2bf40022336bc92abac3ce08f7d919507c44531f",
@@ -14,7 +14,7 @@
     "installer/release.py": "a40009cddb83134786ea2cde396ce5bdd7775a71c15118bdffe9a0592fc4d7dc",
     "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
     "localnet/compose.yml": "e009ba4de3363d4719a16233166e6dbc91df84ae020fe65d1dafddad109a21df",
-    "miner/docker-compose.yml": "d7ea46d666eb9cbf2a9bfc82694200cef7e48e745dabb1191333b9746bf6582a"
+    "miner/docker-compose.yml": "698b97ac9b82d5907f7905327b8a4ba7b97464210d8147aa23981657b1670a12"
   },
   "platform": "linux/amd64",
   "protocol": 1,
