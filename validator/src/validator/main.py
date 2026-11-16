@@ -32,7 +32,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from validator.chain_observer import ChainObservation, ChainObserverNode
-from validator.coordinator import RoundCoordinator, RoundTick, RoundTiming
+from validator.coordinator import SPECIFICATION, RoundCoordinator, RoundTick, RoundTiming
 from validator.discovery import freeze_via_pylon
 from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
@@ -64,6 +64,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     evaluation_window: timedelta = timedelta(minutes=55)
     judge_stop_reserve: timedelta = timedelta(minutes=5)
     stop_grace_seconds: int = Field(default=60, ge=0, le=60)
+    specification: str = Field(default=SPECIFICATION, min_length=1)
     weights_enabled: bool = False
     weight_temperature: float = Field(default=0.1, gt=0, allow_inf_nan=False)
     weight_tempo: int = Field(default=360, gt=0)
@@ -76,6 +77,12 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
+
+    @field_validator("specification", mode="before")
+    @classmethod
+    def _empty_specification(cls, value: object) -> object:
+        # Compose passes an unset operator variable as an empty string.
+        return SPECIFICATION if value == "" else value
 
     @field_validator(
         "generation_window", "confirmation_window", "evaluation_window", "judge_stop_reserve", mode="before"
@@ -160,7 +167,13 @@ class Validator(NexusValidator):
                 settings.validator_hotkey,
             )
             coordinator = RoundCoordinatorNode(
-                RoundCoordinator(self.results, settings.round_timing(), settings.judge_image, discovery)
+                RoundCoordinator(
+                    self.results,
+                    settings.round_timing(),
+                    settings.judge_image,
+                    discovery,
+                    settings.specification,
+                )
             )
             self.connect(self.tasks.poll_clock.source, coordinator.sink)
             self.connect(self.subnet_clock.source, taps=(coordinator.block_beat,))

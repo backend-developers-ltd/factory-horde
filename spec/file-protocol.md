@@ -83,6 +83,10 @@ Requests cannot supply shell commands, Docker flags, wallets or arbitrary mount
 destinations. Operator settings supply UID/GID, resource limits and Docker access;
 task 4 establishes actual ownership, with installer verification in task 15.
 
+By default every workload runs with `--network none`, no environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory containers then join that Docker network instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable, and judges always run without a network or environment.
+
+The network is the internal one that the `inference` Compose profile creates together with the proxy. It has no route to the internet or to the host, so the proxy is the only service a factory can reach. The proxy forwards only paths matching `/v1/messages*` to `https://api.anthropic.com` and answers 404 for everything else. Factories that run at the same time share this network and can reach each other, and the proxy applies no per-factory quota: all factories draw on the same credential.
+
 `RoundRepository.prepare_round` records the plan/IDs before preparing input. It
 publishes the complete specification and manifest immutably, creates output/report
 directories and preserves existing evidence on replay. `publish_request` requires
@@ -90,7 +94,9 @@ the persisted plan, matching specification hash, exact manifest and canonical
 paths before making a request visible. The coordinator applies the stage gate before
 publication; the communicator may idempotently republish the same frozen request.
 
-`Schedule` persists the next slot and an optional `RoundSeed` before discovery. The
+`Schedule` persists the next slot and an optional `RoundSeed` before discovery. A new
+seed takes its specification from `VALIDATOR_SPECIFICATION` (the operator's
+`TASK_SPECIFICATION`; unset or empty keeps the built-in greeting task). The
 seed freezes round ID, sequence, judge, specification and all deadlines; a retained
 discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
 input publication is repaired using those same identities. The schedule advances

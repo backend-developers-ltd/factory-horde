@@ -4,7 +4,7 @@ Refinery is a private development chain (`ws://10.0.0.10:9944`); FactoryHorde us
 
 | File | Purpose |
 | --- | --- |
-| [`validator.env.example`](validator.env.example) | Validator settings for the chain, subnet, round windows and metrics push |
+| [`validator.env.example`](validator.env.example) | Validator settings for the chain, subnet, round windows, task, inference proxy and metrics push |
 | [`miner.env.example`](miner.env.example) | Miner settings for the chain, subnet and the committed factory image |
 | [`fund-from-alice.sh`](fund-from-alice.sh) | Transfers development TAO from the chain's public `//Alice` key to an address |
 
@@ -41,15 +41,17 @@ Follow [published operator installation](../installer/README.md#published-operat
 ```bash
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
-# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD in operator.env.
+# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD in operator.env.
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
 The metrics login comes from the company monitoring stack: see [monitoring](../installer/README.md#monitoring-and-recovery) for how it is created and registered. Metrics then appear in the central Grafana under the deployment's `client_server_group` and `host`.
 
-`.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `alloy` profile enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and releases promoted to `deploy-config-refinery` within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.
+`.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `alloy` and `inference` profiles enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and releases promoted to `deploy-config-refinery` within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.
 
-Rounds last 30 minutes: 10 minutes generation, 5 minutes stop confirmation and 15 minutes evaluation.
+Rounds last 60 minutes: 30 minutes generation, 5 minutes stop confirmation and 25 minutes evaluation. Every factory gets the task in `TASK_SPECIFICATION`, a small command-line to-do list manager in Python.
+
+Factories call Claude through the validator's [inference proxy](../installer/README.md#task-specification-and-inference-proxy). `CLAUDE_CODE_OAUTH_TOKEN` is a Claude subscription token from `claude setup-token`; it stays in `.env` on the validator server and is never given to factories, which reach only the proxy. Factories that run at the same time share the proxy's network and can reach each other, and the proxy applies no per-factory quota.
 
 ## Miner
 
@@ -68,6 +70,8 @@ docker compose run --rm submit
 
 The validator admits the miner from the first round that starts after its commitment.
 
+The Refinery miner server runs three demo miners. Their factories are built and documented in [factory-horde-demo-miners](https://github.com/backend-developers-ltd/factory-horde-demo-miners).
+
 ## Subnet requirements
 
 The deployment changes no subnet setting. It expects subnet 11 to allow registration and to permit a single miner to receive all weight (minimum one weight, maximum weight 1.0).
@@ -79,9 +83,10 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 
 - **Development chain and keys.** Refinery is a private development chain. Wallets are funded from the public `//Alice` key, and coldkeys are stored unencrypted in the wallet directory that Pylon mounts read-only. A real deployment uses funded, encrypted coldkeys kept off the servers, with only hotkeys on the hosts.
 - **Release selection.** The same build/promotion process uses the `refinery` branch suffix instead of `production`. The validator follows `deploy-config-refinery`; the miner downloads its checksummed Compose file from that branch. Neither server deploys source checkouts.
-- **Images.** Validator and submitter images are built through `deploy-build-refinery` and pinned by digest in the configuration release. The factory and judge remain prototype fixtures; the earlier localnet candidate is historical acceptance evidence, not the active application release.
-- **Mining.** The miner commits one fixed baseline image instead of building and publishing improved factories. The baseline factory writes a fixed greeting and the judge draws a random score, so scores and weights carry no quality signal.
-- **Round length.** Rounds last 30 minutes instead of the default two hours (60/5/55 minutes).
+- **Images.** Validator and submitter images are built through `deploy-build-refinery` and pinned by digest in the configuration release. The judge remains a prototype fixture, and the miners commit demo factories from [factory-horde-demo-miners](https://github.com/backend-developers-ltd/factory-horde-demo-miners) rather than the baseline factory; the earlier localnet candidate is historical acceptance evidence, not the active application release.
+- **Mining.** Three demo miners on one server commit factories that write the requested program with Claude. The judge still draws a random score, so scores and weights carry no quality signal.
+- **Inference.** All factories use one Claude subscription through the validator's proxy, without a per-factory quota or isolation between factories that run at the same time.
+- **Round length.** Rounds last 60 minutes (30/5/25 minutes) instead of the default two hours (60/5/55 minutes).
 - **Network access.** Both servers share the chain's private VLAN. Outside miners cannot reach the chain, which a real subnet would expose publicly.
 - **Pylon EVM endpoints.** Both Pylons keep their default public mainnet EVM endpoints; FactoryHorde does not use EVM calls.
 - **Monitoring.** Alloy pushes metrics to the company monitoring stack; only its generic host and silence alerts apply, with no FactoryHorde-specific rules. The local Prometheus listens on the validator's loopback only.

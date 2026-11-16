@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
@@ -264,6 +265,22 @@ def test_crash_at_publication_recovers_original_ids_and_deadlines(
     assert records[0].plan.deadlines == TIMING.deadlines(START)
     assert len(fixture.repository.rounds.requests()) == fixture.count
     assert fixture.discoveries == 1
+
+
+def test_configured_specification_is_frozen_with_the_admission(fixture: Fixture) -> None:
+    def unavailable(identity: UUID) -> DiscoverySnapshot:
+        raise OSError("chain unavailable")
+
+    repository = fixture.repository
+    with pytest.raises(OSError):
+        RoundCoordinator(repository, TIMING, JUDGE, unavailable, "First task.").tick(START, BEAT)
+    pending = repository.files.read("control/schedule.json", Schedule).pending
+    assert pending is not None and pending.specification == "First task."
+    result = RoundCoordinator(repository, TIMING, JUDGE, fixture.discovery, "Second task.").tick(START, BEAT)
+    plan = repository.rounds.rounds()[0].plan
+    assert plan.round_id == pending.round_id and plan.specification_sha256 == sha256(b"First task.").hexdigest()
+    for path in (plan.directory, *(job.input_dir for job in result.jobs)):
+        assert repository.files.read_bytes(f"{path}/specification.md") == b"First task."
 
 
 @pytest.mark.parametrize("boundary", ["generation_end", "evaluation_start", "judge_end", "round_end"])

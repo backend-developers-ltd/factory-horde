@@ -123,12 +123,14 @@ class RoundCoordinator:
         timing: RoundTiming,
         judge_image: str,
         discover: Callable[[UUID], DiscoverySnapshot],
+        specification: str = SPECIFICATION,
     ):
         self.repository = repository
         self.rounds = repository.rounds
         self.timing = timing
         self.judge_image = judge_image
         self.discover = discover
+        self.specification = specification
 
     def _save_schedule(self, schedule: Schedule) -> None:
         self.repository.files.replace("control/schedule.json", schedule)
@@ -149,6 +151,7 @@ class RoundCoordinator:
                 deadlines=self.timing.deadlines(schedule.next_start),
                 judge_image=self.judge_image,
                 stop_grace_seconds=self.timing.stop_grace_seconds,
+                specification=self.specification,
             )
             schedule = schedule.model_copy(update={"pending": seed})
             self._save_schedule(schedule)

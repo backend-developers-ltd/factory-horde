@@ -48,6 +48,10 @@ REQUEST_FIELDS = {
     "stop_grace_seconds",
 }
 DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+# Not a secret: it only makes Claude Code send OAuth requests; the inference proxy holds the credential.
+INFERENCE_TOKEN_PLACEHOLDER = "inference-proxy"
+# Docker's own network modes would bypass the inference proxy or share the host's network.
+RESERVED_NETWORKS = ("none", "host", "bridge", "default")
 
 
 class ProtocolError(ValueError):
@@ -364,6 +368,9 @@ class Settings:
     pids: int = 128
     poll_seconds: float = 2
     workers: int = 32
+    tmp_size: str = "64m"
+    factory_network: str = ""
+    inference_url: str = "http://inference-proxy:8080"
 
 
 class Metrics:
@@ -519,7 +526,10 @@ class Docker:
         return value
 
     def create(self, request: Request) -> str:
-        """Create a detached, non-restarting workload with only its fixed job mounts."""
+        """Create a detached, non-restarting workload with only its fixed job mounts.
+
+        Only factories join the configured inference network; judges never get a network.
+        """
         destination = "/output" if request.kind == "factory" else "/submission,readonly"
         mounts = [
             f"type=bind,src={self.files.mount(request.input_dir)},dst=/input,readonly",
@@ -527,6 +537,7 @@ class Docker:
         ]
         if request.report_dir is not None:
             mounts.append(f"type=bind,src={self.files.mount(request.report_dir)},dst=/report")
+        network = self.settings.factory_network if request.kind == "factory" else ""
         args = [
             "create",
             "--name",
@@ -538,10 +549,10 @@ class Docker:
             "--restart",
             "no",
             "--network",
-            "none",
+            network or "none",
             "--read-only",
             "--tmpfs",
-            "/tmp:rw,nosuid,nodev,size=64m",
+            f"/tmp:rw,nosuid,nodev,size={self.settings.tmp_size}",
             "--cap-drop",
             "ALL",
             "--security-opt",
@@ -569,6 +580,12 @@ class Docker:
         ]
         for mount in mounts:
             args.extend(("--mount", mount))
+        if network:
+            for variable in (
+                f"ANTHROPIC_BASE_URL={self.settings.inference_url}",
+                f"CLAUDE_CODE_OAUTH_TOKEN={INFERENCE_TOKEN_PLACEHOLDER}",
+            ):
+                args.extend(("--env", variable))
         return self.require(*args, request.image)
 
 
@@ -1005,6 +1022,9 @@ def main() -> None:
         pids=int(os.environ.get("EXECUTOR_PIDS_LIMIT", "128")),
         poll_seconds=float(os.environ.get("EXECUTOR_POLL_SECONDS", "2")),
         workers=int(os.environ.get("EXECUTOR_WORKERS", "32")),
+        tmp_size=os.environ.get("EXECUTOR_TMP_SIZE", "64m"),
+        factory_network=os.environ.get("EXECUTOR_FACTORY_NETWORK", ""),
+        inference_url=os.environ.get("EXECUTOR_INFERENCE_URL", "http://inference-proxy:8080"),
     )
     if (
         settings.uid < 1
@@ -1017,6 +1037,13 @@ def main() -> None:
         or not 5 <= settings.workers <= 256
     ):
         parser.error("Require non-root UID/GID and positive CPU, PID and polling settings")
+    if (
+        re.fullmatch(r"[1-9][0-9]{0,5}[kmg]", settings.tmp_size) is None
+        or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.factory_network) is None
+        or settings.factory_network in RESERVED_NETWORKS
+        or re.fullmatch(r"https?://[A-Za-z0-9._:/-]+", settings.inference_url) is None
+    ):
+        parser.error("Require a simple /tmp size, a user-defined Docker network name and an HTTP(S) inference URL")
     executor = Executor(settings)
 
     def stop_signal(_number: int, _frame: FrameType | None) -> None:

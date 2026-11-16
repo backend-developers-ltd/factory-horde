@@ -79,6 +79,8 @@ is persisted before replacing Compose assets and cleared only after successful C
 Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared.
 
+Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories, never judges, to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. Factories on that network can reach each other and share one credential without a quota. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds.
+
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.
 
