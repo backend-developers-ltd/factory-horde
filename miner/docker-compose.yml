@@ -41,7 +41,7 @@ services:
   # Not started by "up". Run: docker compose run --rm submit [IMAGE]
   submit:
     # Published submitter release; a source build may override this reference.
-    image: "${SUBMITTER_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-submitter-${ENVIRONMENT:?}@sha256:ea1aa7b209391f40f9476b74d302b80c8e37f45cceae49fcf590b43ec8a2d87b}"
+    image: "${SUBMITTER_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-submitter-${ENVIRONMENT:?}@sha256:7e331485ee38b397c86382a8f51757718e08c0bbd995396f6efdd79be73fdda5}"
     platform: linux/amd64
     profiles: [submit]
     environment:
