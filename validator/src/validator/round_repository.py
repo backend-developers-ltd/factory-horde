@@ -5,11 +5,13 @@ from pathlib import Path
 
 from validator.record_files import RecordConflictError, RecordFiles, RecordFormatError, decode_record
 from validator.records import (
+    EvaluationPolicy,
     InputManifest,
     JobIdentity,
     JobRequest,
     JobStatus,
     JudgeReport,
+    ReviewEvidence,
     RoundLocation,
     RoundPlan,
     RoundRecord,
@@ -63,6 +65,8 @@ class RoundRepository:
                 request = request_for(plan, member, "factory")
                 self.files.write_bytes(f"{request.input_dir}/specification.md", content, immutable=True)
                 self.files.publish(f"{request.input_dir}/task.json", self._manifest(plan, request))
+                if plan.evaluation is not None:
+                    self.files.publish(f"{request.input_dir}/evaluation.json", plan.evaluation)
                 self.files.mkdir(request.output_dir)
                 self.files.mkdir(f"{plan.directory}/{member.miner_hotkey}/evaluation")
             for control in ("requests", "stops", "statuses"):
@@ -137,6 +141,11 @@ class RoundRepository:
             manifest = self.files.read(f"{request.input_dir}/task.json", InputManifest)
             if manifest != self._manifest(plan, request):
                 raise RecordConflictError("task manifest differs from its frozen cohort")
+            if (
+                plan.evaluation is not None
+                and self.files.read(f"{request.input_dir}/evaluation.json", EvaluationPolicy) != plan.evaluation
+            ):
+                raise RecordConflictError("evaluation criteria differ from the frozen round")
             self.files.list_names(request.output_dir)
             if request.report_dir is not None:
                 self.files.list_names(request.report_dir)
@@ -195,3 +204,15 @@ class RoundRepository:
     def _check_job(request: JobRequest, record: JobIdentity) -> None:
         if not request.same_job(record):
             raise RecordFormatError("record attribution does not match the expected job")
+
+    def review(self, request: JobRequest) -> ReviewEvidence:
+        """Read bounded judge evidence and verify the same job attribution as the report.
+
+        Raises:
+            ValueError: A factory request has no review.
+        """
+        if request.report_dir is None:
+            raise ValueError("only judges have a report directory")
+        evidence = decode_record(self.files.read_artifact(f"{request.report_dir}/review.json"), ReviewEvidence)
+        self._check_job(request, evidence)
+        return evidence

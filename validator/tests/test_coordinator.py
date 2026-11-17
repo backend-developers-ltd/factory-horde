@@ -16,17 +16,20 @@ from validator.coordinator import (
     RoundTick,
     RoundTiming,
     Schedule,
-    SkippedEvaluation,
 )
 from validator.discovery import DiscoverySnapshot
 from validator.record_files import RecordFiles
 from validator.records import (
     CohortMember,
+    CriterionVerdict,
     Deadlines,
+    EvaluationPolicy,
     JobRequest,
     JobStatus,
     JudgeReport,
+    ReviewEvidence,
     RoundPlan,
+    SkippedEvaluation,
     StopRequest,
     request_for,
 )
@@ -135,7 +138,7 @@ class Fixture:
 
 @pytest.fixture
 def fixture(tmp_path: Path) -> Fixture:
-    return Fixture(ResultRepository(RoundRepository(tmp_path)))
+    return Fixture(ResultRepository(RoundRepository(tmp_path), "fixture"))
 
 
 def test_defaults_and_invalid_windows() -> None:
@@ -273,14 +276,74 @@ def test_configured_specification_is_frozen_with_the_admission(fixture: Fixture)
 
     repository = fixture.repository
     with pytest.raises(OSError):
-        RoundCoordinator(repository, TIMING, JUDGE, unavailable, "First task.").tick(START, BEAT)
+        RoundCoordinator(repository, TIMING, JUDGE, unavailable, "First task.", ("Add", "Remove")).tick(START, BEAT)
     pending = repository.files.read("control/schedule.json", Schedule).pending
     assert pending is not None and pending.specification == "First task."
-    result = RoundCoordinator(repository, TIMING, JUDGE, fixture.discovery, "Second task.").tick(START, BEAT)
+    result = RoundCoordinator(repository, TIMING, JUDGE, fixture.discovery, "Second task.", ("List",)).tick(START, BEAT)
     plan = repository.rounds.rounds()[0].plan
     assert plan.round_id == pending.round_id and plan.specification_sha256 == sha256(b"First task.").hexdigest()
     for path in (plan.directory, *(job.input_dir for job in result.jobs)):
         assert repository.files.read_bytes(f"{path}/specification.md") == b"First task."
+    assert plan.evaluation == pending.evaluation == EvaluationPolicy(mode="fixture", requirements=("Add", "Remove"))
+    for job in result.jobs:
+        assert repository.files.read(f"{job.input_dir}/evaluation.json", EvaluationPolicy) == pending.evaluation
+
+
+@pytest.mark.parametrize("second_outcome", ["outage", "invalid submission", "legacy score", "wrong criteria"])
+@pytest.mark.parametrize("round_count", [1, 2])
+def test_review_weights_require_a_comparable_round(tmp_path: Path, second_outcome: str, round_count: int) -> None:
+    repo = ResultRepository(RoundRepository(tmp_path), "review")
+    fixture = Fixture(repo)
+    coordinator = RoundCoordinator(repo, TIMING, JUDGE, fixture.discovery, "Build a CLI.", ("Add",))
+    for sequence in range(1, round_count + 1):
+        start = START + (sequence - 1) * TIMING.interval
+        assert not coordinator.tick(start, BEAT).errors
+        plan = repo.rounds.rounds()[-1].plan
+        for member in plan.cohort:
+            fixture.status(request_for(plan, member, "factory"))
+        assert not coordinator.tick(plan.deadlines.evaluation_start, BEAT).errors
+        for index, member in enumerate(plan.cohort):
+            job = request_for(plan, member, "judge")
+            outcome = second_outcome if sequence == round_count and index == 1 else "success"
+            if outcome in ("invalid submission", "outage"):
+                invalid = outcome == "invalid submission"
+                fixture.status(job, code=1 if invalid else 75)
+                failed = repo.rounds.report(job).model_copy(
+                    update={
+                        "score": None,
+                        "failure": "Invalid submission: too large" if invalid else "Review unavailable: rate limit",
+                    }
+                )
+                repo.files.replace(f"{job.report_dir}/report.json", failed)
+            else:
+                fixture.status(job)
+                if outcome != "legacy score":
+                    item = CriterionVerdict(
+                        id=1,
+                        requirement="Remove" if outcome == "wrong criteria" else "Add",
+                        verdict="unmet",
+                        reason="Missing",
+                    )
+                    evidence = ReviewEvidence(
+                        round_id=job.round_id,
+                        job_id=job.job_id,
+                        factory_job_id=job.factory_job_id,
+                        kind="judge",
+                        miner_hotkey=job.miner_hotkey,
+                        model="test",
+                        score=0.0,
+                        requirements=(item,),
+                    )
+                    repo.files.publish(f"{job.report_dir}/review.json", evidence)
+        assert not coordinator.tick(plan.deadlines.round_end - timedelta(seconds=1), BEAT).errors
+    recovered = ResultRepository(RoundRepository(tmp_path), "review")
+    selected = recovered.latest_usable_round()
+    if second_outcome == "invalid submission":
+        assert selected is not None and selected[0].sequence == round_count and len(selected[1]) == 1
+    elif round_count == 1:
+        assert selected is None
+    else:
+        assert selected is not None and selected[0].sequence == 1 and len(selected[1]) == 2
 
 
 @pytest.mark.parametrize("boundary", ["generation_end", "evaluation_start", "judge_end", "round_end"])
@@ -364,7 +427,7 @@ def test_finish_cutoff_survives_late_observation_and_restart(
         skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
         assert skipped.reason == "factory_late"
     # A fresh repository/coordinator retains the decision, IDs and original cutoff.
-    fixture.repository = ResultRepository(RoundRepository(fixture.repository.files.root))
+    fixture.repository = ResultRepository(RoundRepository(fixture.repository.files.root), "fixture")
     fixture.coordinator().tick(observed + timedelta(seconds=1), BEAT)
     assert fixture.repository.files.read(relative, FactoryEligibility) == eligibility
 

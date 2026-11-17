@@ -38,9 +38,10 @@ rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
   specification.md
   <miner-hotkey>/
-    input/{specification.md,task.json}
+    input/{specification.md,task.json,evaluation.json}
     output/{main.py,README.md}
     evaluation/report.json
+    evaluation/review.json        # verdicts for a successful model review
     factory-result.json           # immutable factory JobResult
     result.json                   # immutable judge JobResult, containing AcceptedResult on success
 ```
@@ -57,7 +58,7 @@ request is authorized at that point.
 |---|---|---|
 | Round plan/stage, task manifest, request, stop | Validator | Frozen cohort, authorization and application state |
 | Status | Executor | Docker observation and startup closure |
-| Report | Judge | Untrusted file checks and random score/failure |
+| Report | Judge | Untrusted file checks and review or random score/failure |
 | Accepted result | Validator | One validated score and stable Nexus projection metadata |
 
 `protocol_version` is integer `1`; extra fields, unsupported versions, duplicate
@@ -77,18 +78,25 @@ Selected platform is `linux/amd64`, matching task 2's Pylon image.
 
 The factory writes `/output/main.py` and `/output/README.md`. The judge reads
 `/input/task.json` for round/miner and both job IDs, checks the specification and
-submission, and writes `/report/report.json`. No generated code is executed.
+submission, and writes `/report/report.json`. No generated code is executed. A
+reviewing judge first publishes `/report/review.json`. The validator verifies its
+identity, ordered rubric and arithmetic against the round's frozen evaluation policy
+before accepting the protocol-v1 score. The optional `evaluation` field in a round
+plan contains protocol version 1, the mode and ordered requirements. The validator
+copies it into each job's read-only `/input/evaluation.json`. Historical round plans
+without this field are eligible only for explicit fixture weights. The judge uses a
+per-job directory lock during review and durable publication.
 Images must provide these executables; task 5 supplies their implementation.
 Requests cannot supply shell commands, Docker flags, wallets or arbitrary mount
 destinations. Operator settings supply UID/GID, resource limits and Docker access;
 task 4 establishes actual ownership, with installer verification in task 15.
 
-By default every workload runs with `--network none`, no environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory containers then join that Docker network instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable, and judges always run without a network or environment.
+By default every workload runs with `--network none`, no environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory and judge containers then join that Docker network instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable. Missing `ANTHROPIC_BASE_URL` in review mode returns exit 75. Random scoring requires a frozen fixture policy.
 
 The network is the internal one that the `inference` Compose profile creates together with the proxy. It has no route to the internet or to the host, so the proxy is the only service a factory can reach. The proxy forwards only paths matching `/v1/messages*` to `https://api.anthropic.com` and answers 404 for everything else. Factories that run at the same time share this network and can reach each other, and the proxy applies no per-factory quota: all factories draw on the same credential.
 
 `RoundRepository.prepare_round` records the plan/IDs before preparing input. It
-publishes the complete specification and manifest immutably, creates output/report
+publishes the complete specification, manifest and frozen evaluation policy, creates output/report
 directories and preserves existing evidence on replay. `publish_request` requires
 the persisted plan, matching specification hash, exact manifest and canonical
 paths before making a request visible. The coordinator applies the stage gate before
@@ -97,8 +105,8 @@ publication; the communicator may idempotently republish the same frozen request
 `Schedule` persists the next slot and an optional `RoundSeed` before discovery. A new
 seed takes its specification from `VALIDATOR_SPECIFICATION` (the operator's
 `TASK_SPECIFICATION`; unset or empty keeps the built-in greeting task). The
-seed freezes round ID, sequence, judge, specification and all deadlines; a retained
-discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
+seed freezes the round ID, sequence, judge image, specification, scoring mode, criteria
+and all deadlines. A retained discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
 input publication is repaired using those same identities. The schedule advances
 only after preparation succeeds. No new round is admitted before an actual block
 beat in the current runtime or while old work remains unresolved. Expired intended
@@ -162,8 +170,8 @@ It contains the complete immutable request, terminal executor status, original
 Docker start/finish times (observation time for never-started jobs), first acceptance
 block number/hash/timestamp, stable result ID and either a failure or an accepted
 judge score. The existing `AcceptedResult` schema is embedded in the successful
-judge decision. This is the only persisted copy of the score. The entire decision
-publishes in one operation; score and outcome cannot become partially committed.
+judge decision. It is the authoritative record of the score used for weights.
+The validator publishes the entire decision in one operation.
 
 Unconfirmed execution raises `ResultNotReady`; it is never finalized as stopped.
 After confirmed clean judge termination, a missing, malformed or misattributed report
@@ -186,11 +194,12 @@ A process restart rebuilds by-ID and ordered block indexes from these references
 Epoch queries use inclusive original completion-block ranges. Returned mutable
 Pylon routing models are copied to preserve thread-safe cached observations.
 
-`latest_usable_round` reads completed rounds and skips empty ones, including when
-other jobs remain unresolved. This query supplies score history; it does not grant
-permission to start another round. Synthetic routing identities never attribute
-scores: use `AcceptedResult.miner_hotkey`, not Nexus routed-neuron count helpers.
-The weight gate and setter read this same provider/repository. They filter accepted
+`latest_usable_round` reads completed rounds in the configured scoring mode.
+A review round needs at least one accepted score and an outcome for every miner.
+A reviewer outage or missing evidence skips the whole round. An attributed invalid
+submission excludes only that miner. Without a usable review round the weight gate
+skips submission. Explicit fixtures can use a subset of accepted scores.
+The weight gate and setter use `AcceptedResult.miner_hotkey` to filter accepted
 hotkeys against current registration, apply stable softmax at the configured positive
 temperature and recheck registration after calculation. A detected membership change
 aborts that attempt. `WeightCalculation` records the source round, membership block,

@@ -212,6 +212,8 @@ def main() -> None:
                     "--env",
                     "VALIDATOR_WEIGHTS_ENABLED=true",
                     "--env",
+                    "VALIDATOR_JUDGE_MODE=fixture",
+                    "--env",
                     "MECHANISM_ID=1",
                     "validator",
                 ],

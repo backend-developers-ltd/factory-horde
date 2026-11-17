@@ -16,12 +16,14 @@ from validator.discovery import DiscoverySnapshot
 from validator.record_files import RecordFormatError
 from validator.records import (
     Deadlines,
+    EvaluationPolicy,
     ImageReference,
     JobIdentity,
     JobRequest,
     Record,
     RoundPlan,
     RoundRecord,
+    SkippedEvaluation,
     StopRequest,
     UtcTime,
     request_for,
@@ -79,6 +81,7 @@ class RoundSeed(Record):
     judge_image: ImageReference
     stop_grace_seconds: Annotated[int, Field(ge=0, le=60)]
     specification: Annotated[str, Field(min_length=1)] = SPECIFICATION
+    evaluation: EvaluationPolicy | None = Field(default=None, exclude_if=lambda v: v is None)
 
 
 class Schedule(Record):
@@ -87,13 +90,6 @@ class Schedule(Record):
     next_start: UtcTime
     next_sequence: Annotated[int, Field(ge=1)]
     pending: RoundSeed | None = None
-
-
-class SkippedEvaluation(JobIdentity):
-    """An intended judge was never authorized; this is not an executor termination claim."""
-
-    reason: Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"]
-    observed_at: UtcTime
 
 
 class FactoryEligibility(JobIdentity):
@@ -124,6 +120,7 @@ class RoundCoordinator:
         judge_image: str,
         discover: Callable[[UUID], DiscoverySnapshot],
         specification: str = SPECIFICATION,
+        requirements: tuple[str, ...] = (),
     ):
         self.repository = repository
         self.rounds = repository.rounds
@@ -131,6 +128,7 @@ class RoundCoordinator:
         self.judge_image = judge_image
         self.discover = discover
         self.specification = specification
+        self.evaluation = EvaluationPolicy(mode=repository.judge_mode, requirements=requirements or (specification,))
 
     def _save_schedule(self, schedule: Schedule) -> None:
         self.repository.files.replace("control/schedule.json", schedule)
@@ -152,6 +150,7 @@ class RoundCoordinator:
                 judge_image=self.judge_image,
                 stop_grace_seconds=self.timing.stop_grace_seconds,
                 specification=self.specification,
+                evaluation=self.evaluation,
             )
             schedule = schedule.model_copy(update={"pending": seed})
             self._save_schedule(schedule)
@@ -165,6 +164,7 @@ class RoundCoordinator:
             membership_snapshot="commitment_block",
             cohort=snapshot.cohort,
             judge_image=seed.judge_image,
+            evaluation=seed.evaluation,
             stop_grace_seconds=seed.stop_grace_seconds,
             specification_sha256=sha256(seed.specification.encode()).hexdigest(),
         )

@@ -41,6 +41,8 @@ type ImageReference = Annotated[
     ),
 ]
 type JobKind = Literal["factory", "judge"]
+type JudgeMode = Literal["review", "fixture"]
+type Criterion = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 type Score = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
 type NonnegativeInt = Annotated[int, Field(ge=0)]
 
@@ -96,6 +98,20 @@ class CohortMember(Record):
     judge_job_id: UUID4 = Field(default_factory=uuid4)
 
 
+class EvaluationPolicy(Record):
+    """Operator-selected scoring mode and ordered criteria shared by the whole round."""
+
+    mode: JudgeMode
+    requirements: Annotated[tuple[Criterion, ...], Field(min_length=1)]
+
+    @field_validator("requirements")
+    @classmethod
+    def _unique_requirements(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(set(value)) != len(value):
+            raise ValueError("Evaluation requirements must be unique")
+        return value
+
+
 class RoundPlan(Record):
     """Immutable portion of a round; timestamps alone never determine identity."""
 
@@ -110,6 +126,7 @@ class RoundPlan(Record):
     platform: Literal["linux/amd64"] = "linux/amd64"
     stop_grace_seconds: Annotated[int, Field(ge=0, le=60)] = 60
     specification_sha256: Sha256
+    evaluation: EvaluationPolicy | None = Field(default=None, exclude_if=lambda v: v is None)
 
     @model_validator(mode="after")
     def _unique_membership(self) -> Self:
@@ -192,6 +209,13 @@ class JobIdentity(Record):
     def projection_id(self) -> UUID:
         """Stable Nexus result identity across new runtime contexts and timestamps."""
         return uuid5(NAMESPACE_URL, f"factory-horde:v1:{self.kind}:{self.job_id}")
+
+
+class SkippedEvaluation(JobIdentity):
+    """A judge was never authorized; the reason determines eligibility for review weights."""
+
+    reason: Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"]
+    observed_at: UtcTime
 
 
 class JobRequest(JobIdentity):
@@ -320,6 +344,30 @@ class JudgeReport(JobIdentity):
         if self.score is not None and set(self.checked_files) != {"main.py", "README.md"}:
             raise ValueError("successful report requires both expected file checks")
         return self
+
+
+class CriterionVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    id: Annotated[int, Field(ge=1)]
+    requirement: Criterion
+    verdict: Literal["met", "partial", "unmet"]
+    reason: Criterion
+
+
+class ReviewEvidence(JobIdentity):
+    """The judge's linked, ordered explanation of the protocol-v1 score."""
+
+    model: Criterion
+    score: Score
+    requirements: Annotated[tuple[CriterionVerdict, ...], Field(min_length=1)]
+
+    def matches(self, policy: EvaluationPolicy, score: float) -> bool:
+        points = {"met": 1.0, "partial": 0.5, "unmet": 0.0}
+        return (
+            tuple(item.requirement for item in self.requirements) == policy.requirements
+            and all(item.id == index for index, item in enumerate(self.requirements, 1))
+            and self.score == score == sum(points[item.verdict] for item in self.requirements) / len(self.requirements)
+        )
 
 
 class AcceptedResult(JobIdentity):

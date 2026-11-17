@@ -1,29 +1,54 @@
-# FactoryHorde prototype judge
+# FactoryHorde judge
 
-The judge checks only presence and readability of `main.py` and `README.md`.
-It never executes or imports the submitted project. These checks do not measure
-software quality. A successful check draws a uniform random score in `[0,1]` and
-writes one linked [protocol-v1 report](../spec/file-protocol.md).
+The judge reads the frozen specification and the stopped factory's `main.py` and
+`README.md`. It evaluates them without importing or executing the submission.
+The executor mounts `/input` and `/submission` read-only and gives each job a
+writable `/report` directory.
 
-Run `/usr/local/bin/factory-horde-judge` in the pinned Python image with:
+## Scoring
 
-- `/input:ro`: immutable `task.json` and `specification.md`.
-- `/submission:ro`: the stopped factory's output.
-- `/report:rw`: the judge's own report directory.
+`JUDGE_MODE=review` is the validator default. At admission the validator freezes
+`TASK_REQUIREMENTS`, an ordered JSON list of acceptance criteria, alongside the
+specification. Omitting the list makes the full specification one criterion.
+Every miner receives the same `/input/evaluation.json`. IDs start at 1 and
+follow the order in the list. With older inputs that have only `task.json` and
+`specification.md`, this judge uses review mode and the whole-task criterion.
 
-The executable uses only Python's standard library. It verifies input version,
-UUIDs, miner attribution and specification hash, rejects duplicate/non-finite JSON,
-and reads only bounded regular files (one MiB each). Missing, unreadable, oversized,
-symlinked or non-regular submission files produce a failure report and exit 1.
-Malformed attribution fails without fabricating a linked report. Success exits 0.
+Claude Code receives its grading instructions through `--append-system-prompt`.
+Standard input contains the criteria, specification and both files, delimited by
+a fresh random boundary. The CLI disables its ordinary tools. Its structured
+response must supply exactly one known ID, verdict and reason per criterion.
+The judge assigns 1 for met, 0.5 for partial and 0 for unmet, then averages
+these points. The model defaults to `sonnet`. One CLI invocation has a 600-second
+limit. The specification and generated files together can use up to 200,000 bytes.
 
-Reports are written with file/directory fsync and atomic create-if-absent publication.
-Rerunning the same judge preserves its first valid report, including a failed one,
-and never replaces mismatched or malformed existing evidence. Validator acceptance
-still requires independent matching request/status and successful Docker exit.
+An explicit `JUDGE_MODE=fixture` in the round configuration produces a random
+score for offline orchestration tests. Losing access to the proxy in review mode
+produces an unavailable evaluation.
 
-Use `localnet/build-baselines.sh` from the repository root for source-build Docker
-checks. These verify read-only input/submission mounts, writable report storage,
-no execution of submitted code, stable reruns, failure cases and exact protocol
-parsing. GHCR publication uses the baseline GitHub Actions workflow; see the
-[factory guide](../miner/factory/README.md) for publication and anonymous verification.
+## Outcomes and recovery
+
+- A successful judge exits 0 and publishes a linked protocol-v1 `report.json`.
+  For review scores the validator also checks the job identity, ordered criteria,
+  verdicts and arithmetic in `review.json`.
+- A missing, oversized or invalid submission exits 1 with a linked failure
+  starting with `Invalid submission: `. Other miners remain eligible.
+- Missing inference configuration, a timeout, an unusable model reply or invalid
+  review inputs produce exit 75 and a failure starting with `Review unavailable: `.
+  The validator skips the entire round when selecting review weights and can use
+  the previous comparable round. Confirmed judge crashes or missing evidence also
+  prevent selection of a partial ranking.
+- A per-job directory lock covers the first check through publication. The judge
+  fsyncs and publishes review evidence before the report. After an interruption
+  between those writes it reconstructs the score from the saved verdicts. A
+  completed report, including its failure classification, is reused on replay.
+
+Run the focused tests from the repository root.
+
+```sh
+env -u UV_EXCLUDE_NEWER uv run --frozen --project validator pytest judge/test_judge.py -q
+```
+
+The [image checks](../localnet/build-baselines.sh) exercise the explicit offline
+fixture. The [file protocol](../spec/file-protocol.md) defines the mounted inputs
+and acceptance rules.

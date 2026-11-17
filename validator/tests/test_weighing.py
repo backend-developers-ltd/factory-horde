@@ -22,6 +22,7 @@ from pylon_client.artanis.v1 import GetNeuronsResponse
 
 from validator.main import Settings, Validator
 from validator.records import RoundPlan, RoundRecord
+from validator.result_repository import ResultRepository
 from validator.result_store import FileTaskResultStore
 from validator.weighing import Membership, NoUsableScores, RegistrationChanged, Weigher, WeightCalculation, softmax
 from validator.weight_gate import WeightGate
@@ -101,6 +102,11 @@ def test_scores_outlive_epochs_and_repeated_opportunities_do_not_redraw(pair: Pa
     assert pair.repo.files.read_bytes(pair.repo.result_path(pair.judge)) == before
     calculation = pair.repo.files.read("control/weight-calculation.json", WeightCalculation)
     assert calculation.epoch_start == EPOCH.first_block and calculation.round_id == pair.judge.round_id
+
+
+def test_review_weights_exclude_retained_legacy_random_scores(pair: Pair) -> None:
+    accepted(pair)
+    assert ResultRepository(pair.repo.rounds, "review").latest_usable_round() is None
 
 
 def test_new_empty_round_preserves_previous_valid_history(pair: Pair) -> None:

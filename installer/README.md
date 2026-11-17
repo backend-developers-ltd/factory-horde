@@ -194,15 +194,17 @@ ownership/permissions preparation command.
 
 `TASK_SPECIFICATION` in `.env` is the task text given to every factory in new rounds. Write it on one line in single quotes, without `$` or backticks. Unset or empty keeps the built-in greeting task, and a round that is already admitted keeps the text it started with.
 
+Set `TASK_REQUIREMENTS` to a single-quoted JSON array of distinct criteria, for example `'["Add a task.","Persist tasks across invocations."]'`. An empty list uses the whole specification as a single criterion. The validator freezes the list and `JUDGE_MODE` at admission. Review is the default. Use `JUDGE_MODE=fixture` explicitly for offline localnet checks.
+
 Workloads run without a network by default. Factories that call Claude need the inference proxy, which three settings enable together:
 
 - `COMPOSE_PROFILES=inference` (or `alloy,inference`) starts the `inference-proxy` service and creates the internal Docker network `factory-horde-inference`. This profile requires Docker Engine 28 or newer.
 - `CLAUDE_CODE_OAUTH_TOKEN` is a Claude subscription token created with `claude setup-token`. It stays in `.env` on the validator host, readable only by the operator, and reaches only the proxy container. It is never written to `executor.env` or given to a factory.
-- `EXECUTOR_FACTORY_NETWORK=factory-horde-inference` makes the executor attach factory containers to that network and give them `ANTHROPIC_BASE_URL` (`EXECUTOR_INFERENCE_URL`, default `http://inference-proxy:8080`) and the placeholder `CLAUDE_CODE_OAUTH_TOKEN=inference-proxy`. Judges stay without a network. The same variable names the network in Compose, so one value keeps both sides in step.
+- `EXECUTOR_FACTORY_NETWORK=factory-horde-inference` makes the executor attach factory and judge containers to that network and give them `ANTHROPIC_BASE_URL` (`EXECUTOR_INFERENCE_URL`, default `http://inference-proxy:8080`) and the placeholder `CLAUDE_CODE_OAUTH_TOKEN=inference-proxy`. Review mode uses this proxy. A missing proxy setting makes the round ineligible for review weights. The same variable names the network in Compose, so one value keeps both sides in step.
 
-The network has no route to the internet or to the host. The proxy forwards only `/v1/messages*` to `https://api.anthropic.com`, replaces the `Authorization` header with the real token and answers 404 for any other path. Factories that run at the same time share the network and can reach each other, and the proxy applies no per-factory quota, so every factory in a round draws on the same subscription.
+The network has no route to the internet or to the host. The proxy forwards only `/v1/messages*` to `https://api.anthropic.com`, replaces the `Authorization` header with the real token and answers 404 for any other path. Factories and judges that run at the same time share the network and can reach each other, and the proxy applies no per-workload quota, so every factory and judge in a round draws on the same subscription.
 
-Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory containers and those factories fail without a score.
+Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory and judge containers and those jobs fail without a score.
 
 ## Monitoring and recovery
 

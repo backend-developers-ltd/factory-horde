@@ -58,7 +58,11 @@ Pylon identity credentials. Both Nexus weight opportunity and setter nodes use
 `MECHANISM_ID`; the setter shares the factory/evaluation store provider. The gate
 skips opportunities without usable registered scores. Empty rounds retain the
 latest nonempty completed round; chain epoch boundaries do not expire its scores.
-Successful zeros remain eligible and failures are excluded. Weighing uses
+For review weights, each admitted job must have a verified review, a confirmed
+miner-specific rejection or a recorded miner-specific skip. A reviewer outage,
+incomplete evaluation or legacy random score cannot supply review weights. With
+no comparable completed round the gate skips the weight opportunity. Explicit
+fixture mode can still use historical localnet fixture results. Successful zeros remain eligible. Weighing uses
 `exp((score - maximum) / temperature)`, normalized over currently registered
 accepted hotkeys, with finite positive `VALIDATOR_WEIGHT_TEMPERATURE` default `0.1`.
 Membership is read again after calculation; a detected change aborts that attempt.

@@ -38,7 +38,7 @@ from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
 from validator.monitoring import ChainViewNode, MonitoringNode, read_chain_view
 from validator.otel import OtelSettings, setup_otel
-from validator.records import ImageReference, MinerHotkey
+from validator.records import Criterion, ImageReference, JudgeMode, MinerHotkey
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
 from validator.result_repository import ResultRepository
 from validator.round_actor import RoundCoordinatorNode
@@ -65,6 +65,8 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     judge_stop_reserve: timedelta = timedelta(minutes=5)
     stop_grace_seconds: int = Field(default=60, ge=0, le=60)
     specification: str = Field(default=SPECIFICATION, min_length=1)
+    requirements: tuple[Criterion, ...] = ()
+    judge_mode: JudgeMode = "review"
     weights_enabled: bool = False
     weight_temperature: float = Field(default=0.1, gt=0, allow_inf_nan=False)
     weight_tempo: int = Field(default=360, gt=0)
@@ -137,7 +139,7 @@ class Validator(NexusValidator):
         self.connect(self.subnet_clock.source, observer.sink)
         self.connect(observer.error, errors.sink)
         self.connect(observer.ok, observed.sink)
-        self.results = ResultRepository(RoundRepository(settings.data_root))
+        self.results = ResultRepository(RoundRepository(settings.data_root), settings.judge_mode)
         self.tasks = FileTasks(self.results)
         self.tasks.connect(self, errors)
         monitoring = MonitoringNode(
@@ -173,6 +175,7 @@ class Validator(NexusValidator):
                     settings.judge_image,
                     discovery,
                     settings.specification,
+                    settings.requirements,
                 )
             )
             self.connect(self.tasks.poll_clock.source, coordinator.sink)

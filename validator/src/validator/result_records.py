@@ -4,7 +4,7 @@ from typing import Self
 from uuid import UUID
 
 from nexus.v1 import BlockBeat, Neuron
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from validator.records import (
     AcceptedResult,
@@ -42,9 +42,12 @@ class JobResult(Record):
     completion: CompletionBlock
     accepted: AcceptedResult | None = None
     failure: str | None = None
+    submission_rejected: bool = Field(default=False, exclude_if=lambda v: not v)
 
     @model_validator(mode="after")
     def _consistent_decision(self) -> Self:
+        if self.submission_rejected and (self.request.kind != "judge" or self.failure is None):
+            raise ValueError("Only a failed judge can reject a submission")
         if not self.request.same_job(self.status) or not self.status.confirmed_stopped:
             raise ValueError("Result requires attributed confirmed termination")
         if self.result_id != self.request.projection_id or self.processing_started > self.processing_finished:

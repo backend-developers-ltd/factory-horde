@@ -25,6 +25,9 @@ def directories(tmp_path: Path) -> tuple[Path, Path, Path]:
         directory.mkdir()
     (inputs / "task.json").write_bytes((FIXTURES / "input-manifest.json").read_bytes())
     (inputs / "specification.md").write_bytes((FIXTURES / "specification.md").read_bytes())
+    (inputs / "evaluation.json").write_text(
+        json.dumps({"protocol_version": 1, "mode": "fixture", "requirements": ["Print the greeting."]})
+    )
     return inputs, output, report
 
 
@@ -164,9 +167,13 @@ def test_input_and_existing_report_conflicts_fail_without_rewriting(directories:
     (output / "main.py").write_text("readable")
     (output / "README.md").write_text("readable")
     (inputs / "specification.md").write_text("changed")
-    assert judge(directories).returncode == 1
+    outcome = judge(directories)
     failed = JudgeReport.model_validate_json((report / "report.json").read_bytes())
-    assert failed.failure == "Specification digest mismatch"
+    # This contract suite also runs against the published offline v1 image.
+    assert (outcome.returncode, failed.failure) in {
+        (os.EX_TEMPFAIL, "Review unavailable: Specification digest mismatch"),
+        (1, "Specification digest mismatch"),
+    }
     (report / "report.json").unlink()
     (inputs / "specification.md").write_bytes((FIXTURES / "specification.md").read_bytes())
     (report / "report.json").write_bytes((FIXTURES / "mismatched-report.json").read_bytes())

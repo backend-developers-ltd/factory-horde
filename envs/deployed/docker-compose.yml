@@ -60,6 +60,8 @@ services:
       VALIDATOR_STOP_GRACE_SECONDS: "${STOP_GRACE_SECONDS:-60}"
       # Empty keeps the validator's built-in specification.
       VALIDATOR_SPECIFICATION: "${TASK_SPECIFICATION:-}"
+      VALIDATOR_REQUIREMENTS: "${TASK_REQUIREMENTS:-[]}"
+      VALIDATOR_JUDGE_MODE: "${JUDGE_MODE:-review}"
       VALIDATOR_WEIGHTS_ENABLED: "${VALIDATOR_WEIGHTS_ENABLED:-false}"
       VALIDATOR_WEIGHT_TEMPERATURE: "${WEIGHT_TEMPERATURE:-0.1}"
       VALIDATOR_WEIGHT_TEMPO: "${SUBNET_TEMPO:-360}"
@@ -156,9 +158,9 @@ services:
     depends_on: [pylon, node-exporter]
 
   # Optional inference proxy, started only with COMPOSE_PROFILES=inference in .env. It holds the Claude
-  # credential and is the only service factories can reach on the internal network that the executor
-  # attaches them to (EXECUTOR_FACTORY_NETWORK). Factories on that network can also reach each other,
-  # and the proxy applies no per-factory quota.
+  # credential and is the only service factories and judges can reach on the internal network that the
+  # executor attaches them to (EXECUTOR_FACTORY_NETWORK). Workloads on that network can also reach each
+  # other, and the proxy applies no per-workload quota.
   inference-proxy:
     # caddy:2.11.9
     image: docker.io/library/caddy@sha256:e40b94d0a43b5ff69cb20568d73f10c70703df7b0ffc2298eb3d723cdc9d0bd1

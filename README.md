@@ -8,10 +8,11 @@ Versioned shared files preserve requests, permanent stops, execution evidence an
 accepted scores across restarts and executor updates.
 
 The baseline invokes Pi 0.87.1 without inference, waits approximately one minute,
-and writes a fixed greeting project. The judge checks the required files without
-executing them and draws a random score. Stable softmax weights come from accepted
-scores, filtered against current registration. Random scores demonstrate the
-orchestration flow; they measure no software quality, economics or security.
+and writes a fixed greeting project. The judge reads the required files without
+executing them. Review mode asks Claude for one verdict per frozen criterion and
+records the mean. An unavailable judge excludes the round from weight selection.
+Localnet explicitly selects fixture mode for random orchestration scores.
+The validator computes stable softmax weights over eligible registered miners.
 
 ## Run the accepted prototype
 
@@ -59,7 +60,7 @@ relevant project and preserve its dependency-age restriction. The host executor 
 one standard-library Python file; the validator has no Docker socket or wallet mount.
 
 No operator configuration branch has been promoted, and no subnet-12, public-chain
-or emissions change is part of this prototype. Real inference, quality judging,
+or emissions change is part of this prototype. Quality calibration,
 stronger isolation, private/encrypted submissions, automatic rollback, scale/storage
 systems and TEE remain future work.
 

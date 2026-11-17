@@ -528,7 +528,7 @@ class Docker:
     def create(self, request: Request) -> str:
         """Create a detached, non-restarting workload with only its fixed job mounts.
 
-        Only factories join the configured inference network; judges never get a network.
+        Factories and judges both join the configured inference network, if any.
         """
         destination = "/output" if request.kind == "factory" else "/submission,readonly"
         mounts = [
@@ -537,7 +537,7 @@ class Docker:
         ]
         if request.report_dir is not None:
             mounts.append(f"type=bind,src={self.files.mount(request.report_dir)},dst=/report")
-        network = self.settings.factory_network if request.kind == "factory" else ""
+        network = self.settings.factory_network
         args = [
             "create",
             "--name",

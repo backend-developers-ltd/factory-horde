@@ -41,7 +41,8 @@ Follow [published operator installation](../installer/README.md#published-operat
 ```bash
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
-# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD in operator.env.
+# Set JUDGE_IMAGE to the published GHCR digest for the review judge in your release.
+# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD.
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
@@ -84,7 +85,7 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 - **Development chain and keys.** Refinery is a private development chain. Wallets are funded from the public `//Alice` key, and coldkeys are stored unencrypted in the wallet directory that Pylon mounts read-only. A real deployment uses funded, encrypted coldkeys kept off the servers, with only hotkeys on the hosts.
 - **Release selection.** The same build/promotion process uses the `refinery` branch suffix instead of `production`. The validator follows `deploy-config-refinery`; the miner downloads its checksummed Compose file from that branch. Neither server deploys source checkouts.
 - **Images.** Validator and submitter images are built through `deploy-build-refinery` and pinned by digest in the configuration release. The judge remains a prototype fixture, and the miners commit demo factories from [factory-horde-demo-miners](https://github.com/backend-developers-ltd/factory-horde-demo-miners) rather than the baseline factory; the earlier localnet candidate is historical acceptance evidence, not the active application release.
-- **Mining.** Three demo miners on one server commit factories that write the requested program with Claude. The judge still draws a random score, so scores and weights carry no quality signal.
+- **Mining.** Three demo miners on one server commit factories that write the requested program with Claude. The historical fixture judge draws random scores. Review scoring requires the updated validator, executor and matching judge digest. The example selects `JUDGE_MODE=review` and provides one list of criteria for all miners. Review weights start with the first eligible review round.
 - **Inference.** All factories use one Claude subscription through the validator's proxy, without a per-factory quota or isolation between factories that run at the same time.
 - **Round length.** Rounds last 60 minutes (30/5/25 minutes) instead of the default two hours (60/5/55 minutes).
 - **Network access.** Both servers share the chain's private VLAN. Outside miners cannot reach the chain, which a real subnet would expose publicly.

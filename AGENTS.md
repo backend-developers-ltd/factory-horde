@@ -2,7 +2,8 @@
 
 FactoryHorde is a localnet-first orchestration prototype for software factories submitted as immutable
 container images. A Nexus validator coordinates host Docker execution through shared files; a separate judge
-produces persistent random fixture scores. No inference, quality validation or public deployment is included.
+produces persistent scores: one tool-less Claude review of the submitted files against frozen criteria, with
+random scoring available in explicit fixture mode. No public deployment is included.
 Origin: the Copier-rendered Nexus subnet template.
 
 Follow `spec/FactoryHorde-v2-sequential-implementation-tasks.md` in order and use `subnet_design.md` for the
@@ -79,7 +80,7 @@ is persisted before replacing Compose assets and cleared only after successful C
 Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared.
 
-Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories, never judges, to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. Factories on that network can reach each other and share one credential without a quota. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds.
+Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories and judges to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; review mode requires the proxy, and localnet explicitly selects fixture mode; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. Factories on that network can reach each other and share one credential without a quota. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds. Admission freezes `TASK_REQUIREMENTS` and `JUDGE_MODE` with that text. Review weights skip rounds with an unavailable judge and exclude legacy fixture scores.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

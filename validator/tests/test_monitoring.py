@@ -60,7 +60,7 @@ def executor_health(sampler: HealthSampler, now: datetime, *, docker_ok: bool = 
 
 @pytest.fixture
 def sampler(tmp_path: Path) -> HealthSampler:
-    result = HealthSampler(ResultRepository(RoundRepository(tmp_path)), False, 30)
+    result = HealthSampler(ResultRepository(RoundRepository(tmp_path), "fixture"), False, 30)
     executor_health(result, START)
     result.chain_at = START
     return result

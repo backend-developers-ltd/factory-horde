@@ -717,7 +717,7 @@ def test_default_workloads_stay_offline_without_environment(
         assert "--env" not in arguments and arguments[-1] == request.image
 
 
-def test_only_factories_join_the_inference_network(
+def test_factories_and_judges_join_the_inference_network(
     executor: Executor, job_request: Request, judge_request: Request
 ) -> None:
     settings = Settings(
@@ -736,8 +736,9 @@ def test_only_factories_join_the_inference_network(
     ]
     assert values(factory, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and factory[-1] == job_request.image
     judge = create_arguments(executor, judge_request, settings)
-    assert values(judge, "--network") == ["none"] and "--env" not in judge
-    assert values(judge, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"]
+    assert values(judge, "--network") == ["factory-horde-inference"]
+    assert values(judge, "--env") == values(factory, "--env")
+    assert values(judge, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and judge[-1] == judge_request.image
     unchanged = create_arguments(executor, job_request, executor.settings)
     assert [a for a in factory if a not in unchanged] == [
         "factory-horde-inference",
