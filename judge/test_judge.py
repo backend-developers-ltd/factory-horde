@@ -413,3 +413,10 @@ def test_runner_exchange_never_executes_on_controller(tmp_path: Path, monkeypatc
     monkeypatch.setattr(subprocess, "run", forbidden)
     assert judge.run_command(command, 1) == outcome
     assert load(tmp_path / "1.request.json") == command
+
+
+def test_controller_assigns_command_ids_independently_of_model_step(directories: Directories) -> None:
+    model = FakeModel(decision(step=999), decision("finish", step=1000, purpose="", requirements=assessment("met")))
+    assert evaluate(*directories, call=model) == 0
+    capture = load(directories[2] / "step-1.observation.json")
+    assert judge.as_object(capture["outcome"])["id"] == "step-1"

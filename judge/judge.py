@@ -82,7 +82,8 @@ change. Fix your test invocation if it is wrong; distinguish harness errors from
 Each captured command has an id step-N. Use an evidence action with an earlier command's step number to \
 retrieve its full recorded output when it is outside the recent history. notes carries a concise progress \
 summary for your next decision; notes are not execution evidence. Unused argv/requirements must be [], unused \
-stdin must be empty and unused step must be 0. purpose explains why this action helps evaluate a requirement.
+stdin must be empty. step selects an earlier command only for evidence lookup; command IDs are assigned \
+by the controller. purpose explains why this action helps evaluate a requirement.
 
 Finish only with exactly one verdict per criteria.json id. met=fully demonstrated, partial=demonstrated \
 incomplete functionality, unmet=demonstrated missing/broken functionality. Cite actual command check_ids \
@@ -99,7 +100,10 @@ STEP_SCHEMA = {
         "stdin": {"type": "string"},
         "purpose": {"type": "string"},
         "notes": {"type": "string"},
-        "step": {"type": "integer"},
+        "step": {
+            "type": "integer",
+            "description": "Earlier command number for evidence lookup; ignored for command and finish.",
+        },
         "requirements": REQUIREMENTS_SCHEMA,
     },
     "required": ["kind", "argv", "stdin", "purpose", "notes", "step", "requirements"],
@@ -483,7 +487,6 @@ def parse_step(value: object) -> dict[str, object]:
         or any(not isinstance(a, str) or "\0" in a for a in cast(list[object], argv))
         or not isinstance(stdin, str)
         or not isinstance(purpose, str)
-        or not purpose.strip()
         or not isinstance(notes, str)
         or type(step["step"]) is not int
         or not isinstance(step["requirements"], list)
@@ -491,9 +494,9 @@ def parse_step(value: object) -> dict[str, object]:
     ):
         raise ReviewError("Invalid agent decision")
     if step["kind"] == "command":
-        if not argv or not argv[0] or step["step"] != 0 or step["requirements"]:
+        if not argv or not argv[0] or step["requirements"]:
             raise ReviewError("Invalid sandbox command decision")
-    elif argv or stdin or (step["kind"] == "finish" and step["step"] != 0):
+    elif argv or stdin:
         raise ReviewError("Unexpected command in non-command decision")
     elif step["kind"] == "evidence" and (step["step"] < 1 or step["requirements"]):
         raise ReviewError("Invalid evidence lookup")
