@@ -1,6 +1,7 @@
 """Real Docker boundaries for the executor-owned application runner."""
 
 import os
+import socket
 import subprocess
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -114,7 +115,21 @@ def test_workloads_reach_proxy_but_not_peers_or_internet(runner: ApplicationRunn
     first = runner.request
     second = replace(first, job_id=str(uuid4()))
     names = [first.name + "-probe", second.name + "-probe"]
+    listener = socket.socket()
+    listener.bind(("0.0.0.0", 0))
+    listener.listen(4)
+    host_port = listener.getsockname()[1]
     try:
+        runner.docker.require(
+            "run",
+            "--rm",
+            "--network",
+            "bridge",
+            IMAGE,
+            "python",
+            "-c",
+            f"import socket; socket.create_connection(('172.17.0.1', {host_port}), timeout=2)",
+        )
         net1 = runner.docker.inference_network(first)
         net2 = runner.docker.inference_network(second)
         for name, net in zip(names, [net1, net2], strict=True):
@@ -141,14 +156,15 @@ def test_workloads_reach_proxy_but_not_peers_or_internet(runner: ApplicationRunn
         )
         code = """import socket, urllib.request
 assert urllib.request.urlopen('http://inference-proxy:8080/healthz', timeout=5).status == 200
-for host, port in [(PEER, 8081), ('1.1.1.1', 80), ('172.17.0.1', 22)]:
+for host, port in [(PEER, 8081), ('1.1.1.1', 80), ('172.17.0.1', HOST_PORT)]:
     try: socket.create_connection((host, port), timeout=1)
     except OSError: pass
     else: raise RuntimeError('Forbidden connection: ' + host)
 print('proxy-only verified')
-""".replace("PEER", repr(peer))
+""".replace("PEER", repr(peer)).replace("HOST_PORT", str(host_port))
         assert "proxy-only verified" in runner.docker.require("exec", names[0], "python", "-c", code)
     finally:
+        listener.close()
         for name in names:
             runner.docker.call("rm", "-f", name)
         runner.docker.release_network(first)

@@ -941,7 +941,7 @@ class ApplicationRunner:
                                     continue
                                 channel = frame_header[0]
                                 remaining = int.from_bytes(frame_header[4:8], "big")
-                                if channel not in streams or frame_header[1:4] != b"\0\0\0":
+                                if channel not in streams or bytes(frame_header[1:4]) != b"\0\0\0":
                                     raise DockerError("Invalid Docker output frame")
                                 frame_header.clear()
                             size = min(remaining, len(chunk))
