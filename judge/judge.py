@@ -95,7 +95,9 @@ PLAN_SCHEMA = {
                     "id": {"type": "string"},
                     "args": {
                         "type": "array",
-                        "description": "Arguments AFTER python main.py, e.g. [add, buy milk]. Omit the entrypoint.",
+                        "description": (
+                            "Arguments AFTER python main.py; e.g. [add, buy milk]. Do not include the entrypoint."
+                        ),
                         "items": {"type": "string"},
                     },
                     "stdin": {"type": "string"},

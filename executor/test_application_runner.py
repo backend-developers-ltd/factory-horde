@@ -37,6 +37,8 @@ def runner(tmp_path: Path):
         "none",
         "--user",
         "1000:1000",
+        "--mount",
+        f"type=bind,src={tmp_path / 'sentinel-report'},dst=/report/sentinel,readonly",
         "--label",
         f"factory_horde.request_sha256={request.digest}",
         "--label",
@@ -56,6 +58,7 @@ def command(*args: str) -> dict[str, object]:
 
 
 def test_workspace_boundaries_and_persistence(runner: ApplicationRunner):
+    assert runner.docker.require("exec", runner.request.name, "cat", "/report/sentinel") == "secret"
     source = runner.files.root / runner.request.output_dir / "main.py"
     source.write_text("""import os, socket, pathlib, sys
 for name in ('/report', '/input', '/runner', '/var/run/docker.sock'):
