@@ -830,6 +830,7 @@ class ApplicationRunner:
         streams = {"stdout": bytearray(), "stderr": bytearray()}
         truncated = {"stdout": False, "stderr": False}
         timed_out = False
+        parent_checked = time.monotonic()
         with subprocess.Popen(
             argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
         ) as process:
@@ -849,6 +850,12 @@ class ApplicationRunner:
                     while selector.get_map():
                         if self.executor.shutdown.is_set():
                             raise DockerError("Executor interrupted application capture")
+                        if time.monotonic() - parent_checked >= 2:
+                            parent = self.docker.inspect(self.request)
+                            if parent is None or object_value(parent["State"])["Running"] is not True:
+                                self.stop()
+                                raise DockerError("Judge stopped during application check")
+                            parent_checked = time.monotonic()
                         if time.monotonic() - started >= limit or self.executor.cancelled(self.request):
                             timed_out = True
                             self.stop()

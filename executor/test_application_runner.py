@@ -27,7 +27,26 @@ def runner(tmp_path: Path):
     (tmp_path / request.output_dir).mkdir(parents=True)
     (tmp_path / "sentinel-report").write_text("secret")
     result = ApplicationRunner(executor, request, {})
+    executor.docker.require(
+        "run",
+        "-d",
+        "--name",
+        request.name,
+        "--network",
+        "none",
+        "--user",
+        "1000:1000",
+        "--label",
+        f"factory_horde.request_sha256={request.digest}",
+        "--label",
+        f"factory_horde.job_id={request.job_id}",
+        IMAGE,
+        "python",
+        "-c",
+        "import time; time.sleep(86400)",
+    )
     yield result
+    subprocess.run(["docker", "rm", "-f", request.name], check=False, capture_output=True)
     subprocess.run(["docker", "rm", "-f", result.name], check=False, capture_output=True)
 
 

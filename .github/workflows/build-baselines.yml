@@ -24,7 +24,7 @@ jobs:
             context: miner/factory
           - kind: judge
             context: judge
-          - kind: behavioral-fixture
+          - kind: control
             context: localnet/fixtures/behavioral
     env:
       IMAGE: ghcr.io/backend-developers-ltd/factory-horde-${{ matrix.kind }}
