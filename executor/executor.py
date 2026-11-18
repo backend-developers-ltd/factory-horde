@@ -791,6 +791,8 @@ class ApplicationRunner:
                 f"type=bind,src={self.files.mount(self.request.output_dir)},dst=/submission,readonly",
                 "--workdir",
                 "/app",
+                "--env",
+                "HOME=/app",
                 "--label",
                 f"factory_horde.runner={self.request.digest}",
                 "--log-driver",

@@ -65,6 +65,7 @@ for name in ('/report', '/input', '/runner', '/var/run/docker.sock'):
     assert not pathlib.Path(name).exists(), name
 assert 'ANTHROPIC_BASE_URL' not in os.environ
 assert 'CLAUDE_CODE_OAUTH_TOKEN' not in os.environ
+assert pathlib.Path.home() == pathlib.Path.cwd()
 assert not pathlib.Path('/proc/1/root/report').exists()
 try:
     socket.create_connection(('1.1.1.1', 80), timeout=1)
@@ -72,7 +73,7 @@ except OSError:
     pass
 else:
     raise RuntimeError('network accessible')
-p = pathlib.Path('state')
+p = pathlib.Path.home() / 'state'
 if sys.argv[1] == 'add': p.write_text('persisted')
 print(p.read_text())
 """)

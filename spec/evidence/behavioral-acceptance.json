@@ -1118,9 +1118,37 @@
     "validator": "201 passed, 9 optional image tests skipped",
     "miner": "22 passed",
     "executor_and_judge": "86 passed",
-    "real_container_boundaries": "6 passed",
+    "real_container_boundaries": "6 passed, including a report sentinel visible inside the controller but inaccessible to the application",
     "installer": "23 passed",
     "ruff_and_strict_types": "passed"
   },
-  "runner_selection": "Pinned bubblewrap failed under unchanged container restrictions; selected executor-owned networkless application container."
+  "runner_selection": "Pinned bubblewrap failed under unchanged container restrictions; selected executor-owned networkless application container.",
+  "mechanical_factory": {
+    "image": "ghcr.io/backend-developers-ltd/fh-miner-oneshot@sha256:202efe8ff2222bdf6708f866df772738f4001b6e46c4251d698126078c5a067a",
+    "status": {
+      "container_id": "03c5ec83d4d5a8f189ce93431b5d58ea6e3629bb7db2fb7892760e9d2f86cbcf",
+      "container_name": "factory-horde-2edf57bb-2b09-4ae8-96bb-feed2f6aa8ce",
+      "execution": "exited",
+      "exit_code": 0,
+      "factory_job_id": "2edf57bb-2b09-4ae8-96bb-feed2f6aa8ce",
+      "finished_at": "2026-11-18T05:54:55.732543+00:00",
+      "forced": false,
+      "job_id": "2edf57bb-2b09-4ae8-96bb-feed2f6aa8ce",
+      "kind": "factory",
+      "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+      "observed_at": "2026-11-18T05:54:56.386480+00:00",
+      "oom_killed": false,
+      "protocol_version": 1,
+      "reason": null,
+      "round_id": "ac0c59f3-81f4-43ae-83db-dd6022c6cc7a",
+      "started_at": "2026-11-18T05:54:17.429509+00:00",
+      "startup_forbidden": true,
+      "state": "finished"
+    }
+  },
+  "review": {
+    "base": "7b1893ce01103651c51a153c9f6d583b1600dc7b",
+    "scope": "Feature branch and final working tree; admission, runner lifecycle, capture, recovery, weighting and operator updates",
+    "unresolved_findings": []
+  }
 }
