@@ -1,0 +1,302 @@
+{
+  "observed_at": "2026-11-18T07:12:06.929552+00:00",
+  "environment": "Refinery development chain, subnet 11",
+  "release_revision": "500e176a37cc00ba24ca0ee69c1e0ba3c04a61a4",
+  "release_health": "healthy",
+  "round_id": "ecc386f9-bab1-467c-bdd1-7f9c96cf69e4",
+  "sequence": 198,
+  "stage": "complete",
+  "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:411c410fe12398028806adcb28a317d52b972bb883030b7d859b64820afc9522",
+  "deadlines": {
+    "evaluation_start": "2026-11-18T07:10:47.402468Z",
+    "generation_end": "2026-11-18T07:10:17.402468Z",
+    "judge_end": "2026-11-18T07:29:47.402468Z",
+    "protocol_version": 1,
+    "round_end": "2026-11-18T07:30:47.402468Z",
+    "start": "2026-11-18T07:00:17.402468Z"
+  },
+  "members": [
+    {
+      "image": "ghcr.io/backend-developers-ltd/fh-miner-oneshot@sha256:202efe8ff2222bdf6708f866df772738f4001b6e46c4251d698126078c5a067a",
+      "uid": 5,
+      "factory": {
+        "execution": "exited",
+        "exit_code": 0,
+        "accepted_score": null,
+        "failed": false
+      },
+      "judge": {
+        "execution": "exited",
+        "exit_code": 0,
+        "accepted_score": 0.9285714285714286,
+        "failed": false
+      },
+      "checks": [
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        }
+      ],
+      "missing_inherited_home_error": false,
+      "verdicts": [
+        {
+          "id": 1,
+          "verdict": "met"
+        },
+        {
+          "id": 2,
+          "verdict": "met"
+        },
+        {
+          "id": 3,
+          "verdict": "met"
+        },
+        {
+          "id": 4,
+          "verdict": "met"
+        },
+        {
+          "id": 5,
+          "verdict": "met"
+        },
+        {
+          "id": 6,
+          "verdict": "partial"
+        },
+        {
+          "id": 7,
+          "verdict": "met"
+        }
+      ],
+      "evidence_files": [
+        "checks.json",
+        "execution.json",
+        "review.json",
+        "report.json"
+      ],
+      "containers": {
+        "factory": "false 0",
+        "judge": "false 0",
+        "application": "false 137"
+      }
+    },
+    {
+      "image": "ghcr.io/backend-developers-ltd/fh-miner-openhands@sha256:bb06f0c159232df943baac42b8f764fe465daccd8ac5f513257088a22632280c",
+      "uid": 6,
+      "factory": {
+        "execution": "exited",
+        "exit_code": 0,
+        "accepted_score": null,
+        "failed": false
+      },
+      "judge": {
+        "execution": "exited",
+        "exit_code": 0,
+        "accepted_score": 0.9285714285714286,
+        "failed": false
+      },
+      "checks": [
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        }
+      ],
+      "missing_inherited_home_error": false,
+      "verdicts": [
+        {
+          "id": 1,
+          "verdict": "met"
+        },
+        {
+          "id": 2,
+          "verdict": "met"
+        },
+        {
+          "id": 3,
+          "verdict": "met"
+        },
+        {
+          "id": 4,
+          "verdict": "met"
+        },
+        {
+          "id": 5,
+          "verdict": "met"
+        },
+        {
+          "id": 6,
+          "verdict": "partial"
+        },
+        {
+          "id": 7,
+          "verdict": "met"
+        }
+      ],
+      "evidence_files": [
+        "checks.json",
+        "execution.json",
+        "review.json",
+        "report.json"
+      ],
+      "containers": {
+        "factory": "false 0",
+        "judge": "false 0",
+        "application": "false 137"
+      }
+    },
+    {
+      "image": "ghcr.io/backend-developers-ltd/fh-miner-pipeline@sha256:1a81d30fc921e6736978f710841765e04369fa62fa53520aae7e251a09049029",
+      "uid": 7,
+      "factory": {
+        "execution": "exited",
+        "exit_code": 0,
+        "accepted_score": null,
+        "failed": false
+      },
+      "judge": {
+        "execution": "exited",
+        "exit_code": 0,
+        "accepted_score": 0.9285714285714286,
+        "failed": false
+      },
+      "checks": [
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "timed_out": false
+        }
+      ],
+      "missing_inherited_home_error": false,
+      "verdicts": [
+        {
+          "id": 1,
+          "verdict": "met"
+        },
+        {
+          "id": 2,
+          "verdict": "met"
+        },
+        {
+          "id": 3,
+          "verdict": "met"
+        },
+        {
+          "id": 4,
+          "verdict": "met"
+        },
+        {
+          "id": 5,
+          "verdict": "met"
+        },
+        {
+          "id": 6,
+          "verdict": "partial"
+        },
+        {
+          "id": 7,
+          "verdict": "met"
+        }
+      ],
+      "evidence_files": [
+        "checks.json",
+        "execution.json",
+        "review.json",
+        "report.json"
+      ],
+      "containers": {
+        "factory": "false 0",
+        "judge": "false 0",
+        "application": "false 137"
+      }
+    }
+  ],
+  "executor": {
+    "active_workers": 0,
+    "docker_ok": true,
+    "reconciled": true
+  },
+  "allocation": {
+    "round_id": "ecc386f9-bab1-467c-bdd1-7f9c96cf69e4",
+    "policy": "winner-90-10",
+    "weights": {
+      "5CYEJYLWSjgKLC5gJ2qHgyvxxyZ1vr2ddVm296d6kmdFfP9f": 0.9,
+      "5GTBGAEfkDGNUehTUd4wSa1qKg6N8bwg1TRKZx9gp7n1zoq9": 0.05,
+      "5H8Rey6FpcK6gwvCeJ11krv3Drn9LEUZZLPUneJbRf9GGpMh": 0.05
+    }
+  },
+  "raw_evidence_retained_on_server": "/home/ubuntu/factory-horde/data/rounds/2026-11-18/round-198-07-00-17-ecc386f9-bab1-467c-bdd1-7f9c96cf69e4",
+  "restored_round_timing": {
+    "generation_seconds": 1800,
+    "confirmation_seconds": 300,
+    "evaluation_seconds": 1500,
+    "judge_stop_reserve_seconds": 300,
+    "stop_grace_seconds": 60
+  },
+  "earlier_runtime_defect": {
+    "round_id": "a917d558-ddae-4942-8485-92a923cccd54",
+    "preserved": true,
+    "excluded_by_selected_judge_digest": true,
+    "fix": "Applications receive their disposable writable workspace as HOME."
+  },
+  "executor_sha256": "0081dfcc04710f44a395b7f7c123cf78cf758095e7283ff127bf8afe76cf3b3b",
+  "chain_verification": "Independent chain-vector proof was performed on isolated localnet; this Refinery summary does not assert a new on-chain weight write."
+}

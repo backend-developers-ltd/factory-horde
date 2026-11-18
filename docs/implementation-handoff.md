@@ -214,3 +214,9 @@ verification passed. At the user's request, no code tests, image rebuilds or loc
 refresh. Published application images and the retained candidate selection have not
 changed; replacing them requires publishing rebuilt artifacts and selecting their
 actual digests. The earlier acceptance evidence does not cover these new versions.
+
+## Behavioral judging — 18 November 2026
+
+The current implementation freezes operator task JSON at admission, runs up to six isolated CLI checks, retains two-phase Claude evidence and allocates 90% to one deterministic top scorer, sharing 10% among the remaining eligible miners. The application container has a writable home, no network and no controller mounts. The [behavioral localnet evidence](../spec/evidence/behavioral-acceptance.json) records working controls scoring 0.857, missing persistence 0.286 and broken controls 0.071, plus independent chain readbacks across restart with mechanism-0 non-interference. Ruff, formatting, strict typing, 201 validator tests, 22 miner tests, 23 installer tests and 92 executor/judge/real-container checks passed; nine optional standalone image tests were skipped.
+
+At the user’s request, revision `500e176a37cc00ba24ca0ee69c1e0ba3c04a61a4` was then deployed through the normal updater to the existing Refinery validator on subnet 11. [Refinery verification](../spec/evidence/behavioral-refinery.json) records completed round 198: oneshot, OpenHands and pipeline each received 0.929, with six observed checks and confirmed application termination. Normal 30/5/25-minute timing was restored. Full generated files and model evidence remain on that server; the repository retains operational metadata only. An earlier test exposed a missing application home directory; its immutable records remain preserved and its judge revision is excluded from fallback. No public-chain configuration was changed.
