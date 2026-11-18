@@ -7,7 +7,7 @@ from pydantic import Field, model_validator
 
 from validator.records import NonnegativeInt, Record, UtcTime
 
-type DockerOperation = Literal["container", "pull", "create", "start", "stop", "kill", "info"]
+type DockerOperation = Literal["container", "pull", "create", "start", "stop", "kill", "info", "exec", "application"]
 type Check = Literal[
     "chain", "records", "writable_paths", "executor", "docker", "reconciled", "job_observations", "coordinator"
 ]

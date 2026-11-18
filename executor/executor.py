@@ -10,6 +10,7 @@ import json
 import math
 import os
 import re
+import selectors
 import signal
 import stat
 import subprocess
@@ -580,6 +581,11 @@ class Docker:
         ]
         for mount in mounts:
             args.extend(("--mount", mount))
+        if request.kind == "judge":
+            channel = f"control/runners/{request.job_id}"
+            with self.files.directory(relative_parts(channel), create=True):
+                pass
+            args.extend(("--mount", f"type=bind,src={self.files.mount(channel)},dst=/runner"))
         if network:
             for variable in (
                 f"ANTHROPIC_BASE_URL={self.settings.inference_url}",
@@ -587,6 +593,277 @@ class Docker:
             ):
                 args.extend(("--env", variable))
         return self.require(*args, request.image)
+
+
+class ApplicationRunner:
+    """Executor-owned, networkless application container and bounded command channel."""
+
+    def __init__(self, executor: Executor, request: Request, ledger: dict[str, object]):
+        self.executor, self.request, self.ledger = executor, request, ledger
+        self.docker, self.files = executor.docker, executor.files
+        self.name = request.name + "-app"
+        self.channel = f"control/runners/{request.job_id}"
+
+    def save(self) -> None:
+        """Persist runner intent in the parent job ledger."""
+        self.executor.save_ledger(self.request, self.ledger)
+
+    def inspect(self) -> dict[str, object] | None:
+        """Verify the retained application identity before using Docker evidence.
+
+        Raises:
+            DockerError: Identity or observation is uncertain.
+        """
+        result = self.docker.call("container", "inspect", self.name, "--format", "{{json .}}")
+        if result.returncode:
+            if "No such container:" in result.stderr or "No such object:" in result.stderr:
+                return None
+            raise DockerError("Application inspection failed")
+        value = parse(result.stdout)
+        config = object_value(value["Config"])
+        if object_value(config["Labels"]).get("factory_horde.runner") != self.request.digest:
+            raise DockerError("Application identity conflict")
+        if self.ledger.get("app_id") not in (None, value["Id"]):
+            raise DockerError("Application container was replaced")
+        return value
+
+    def stop(self) -> None:
+        """Close startup permanently and require confirmed termination of all application processes.
+
+        Raises:
+            DockerError: Docker cannot prove termination.
+        """
+        if "app_phase" not in self.ledger:
+            return
+        self.ledger["app_closed"] = True
+        self.save()
+        container = self.inspect()
+        if container is None:
+            raise DockerError("Application container missing after persisted intent")
+        state = object_value(container["State"])
+        if state["Running"] is True:
+            self.docker.require("kill", "--signal", "KILL", self.name)
+            container = self.inspect()
+            if container is None:
+                raise DockerError("Application disappeared during stop")
+            state = object_value(container["State"])
+        if state["Running"] is not False or state["Status"] not in ("exited", "dead", "created"):
+            raise DockerError("Application stop remains unresolved")
+        self.ledger["app_stopped"] = True
+        self.save()
+
+    def start(self) -> None:
+        """Create the one disposable workspace without exposing controller mounts.
+
+        Raises:
+            DockerError: An ambiguous prior start may not be replayed.
+        """
+        if self.ledger.get("app_closed"):
+            raise DockerError("Application startup permanently closed")
+        container = self.inspect()
+        if container is None:
+            if "app_phase" in self.ledger:
+                raise DockerError("Application missing after create intent")
+            self.ledger["app_phase"] = "creating"
+            self.save()
+            settings = self.executor.settings
+            identifier = self.docker.require(
+                "create",
+                "--name",
+                self.name,
+                "--network",
+                "none",
+                "--read-only",
+                "--cap-drop",
+                "ALL",
+                "--security-opt",
+                "no-new-privileges",
+                "--user",
+                f"{settings.uid}:{settings.gid}",
+                "--memory",
+                settings.memory,
+                "--cpus",
+                str(settings.cpus),
+                "--pids-limit",
+                str(settings.pids),
+                "--tmpfs",
+                "/tmp:rw,nosuid,nodev,size=256m",
+                "--tmpfs",
+                f"/app:rw,nosuid,nodev,size=256m,uid={settings.uid},gid={settings.gid}",
+                "--mount",
+                f"type=bind,src={self.files.mount(self.request.output_dir)},dst=/submission,readonly",
+                "--workdir",
+                "/app",
+                "--label",
+                f"factory_horde.runner={self.request.digest}",
+                "--log-driver",
+                "none",
+                "--entrypoint",
+                "/usr/local/bin/python3",
+                self.request.image,
+                "-I",
+                "-c",
+                "import shutil,time; shutil.copyfile('/submission/main.py','/app/main.py'); time.sleep(86400)",
+            )
+            self.ledger.update(app_id=identifier, app_phase="created")
+            self.save()
+            container = self.inspect()
+        if container is None:
+            raise DockerError("Application creation not observable")
+        state = object_value(container["State"])
+        if state["Status"] == "created" and self.ledger.get("app_phase") == "created":
+            self.ledger["app_phase"] = "starting"
+            self.save()
+            self.docker.require("start", self.name)
+        elif state["Running"] is not True:
+            raise DockerError("Application stopped or startup ambiguous")
+        # Initialization is a fixed image-owned command; this is readiness, never application execution.
+        self.docker.require(
+            "exec",
+            self.name,
+            "/usr/local/bin/python3",
+            "-I",
+            "-c",
+            "from pathlib import Path; assert Path('/app/main.py').is_file()",
+        )
+        self.ledger["app_phase"] = "running"
+        self.save()
+
+    def execute(self, command: dict[str, object]) -> dict[str, object]:
+        """Capture bounded application streams outside its container, without a shell.
+
+        Raises:
+            ProtocolError: The command exceeds the narrow CLI contract.
+            DockerError: Capture or executor lifetime is interrupted.
+        """
+        args = command.get("args")
+        stdin = command.get("stdin", "")
+        if (
+            set(command) != {"id", "args", "stdin", "observation"}
+            or not isinstance(args, list)
+            or len(args) > 32
+            or any(not isinstance(a, str) or len(a) > 4096 or "\0" in a for a in args)
+            or not isinstance(stdin, str)
+            or len(stdin.encode()) > 16384
+        ):
+            raise ProtocolError("Invalid application command")
+        arguments = cast(list[str], args)
+        started = time.monotonic()
+        limit = min(60.0, (self.request.deadline - datetime.now(UTC)).total_seconds() - 5)
+        if limit <= 0:
+            raise DockerError("No application execution time remains")
+        argv = [
+            "docker",
+            "--config",
+            self.docker.config_dir,
+            "exec",
+            "-i",
+            self.name,
+            "/usr/local/bin/python3",
+            "-I",
+            "/app/main.py",
+            *arguments,
+        ]
+        streams = {"stdout": bytearray(), "stderr": bytearray()}
+        truncated = {"stdout": False, "stderr": False}
+        timed_out = False
+        with subprocess.Popen(
+            argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
+        ) as process:
+            if process.stdin is None or process.stdout is None or process.stderr is None:
+                raise DockerError("Application capture unavailable")
+            with selectors.DefaultSelector() as selector:
+                for stream, name in ((process.stdout, "stdout"), (process.stderr, "stderr")):
+                    os.set_blocking(stream.fileno(), False)
+                    selector.register(stream, selectors.EVENT_READ, name)
+                pending = memoryview(stdin.encode())
+                os.set_blocking(process.stdin.fileno(), False)
+                if pending:
+                    selector.register(process.stdin, selectors.EVENT_WRITE, "stdin")
+                else:
+                    process.stdin.close()
+                try:
+                    while selector.get_map():
+                        if self.executor.shutdown.is_set():
+                            raise DockerError("Executor interrupted application capture")
+                        if time.monotonic() - started >= limit or self.executor.cancelled(self.request):
+                            timed_out = True
+                            self.stop()
+                            break
+                        for key, _ in selector.select(0.1):
+                            name = str(key.data)
+                            if name == "stdin":
+                                try:
+                                    pending = pending[os.write(key.fd, pending) :]
+                                except BrokenPipeError:
+                                    pending = pending[len(pending) :]
+                                if not pending:
+                                    selector.unregister(key.fileobj)
+                                    process.stdin.close()
+                                continue
+                            chunk = os.read(key.fd, 8192)
+                            if not chunk:
+                                selector.unregister(key.fileobj)
+                                continue
+                            remaining = 16384 - len(streams[name])
+                            streams[name].extend(chunk[:remaining])
+                            truncated[name] |= len(chunk) > remaining
+                    if not timed_out:
+                        process.wait(timeout=max(0.1, limit - (time.monotonic() - started)))
+                finally:
+                    if process.poll() is None:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    process.wait()
+        duration = time.monotonic() - started
+        self.executor.metrics.observe("application", "timeout" if timed_out else "ok", duration)
+        if process.returncode in (125, 126, 127) and not timed_out:
+            raise DockerError("Docker application exec failed")
+        return {
+            "id": command["id"],
+            "exit_code": process.returncode,
+            "timed_out": timed_out,
+            "stdout": streams["stdout"].decode(errors="replace"),
+            "stderr": streams["stderr"].decode(errors="replace"),
+            "stdout_truncated": truncated["stdout"],
+            "stderr_truncated": truncated["stderr"],
+            "seconds": duration,
+        }
+
+    def tick(self) -> None:
+        """Consume at most six immutable commands, never replay an ambiguous invocation.
+
+        Raises:
+            ProtocolError: A command changed after execution.
+        """
+        for index in range(1, 7):
+            path = f"{self.channel}/{index}"
+            try:
+                command = self.files.read(path + ".request.json")
+            except FileNotFoundError:
+                return
+            retained = f"control/executor/{self.request.job_id}.check-{index}.json"
+            try:
+                outcome = self.files.read(retained)
+            except FileNotFoundError:
+                if self.ledger.get("app_command") == index:
+                    self.stop()
+                    outcome = {"failure": "Interrupted command; execution cannot be replayed"}
+                else:
+                    try:
+                        self.start()
+                        self.ledger["app_command"] = index
+                        self.save()
+                        outcome = self.execute(command)
+                    except (OSError, ValueError, DockerError, subprocess.SubprocessError) as error:
+                        self.stop()
+                        outcome = {"failure": str(error)[:512]}
+                outcome = {"command": command, "result": outcome}
+                self.files.write(retained, outcome, immutable=True)
+            if outcome["command"] != command:
+                raise ProtocolError("Application command changed after execution")
+            self.files.write(path + ".response.json", outcome, immutable=True)
+            if "failure" in object_value(outcome["result"]):
+                return
 
 
 class Executor:
@@ -647,6 +924,8 @@ class Executor:
             **facts,
         }
         if value["execution"] in ("exited", "never_started"):
+            if request.kind == "judge":
+                ApplicationRunner(self, request, ledger).stop()
             ledger.update(closed=True, terminal=value)
             self.save_ledger(request, ledger)
         self.files.write(f"control/statuses/{request.job_id}.json", value)
@@ -826,6 +1105,8 @@ class Executor:
                         self.save_ledger(request, ledger)
                         raise
                 else:
+                    if request.kind == "judge" and state["Running"] is True:
+                        ApplicationRunner(self, request, ledger).tick()
                     self.observe(request, ledger, container)
                 return
             if ledger.get("phase") == "create_rejected":
