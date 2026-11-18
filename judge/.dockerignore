@@ -1,3 +1,5 @@
 *
 !judge.py
 !Dockerfile
+!skills/
+!skills/*.md
