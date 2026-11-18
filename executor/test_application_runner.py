@@ -226,3 +226,12 @@ def test_more_than_six_commands_execute_once_across_recovery(runner: Application
         response = runner.files.read(f"{runner.channel}/{index}.response.json")
         assert object_value(response["result"])["stdout"] == f"{index}\n"
     assert replacement.execute(command())["stdout"] == "11\n"
+
+
+def test_command_can_run_longer_than_the_removed_sixty_second_limit(runner: ApplicationRunner) -> None:
+    source = runner.files.root / runner.request.output_dir / "main.py"
+    source.write_text("import time\ntime.sleep(61)\nprint('completed')\n")
+    runner.start()
+    outcome = runner.execute(command())
+    assert outcome["exit_code"] == 0 and outcome["timed_out"] is False
+    assert outcome["stdout"] == "completed\n"

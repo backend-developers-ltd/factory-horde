@@ -59,6 +59,18 @@ class Location(BaseModel):
     directory: str
 
 
+class TaskIdentity(BaseModel):
+    task_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class TaskPlan(BaseModel):
+    tasks: list[TaskIdentity] = Field(default_factory=list)
+
+
+class TaskRound(BaseModel):
+    plan: TaskPlan
+
+
 class Accepted(BaseModel):
     round_id: UUID
     miner_hotkey: str
@@ -136,19 +148,29 @@ def verify(root: Path, current: ChainSnapshot, previous: ChainSnapshot, calculat
     if current.validator_uid != previous.validator_uid or current.mapping != previous.mapping:
         raise RuntimeError("Registration changed during independent verification")
     location = Location.model_validate_json((root / f"control/rounds/{calculation.round_id}.json").read_bytes())
+    round_path = root / location.directory
+    plan = TaskRound.model_validate_json((round_path / "round.json").read_bytes()).plan
     scores: dict[str, float] = {}
     for hotkey, uid in calculation.uids.items():
         if current.mapping.get(hotkey) != uid:
             raise RuntimeError("Weight recipient does not match current Subtensor registration")
-        result = Decision.model_validate_json((root / location.directory / hotkey / "result.json").read_bytes())
-        if (
-            result.failure is not None
-            or result.accepted is None
-            or result.accepted.round_id != calculation.round_id
-            or result.accepted.miner_hotkey != hotkey
-        ):
-            raise RuntimeError("A weight recipient lacks a linked accepted score")
-        scores[hotkey] = result.accepted.score
+        paths = (
+            [round_path / hotkey / "tasks" / task.task_id / "result.json" for task in plan.tasks]
+            if plan.tasks
+            else [round_path / hotkey / "result.json"]
+        )
+        task_scores: list[float] = []
+        for path in paths:
+            result = Decision.model_validate_json(path.read_bytes())
+            if (
+                result.failure is not None
+                or result.accepted is None
+                or result.accepted.round_id != calculation.round_id
+                or result.accepted.miner_hotkey != hotkey
+            ):
+                raise RuntimeError("A weight recipient lacks a linked accepted task score")
+            task_scores.append(result.accepted.score)
+        scores[hotkey] = math.fsum(task_scores) / len(task_scores)
     if len(scores) != 5:
         raise RuntimeError("This acceptance run requires five registered successful baseline miners")
     maximum = max(scores.values())
