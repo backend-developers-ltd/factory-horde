@@ -69,7 +69,6 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     requirements: tuple[Criterion, ...] = ()
     judge_mode: JudgeMode = "review"
     weights_enabled: bool = False
-    weight_temperature: float = Field(default=0.1, gt=0, allow_inf_nan=False)
     weight_tempo: int = Field(default=360, gt=0)
     weight_epoch_offset: int = Field(default=0, ge=0)
     metrics_host: str = "0.0.0.0"
@@ -140,7 +139,7 @@ class Validator(NexusValidator):
         self.connect(self.subnet_clock.source, observer.sink)
         self.connect(observer.error, errors.sink)
         self.connect(observer.ok, observed.sink)
-        self.results = ResultRepository(RoundRepository(settings.data_root), settings.judge_mode)
+        self.results = ResultRepository(RoundRepository(settings.data_root), settings.judge_mode, settings.judge_image)
         self.tasks = FileTasks(self.results)
         self.tasks.connect(self, errors)
         monitoring = MonitoringNode(
@@ -192,7 +191,6 @@ class Validator(NexusValidator):
             weigher = Weigher(
                 self.tasks.store_provider.get_task_result_store(),
                 partial(read_membership, settings.pylon_config(), settings.netuid),
-                settings.weight_temperature,
             )
             opportunity = SetWeightsBeatNode(
                 "factory-horde-weight-opportunities",

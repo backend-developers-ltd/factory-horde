@@ -19,12 +19,18 @@ from nexus.v1 import (
     WeightSetterNode,
 )
 from pylon_client.artanis.v1 import GetNeuronsResponse
-
 from validator.main import Settings, Validator
 from validator.records import RoundPlan, RoundRecord
 from validator.result_repository import ResultRepository
 from validator.result_store import FileTaskResultStore
-from validator.weighing import Membership, NoUsableScores, RegistrationChanged, Weigher, WeightCalculation, softmax
+from validator.weighing import (
+    Membership,
+    NoUsableScores,
+    RegistrationChanged,
+    Weigher,
+    WeightCalculation,
+    winner_weights,
+)
 from validator.weight_gate import WeightGate
 
 from .test_results import BEAT, Pair
@@ -34,38 +40,29 @@ A, B, C = (Hotkey("5" + value * 47) for value in "abc")
 EPOCH = Epoch(BlockNumber(999_000), BlockNumber(999_359))
 
 
-@pytest.mark.parametrize(
-    "scores,expected",
-    [
-        ({A: 0.5, B: 0.5}, {A: 0.5, B: 0.5}),
-        ({A: 0.0}, {A: 1.0}),
-        ({A: 0.0, B: 0.0, C: 0.0}, {A: 1 / 3, B: 1 / 3, C: 1 / 3}),
-    ],
-)
-def test_equal_single_and_successful_zero_scores(scores: dict[Hotkey, float], expected: dict[Hotkey, float]) -> None:
-    result = softmax(scores)
-    assert result.keys() == expected.keys()
-    assert all(math.isclose(result[key], value, rel_tol=1e-12) for key, value in expected.items())
+@pytest.mark.parametrize("scores", [{A: 0}, {A: 0.5, B: 0.5}, {A: 0, B: 0, C: 0}, {A: 0.1, B: 0.8, C: 1}])
+def test_requested_vectors_and_stable_ties(scores: dict[Hotkey, float]) -> None:
+    round_id = uuid4()
+    weights = winner_weights(scores, round_id)
+    assert weights == winner_weights(dict(reversed(list(scores.items()))), round_id)
+    assert sorted(weights.values()) == (
+        [1] if len(scores) == 1 else [0.1 / (len(scores) - 1)] * (len(scores) - 1) + [0.9]
+    )
+    winner = max(weights, key=lambda key: weights[key])
+    assert scores[winner] == max(scores.values())
 
 
-def test_stable_softmax_exact_formula_and_extreme_temperature() -> None:
-    result = softmax({A: 0.1, B: 0.8, C: 1.0})
-    terms = {A: math.exp(-9), B: math.exp(-2), C: 1.0}
-    assert all(math.isclose(result[key], value / sum(terms.values()), rel_tol=1e-12) for key, value in terms.items())
-    assert math.isclose(math.fsum(result.values()), 1, rel_tol=1e-12)
-    assert softmax({A: 0, B: 1}, 5e-324) == {A: 0, B: 1}
-
-
-@pytest.mark.parametrize("temperature", [0, -1, math.inf, -math.inf, math.nan])
-def test_invalid_temperature(temperature: float) -> None:
-    with pytest.raises(ValueError, match="Temperature"):
-        softmax({A: 0}, temperature)
+def test_exact_two_and_five_miner_vectors() -> None:
+    assert winner_weights({A: 1, B: 0}, uuid4()) == {A: 0.9, B: 0.1}
+    keys = [Hotkey("5" + letter * 47) for letter in "abcde"]
+    scores = {key: float(key == A) for key in keys}
+    assert winner_weights(scores, uuid4()) == {key: 0.9 if key == A else 0.025 for key in keys}
 
 
 @pytest.mark.parametrize("scores", [{}, {A: math.nan}, {A: math.inf}, {A: -0.1}, {A: 1.1}])
 def test_empty_or_invalid_scores(scores: dict[Hotkey, float]) -> None:
     with pytest.raises(ValueError):
-        softmax(scores)
+        winner_weights(scores, uuid4())
 
 
 @dataclass

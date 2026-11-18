@@ -8,7 +8,6 @@ import httpx
 import pytest
 from nexus.v1 import NexusException, ReceiveEvent, SubnetBuilder
 from prometheus_client import CollectorRegistry, generate_latest
-
 from validator.health import ExecutorHealth, ExecutorMetrics, OperationCount, OperationHistogram
 from validator.monitoring import ChainSample, ChainView, ChainViewNode, HealthCollector, HealthSampler, MonitoringNode
 from validator.records import request_for
@@ -156,7 +155,7 @@ def test_latest_usable_round_includes_successful_zero_scores(sampler: HealthSamp
             membership_block=1,
             epoch_start=0,
             epoch_end=360,
-            temperature=0.1,
+            winner=member.miner_hotkey,
             uids={member.miner_hotkey: member.uid},
             weights={member.miner_hotkey: 1.0},
         ),

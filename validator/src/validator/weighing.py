@@ -1,9 +1,12 @@
-"""Stable softmax over durable accepted scores, with current-registration revalidation."""
+"""Winner 90/10 allocation over compatible accepted scores and current registration."""
 
+import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from math import exp, fsum, isfinite
+from hashlib import sha256
+from math import isfinite
+from typing import Literal
 from uuid import UUID
 
 import structlog
@@ -63,20 +66,22 @@ def read_membership(config: Config, netuid: int) -> Membership:
         return Membership.from_response(response)
 
 
-def softmax(scores: Mapping[Hotkey, float], temperature: float = 0.1) -> dict[Hotkey, Weight]:
-    """Normalize successful scores without overflow or assigning values to failed miners.
+def winner_weights(scores: Mapping[Hotkey, float], round_id: UUID) -> dict[Hotkey, Weight]:
+    """Allocate 90% to one deterministic winner and share 10% among the remaining miners.
 
     Raises:
-        ValueError: Temperature or a score is invalid, or no eligible scores exist.
+        ValueError: Scores are empty, non-finite or outside [0, 1].
     """
-    if not isfinite(temperature) or temperature <= 0:
-        raise ValueError("Temperature must be finite and positive")
     if not scores or any(not isfinite(score) or not 0 <= score <= 1 for score in scores.values()):
-        raise ValueError("Softmax requires nonempty finite scores in [0, 1]")
-    maximum = max(scores.values())
-    numerators = {key: exp((score - maximum) / temperature) for key, score in sorted(scores.items())}
-    total = fsum(numerators.values())
-    return {key: Weight(value / total) for key, value in numerators.items()}
+        raise ValueError("Allocation requires nonempty finite scores in [0, 1]")
+    highest = max(scores.values())
+    winner = min(
+        (key for key, score in scores.items() if score == highest),
+        key=lambda key: (sha256(json.dumps([str(round_id), str(key)], separators=(",", ":")).encode()).digest(), key),
+    )
+    if len(scores) == 1:
+        return {winner: Weight(1.0)}
+    return {key: Weight(0.9 if key == winner else 0.1 / (len(scores) - 1)) for key in sorted(scores)}
 
 
 class WeightCalculation(Record):
@@ -87,7 +92,9 @@ class WeightCalculation(Record):
     membership_block: NonnegativeInt
     epoch_start: int
     epoch_end: int
-    temperature: float
+    policy: Literal["winner-90-10"] = "winner-90-10"
+    winner: MinerHotkey
+    tie_rule: Literal["sha256-json-round-hotkey"] = "sha256-json-round-hotkey"
     uids: dict[MinerHotkey, NonnegativeInt]
     weights: dict[MinerHotkey, Score]
 
@@ -95,10 +102,8 @@ class WeightCalculation(Record):
 class Weigher:
     """Read the shared task provider's repository; chain epoch never expires application scores."""
 
-    def __init__(self, store: FileTaskResultStore, membership: Callable[[], Membership], temperature: float = 0.1):
-        if not isfinite(temperature) or temperature <= 0:
-            raise ValueError("Temperature must be finite and positive")
-        self.store, self.membership, self.temperature = store, membership, temperature
+    def __init__(self, store: FileTaskResultStore, membership: Callable[[], Membership]):
+        self.store, self.membership = store, membership
 
     def select(self) -> tuple[UUID, Membership, dict[Hotkey, float]]:
         """Select the latest completed nonempty round, then filter by currently registered hotkeys.
@@ -130,7 +135,7 @@ class Weigher:
                 if bundle.tasks_result_store is not self.store:
                     raise ValueError("Weight setter must share the factory/evaluation result store")
                 round_id, initial, scores = self.select()
-                weights = softmax(scores, self.temperature)
+                weights = winner_weights(scores, round_id)
                 final = self.membership()
                 if dict(initial.uids) != dict(final.uids):
                     raise RegistrationChanged("Membership changed during weight calculation")
@@ -142,7 +147,7 @@ class Weigher:
                         membership_block=final.block,
                         epoch_start=bundle.epoch.first_block,
                         epoch_end=bundle.epoch.last_block,
-                        temperature=self.temperature,
+                        winner=max(weights, key=lambda key: weights[key]),
                         uids={key: final.uids[key] for key in weights},
                         weights={str(key): float(value) for key, value in weights.items()},
                     ),
@@ -156,6 +161,6 @@ class Weigher:
                 round_id=str(round_id),
                 recipients=len(weights),
                 membership_block=final.block,
-                temperature=self.temperature,
+                winner=max(weights, key=lambda key: weights[key]),
             )
             return weights

@@ -6,6 +6,7 @@ import math
 import subprocess
 import time
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from typing import Protocol, cast
 from uuid import UUID, uuid4
@@ -47,7 +48,9 @@ class Registrations(BaseModel):
 class Calculation(BaseModel):
     round_id: UUID
     calculated_at: datetime
-    temperature: float = Field(gt=0, allow_inf_nan=False)
+    policy: str
+    winner: str
+    tie_rule: str
     uids: dict[str, int]
     weights: dict[str, float]
 
@@ -123,7 +126,7 @@ def snapshot(chain: bt.Subtensor, validator: str) -> ChainSnapshot:
 
 
 def verify(root: Path, current: ChainSnapshot, previous: ChainSnapshot, calculation: Calculation) -> dict[str, float]:
-    """Recompute softmax independently from accepted records and compare with encoded chain weights.
+    """Recompute 90/10 allocation independently from accepted records and compare with encoded chain weights.
 
     Raises:
         RuntimeError: Chain attribution, accepted score, normalization or mechanism isolation differs.
@@ -149,13 +152,20 @@ def verify(root: Path, current: ChainSnapshot, previous: ChainSnapshot, calculat
     if len(scores) != 5:
         raise RuntimeError("This acceptance run requires five registered successful baseline miners")
     maximum = max(scores.values())
-    terms = {key: math.exp((score - maximum) / calculation.temperature) for key, score in scores.items()}
-    total = math.fsum(terms.values())
-    expected = {key: value / total for key, value in terms.items()}
+    winner = min(
+        (key for key, score in scores.items() if score == maximum),
+        key=lambda key: (
+            sha256(json.dumps([str(calculation.round_id), key], separators=(",", ":")).encode()).digest(),
+            key,
+        ),
+    )
+    expected = {key: 1.0 if len(scores) == 1 else 0.9 if key == winner else 0.1 / (len(scores) - 1) for key in scores}
+    if calculation.policy != "winner-90-10" or calculation.winner != winner:
+        raise RuntimeError("Unexpected allocation policy or winner")
     if expected.keys() != calculation.weights.keys() or any(
         not math.isclose(value, calculation.weights[key], rel_tol=1e-12) for key, value in expected.items()
     ):
-        raise RuntimeError("Calculated request differs from independent softmax")
+        raise RuntimeError("Calculated request differs from independent 90/10 allocation")
     raw = dict(dict(current.mechanism_one).get(current.validator_uid, []))
     if not raw or set(raw) != set(calculation.uids.values()) or sum(raw.values()) <= 0:
         raise RuntimeError("Chain vector does not identify exactly the accepted recipients")
@@ -262,7 +272,7 @@ def main() -> None:
                 "mechanism_zero_unchanged": True,
                 "validator_restarted_between_updates": True,
                 "encoding": (
-                    "Compared normalized Subtensor u16 vector with independent stable softmax; "
+                    "Compared normalized Subtensor u16 vector with independent stable 90/10 allocation; "
                     "absolute tolerance 2 * recipients / 65535."
                 ),
             }
