@@ -218,8 +218,8 @@ def test_retry_finishes_pending_activation(
     unit = tmp_path / "unit.service"
     unit.write_bytes(release.unit_content(source, destination, config))
 
-    def path(value: str) -> Path:
-        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+    def path(value: str | Path) -> Path:
+        return unit if str(value).startswith("/etc/systemd/system/") else Path(value)
 
     def prepare(*args: object) -> None:
         pass
@@ -322,8 +322,8 @@ def test_retry_activates_application_after_assets_already_match(
     unit = tmp_path / "unit.service"
     unit.write_bytes(release.unit_content(source, destination, config))
 
-    def path(value: str) -> Path:
-        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+    def path(value: str | Path) -> Path:
+        return unit if str(value).startswith("/etc/systemd/system/") else Path(value)
 
     def prepare(*args: object) -> None:
         pass

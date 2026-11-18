@@ -7,12 +7,7 @@ and a host systemd executor runs factories and separate judges through Docker.
 Versioned shared files preserve requests, permanent stops, execution evidence and
 accepted scores across restarts and executor updates.
 
-The baseline invokes Pi 0.87.1 without inference, waits approximately one minute,
-and writes a fixed greeting project. The judge reads the required files without
-executing them. Review mode asks Claude for one verdict per frozen criterion and
-records the mean. An unavailable judge excludes the round from weight selection.
-Localnet explicitly selects fixture mode for random orchestration scores.
-The validator computes stable softmax weights over eligible registered miners.
+The baseline remains an offline orchestration fixture. The behavioral judge asks Claude to plan up to six CLI checks, runs them in an executor-owned networkless application container, and asks Claude to grade the captured observations against frozen criteria. It retains the plan, execution and reasons, and computes the mean of met/partial/unmet verdicts. Unavailable judging excludes the whole round. Task files can change future admissions without rebuilding images. The winner receives 90% of requested weight and the other eligible miners share 10%, with deterministic round-based ties. Explicit fixture mode still supplies random orchestration scores.
 
 ## Run the accepted prototype
 

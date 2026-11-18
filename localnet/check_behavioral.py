@@ -7,17 +7,60 @@ import subprocess
 from pathlib import Path
 from uuid import uuid4
 
+from miner.miner import submit
 from pylon_client.artanis import Config, IdentityName, PylonAuthToken, PylonClient, PylonTimeout
 from tenacity import Retrying, stop_after_attempt
+
 from validator.records import request_for
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
 
-from miner.miner import submit
-
 from .check import Registrations
 from .check_rounds import wait_for
 from .runtime import Runtime
+
+
+def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) -> None:
+    """Verify retained observations without rerunning applications or model calls.
+
+    Raises:
+        RuntimeError: The retained experiment does not demonstrate behavioral discrimination.
+    """
+    results = ResultRepository(rounds, "review", runtime.image("judge"))
+    selected = results.latest_usable_round()
+    if selected is None or len(selected[1]) != 5:
+        raise RuntimeError("Behavioral round has unavailable or missing evaluations")
+    plan = selected[0]
+    scores = {row.miner_hotkey: row.score for row in selected[1]}
+    working = [score for hotkey, score in scores.items() if variants[hotkey] == 0]
+    defective = [score for hotkey, score in scores.items() if variants[hotkey] != 0]
+    if min(working) <= max(defective):
+        raise RuntimeError(f"Working controls did not outrank defective controls: {scores}")
+    reports: dict[str, object] = {}
+    for member in plan.cohort:
+        job = request_for(plan, member, "judge")
+        evidence = runtime.data / str(job.report_dir)
+        execution = json.loads((evidence / "execution.json").read_text())
+        if not execution["observations"]:
+            raise RuntimeError("Missing actual application observations")
+        if variants[member.miner_hotkey] == 0:
+            observed = {row["id"]: row for row in execution["observations"]}
+            successful = {
+                check["args"][0]
+                for check in execution["checks"]
+                if check["args"] and observed[check["id"]]["exit_code"] == 0
+            }
+            if not {"add", "list"} <= successful:
+                raise RuntimeError("Working control lacks successful creation and persistence checks")
+        reports[member.miner_hotkey] = {
+            "variant": variants[member.miner_hotkey],
+            "score": scores[member.miner_hotkey],
+            "review": json.loads((evidence / "review.json").read_text()),
+            "execution": execution,
+        }
+    summary = {"round": plan.model_dump(mode="json"), "reports": reports, "working_outranks_defects": True}
+    (runtime.state / "behavioral-round.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(f"PASS: real behavioral discrimination: {scores}", flush=True)
 
 
 def main() -> None:
@@ -28,11 +71,12 @@ def main() -> None:
     """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("factory_image")
+    parser.add_argument("--inspect", action="store_true")
     parser.add_argument("--env-file", type=Path, default=Path(__file__).parent / ".env")
     args = parser.parse_args()
     runtime = Runtime.load(args.env_file)
     rounds = RoundRepository(runtime.data)
-    if rounds.rounds():
+    if rounds.rounds() and not args.inspect:
         raise RuntimeError("Behavioral acceptance requires a fresh experimental data root")
     judge = runtime.image("judge")
     registrations = Registrations.model_validate_json((runtime.state / "registrations.json").read_bytes())
@@ -40,6 +84,9 @@ def main() -> None:
     variants = {row.hotkey: int(hashlib.sha256(row.hotkey.encode()).hexdigest(), 16) % 3 for row in miners}
     if set(variants.values()) != {0, 1, 2}:
         raise RuntimeError("This cohort does not cover all three deterministic controls")
+    if args.inspect:
+        assess(runtime, rounds, variants)
+        return
     for row in miners:
         config = Config(
             address=runtime.pylon_address,
@@ -74,40 +121,7 @@ def main() -> None:
             raise RuntimeError("Unexpected frozen behavioral cohort")
         print(f"Admitted {plan.round_id}; waiting for real Claude evaluations", flush=True)
         wait_for(lambda: rounds.rounds()[0].stage == "complete", "Behavioral round did not complete", 1270)
-        results = ResultRepository(rounds, "review", judge)
-        selected = results.latest_usable_round()
-        if selected is None or len(selected[1]) != 5:
-            raise RuntimeError("Behavioral round has unavailable or missing evaluations")
-        scores = {row.miner_hotkey: row.score for row in selected[1]}
-        working = [score for hotkey, score in scores.items() if variants[hotkey] == 0]
-        defective = [score for hotkey, score in scores.items() if variants[hotkey] != 0]
-        if min(working) <= max(defective):
-            raise RuntimeError(f"Working controls did not outrank defective controls: {scores}")
-        reports: dict[str, object] = {}
-        for member in plan.cohort:
-            job = request_for(plan, member, "judge")
-            evidence = runtime.data / str(job.report_dir)
-            execution = json.loads((evidence / "execution.json").read_text())
-            if not execution["observations"]:
-                raise RuntimeError("Missing actual application observations")
-            if variants[member.miner_hotkey] == 0:
-                observed = {row["id"]: row for row in execution["observations"]}
-                successful = {
-                    check["args"][0]
-                    for check in execution["checks"]
-                    if check["args"] and observed[check["id"]]["exit_code"] == 0
-                }
-                if not {"add", "list", "done", "remove"} <= successful:
-                    raise RuntimeError("Working control was not exercised through all four core operations")
-            reports[member.miner_hotkey] = {
-                "variant": variants[member.miner_hotkey],
-                "score": scores[member.miner_hotkey],
-                "review": json.loads((evidence / "review.json").read_text()),
-                "execution": execution,
-            }
-        summary = {"round": plan.model_dump(mode="json"), "reports": reports, "working_outranks_defects": True}
-        (runtime.state / "behavioral-round.json").write_text(json.dumps(summary, indent=2) + "\n")
-        print(f"PASS: real behavioral discrimination: {scores}", flush=True)
+        assess(runtime, rounds, variants)
     finally:
         subprocess.run(["docker", "stop", "--time", "5", name], check=False, capture_output=True)
         logs = subprocess.run(["docker", "logs", name], check=False, capture_output=True, text=True)

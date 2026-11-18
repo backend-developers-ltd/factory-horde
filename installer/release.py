@@ -591,6 +591,7 @@ def apply_release(
         ):
             raise ReleaseError("Candidate executor does not execute with the advertised protocol")
         if application:
+            owned_directory(Path(config.get("TASK_DIRECTORY") or directory / "tasks"))
             run(compose(directory, installation, "config", "--quiet", source=stage), quiet=True)
         expected_unit = unit_content(stage, directory, config)
         installed_unit = Path(f"/etc/systemd/system/{installation.service}.service")
