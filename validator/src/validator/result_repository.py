@@ -63,10 +63,11 @@ def result_operation(operation: Literal["finalize", "query", "project", "rebuild
 class ResultRepository:
     """One actor-shared repository; immutable decisions are the only source of accepted scores."""
 
-    def __init__(self, rounds: RoundRepository, judge_mode: JudgeMode = "review"):
+    def __init__(self, rounds: RoundRepository, judge_mode: JudgeMode = "review", judge_image: str | None = None):
         self.rounds = rounds
         self.files = rounds.files
         self.judge_mode: JudgeMode = judge_mode
+        self.judge_image = judge_image
 
     def authorize(self, request: JobRequest) -> RoundPlan:
         """Require the exact published request and frozen round attribution.
@@ -240,6 +241,8 @@ class ResultRepository:
             for record in reversed(self.rounds.rounds()):
                 mode = record.plan.evaluation.mode if record.plan.evaluation is not None else "fixture"
                 if record.stage != "complete" or mode != self.judge_mode:
+                    continue
+                if mode == "review" and self.judge_image != record.plan.judge_image:
                     continue
                 scores: list[AcceptedResult] = []
                 for member in record.plan.cohort:

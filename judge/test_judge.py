@@ -11,6 +11,7 @@ from threading import Event
 
 import pytest
 
+from . import judge
 from .judge import REVIEW_LIMIT, ReviewError, call_model, evaluate
 
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
@@ -25,6 +26,12 @@ class FakeModel:
         self.calls: list[tuple[str, str]] = []
 
     def __call__(self, instructions: str, data: str) -> object:
+        if instructions.startswith("Plan at most"):
+            return {
+                "structured_output": {
+                    "checks": [{"id": "cli", "args": [], "stdin": "", "observation": "Print greeting"}]
+                }
+            }
         self.calls.append((instructions, data))
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
@@ -58,6 +65,21 @@ def directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Directories:
     shutil.copy(FIXTURES / "specification.md", inputs / "specification.md")
     (submission / "main.py").write_text("print('hello')\n")
     (submission / "README.md").write_text("Run main.py\n")
+    monkeypatch.setattr(
+        judge,
+        "run_checks",
+        lambda checks, deadline: [
+            {
+                "id": "cli",
+                "exit_code": 0,
+                "stdout": "hello",
+                "stderr": "",
+                "timed_out": False,
+                "stdout_truncated": False,
+                "stderr_truncated": False,
+            }
+        ],
+    )
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://inference-proxy:8080")
     return inputs, submission, report
 
@@ -89,7 +111,7 @@ def test_submission_cannot_predict_the_data_boundary(directories: Directories) -
     boundary = data.split(" ", 1)[0]
     assert len(boundary) == 32 and boundary in instructions and boundary not in hostile
     assert f"{boundary} BEGIN main.py\n{hostile}\n{boundary} END main.py\n" in data
-    assert data.count(boundary) == 8
+    assert data.count(boundary) == 10
     # Each fresh job chooses its delimiter. An interrupted publication instead reuses its evidence.
     second = directories[2].parent / "second-report"
     second.mkdir()
@@ -218,6 +240,8 @@ def test_concurrent_evaluations_publish_only_the_first_review(
     monkeypatch.setattr(fcntl, "flock", observe_lock)
 
     def slow_model(_rules: str, _data: str) -> object:
+        if _rules.startswith("Plan at most"):
+            return FakeModel()(_rules, _data)
         entered.set()
         assert release.wait(5)
         return reply("met")
@@ -252,3 +276,34 @@ def test_verdicts_are_saved_in_the_order_of_the_frozen_criteria(directories: Dir
     review = load(directories[2] / "review.json")
     assert review["requirements"] == [{**items[0], "requirement": "Add"}, {**items[1], "requirement": "Remove"}]
     assert review["score"] == load(directories[2] / "report.json")["score"] == 0.25
+
+
+@pytest.mark.parametrize(
+    "checks", [[], [{}], [{"id": "x", "args": [], "stdin": "", "observation": "ok", "shell": "id"}]]
+)
+def test_invalid_plan_never_executes(directories: Directories, monkeypatch: pytest.MonkeyPatch, checks: object) -> None:
+    def forbidden(_checks: object, _deadline: float) -> object:
+        pytest.fail("Invalid plan reached runner")
+
+    monkeypatch.setattr(judge, "run_checks", forbidden)
+    assert evaluate(*directories, call=lambda rules, data: {"structured_output": {"checks": checks}}) == 75
+    assert load(directories[2] / "report.json")["score"] is None
+
+
+def test_completed_execution_survives_interrupted_grading(directories: Directories) -> None:
+    calls: list[str] = []
+
+    def interrupted(rules: str, data: str) -> object:
+        calls.append(rules)
+        if rules.startswith("Plan at most"):
+            return FakeModel()(rules, data)
+        raise OSError("process interrupted before review publication")
+
+    with pytest.raises(OSError):
+        evaluate(*directories, call=interrupted)
+    evidence = (directories[2] / "execution.json").read_bytes()
+    model = FakeModel(reply("partial"))
+    assert evaluate(*directories, call=model) == 0
+    assert len(model.calls) == 1 and len(calls) == 2
+    assert (directories[2] / "execution.json").read_bytes() == evidence
+    assert '"stdout": "hello"' in model.calls[0][1]

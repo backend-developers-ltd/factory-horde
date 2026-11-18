@@ -14,5 +14,5 @@ ENV HOME=/tmp/home \
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 USER 1000:1000
 LABEL org.opencontainers.image.source="https://github.com/backend-developers-ltd/factory-horde"
-LABEL org.opencontainers.image.description="FactoryHorde judge with frozen review criteria and explicit offline fixture scoring"
+LABEL org.opencontainers.image.description="FactoryHorde behavioral judge with isolated CLI checks and frozen criteria"
 ENTRYPOINT ["/usr/local/bin/factory-horde-judge"]
