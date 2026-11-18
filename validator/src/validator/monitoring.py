@@ -36,7 +36,7 @@ from validator.health import ExecutorHealth, ExecutorMetrics, Readiness, fresh
 from validator.records import Record, StopRequest, is_job_filename
 from validator.result_records import JobResult, ResultProjection
 from validator.result_repository import ResultRepository
-from validator.weighing import WeightCalculation
+from validator.weighing import WeightCalculation, mean_task_scores
 
 _logger = structlog.get_logger(__name__)
 _events = Counter("factory_horde_health_checks_total", "Application readiness observations", ("outcome",))
@@ -279,18 +279,18 @@ class HealthSampler:
                     "active_jobs": active,
                     "unresolved_jobs": unresolved,
                     "blocked_next_round": blocked,
-                    "usable_scores": len(usable[1]) if usable else 0,
+                    "usable_scores": len(mean_task_scores(usable[1])) if usable else 0,
                     "usable_round_completed_at": completed_at,
                 }
             )
             self.round_view = (
                 RoundView(
                     sequence=rounds[-1].plan.sequence,
-                    miners=len(rounds[-1].plan.cohort),
+                    miners=len({m.miner_hotkey for m in rounds[-1].plan.cohort}),
                     start=rounds[-1].plan.deadlines.start,
                     end=rounds[-1].plan.deadlines.round_end,
                     usable_sequence=usable[0].sequence if usable else None,
-                    scores={r.miner_hotkey: r.score for r in usable[1]} if usable else None,
+                    scores={str(key): score for key, score in mean_task_scores(usable[1]).items()} if usable else None,
                 )
                 if rounds
                 else None

@@ -29,13 +29,14 @@ class RoundRepository:
 
     @staticmethod
     def _manifest(plan: RoundPlan, request: JobRequest) -> InputManifest:
-        member = next(m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey)
+        member = next(m for m in plan.cohort if m.factory_job_id == request.factory_job_id)
+        task = plan.task_for(member)
         return InputManifest(
             round_id=plan.round_id,
             miner_hotkey=member.miner_hotkey,
             factory_job_id=member.factory_job_id,
             judge_job_id=member.judge_job_id,
-            specification_sha256=plan.specification_sha256,
+            specification_sha256=task.specification_sha256 if task else plan.specification_sha256,
         )
 
     def prepare_round(self, plan: RoundPlan, specification: str) -> RoundRecord:
@@ -63,12 +64,15 @@ class RoundRepository:
             self.files.write_bytes(f"{plan.directory}/specification.md", content, immutable=True)
             for member in plan.cohort:
                 request = request_for(plan, member, "factory")
-                self.files.write_bytes(f"{request.input_dir}/specification.md", content, immutable=True)
+                task = plan.task_for(member)
+                task_content = task.specification.encode() if task else content
+                policy = task.evaluation if task else plan.evaluation
+                self.files.write_bytes(f"{request.input_dir}/specification.md", task_content, immutable=True)
                 self.files.publish(f"{request.input_dir}/task.json", self._manifest(plan, request))
-                if plan.evaluation is not None:
-                    self.files.publish(f"{request.input_dir}/evaluation.json", plan.evaluation)
+                if policy is not None:
+                    self.files.publish(f"{request.input_dir}/evaluation.json", policy)
                 self.files.mkdir(request.output_dir)
-                self.files.mkdir(f"{plan.directory}/{member.miner_hotkey}/evaluation")
+                self.files.mkdir(str(request_for(plan, member, "judge").report_dir))
             for control in ("requests", "stops", "statuses"):
                 self.files.mkdir(f"control/{control}")
             return record
@@ -132,18 +136,20 @@ class RoundRepository:
         with self.files.lock:
             if self.read_round(plan.directory).plan != plan:
                 raise RecordConflictError("request does not use the persisted round plan")
-            member = next((m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey), None)
+            member = next((m for m in plan.cohort if m.factory_job_id == request.factory_job_id), None)
             if member is None or request != request_for(plan, member, request.kind):
                 raise RecordConflictError("request differs from its frozen cohort execution")
+            task = plan.task_for(member)
+            policy = task.evaluation if task else plan.evaluation
             specification = self.files.read_bytes(f"{request.input_dir}/specification.md")
-            if sha256(specification).hexdigest() != plan.specification_sha256:
+            if sha256(specification).hexdigest() != (task.specification_sha256 if task else plan.specification_sha256):
                 raise RecordConflictError("incomplete or changed specification")
             manifest = self.files.read(f"{request.input_dir}/task.json", InputManifest)
             if manifest != self._manifest(plan, request):
                 raise RecordConflictError("task manifest differs from its frozen cohort")
             if (
-                plan.evaluation is not None
-                and self.files.read(f"{request.input_dir}/evaluation.json", EvaluationPolicy) != plan.evaluation
+                policy is not None
+                and self.files.read(f"{request.input_dir}/evaluation.json", EvaluationPolicy) != policy
             ):
                 raise RecordConflictError("evaluation criteria differ from the frozen round")
             self.files.list_names(request.output_dir)

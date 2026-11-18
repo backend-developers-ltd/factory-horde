@@ -209,3 +209,20 @@ def test_application_exit_codes_and_stdin_are_grading_evidence(runner: Applicati
     request["stdin"] = "expected input\n"
     outcome = runner.execute(request)
     assert outcome["exit_code"] == 127 and outcome["stdout"] == "expected input\n"
+
+
+def test_more_than_six_commands_execute_once_across_recovery(runner: ApplicationRunner) -> None:
+    source = runner.files.root / runner.request.output_dir / "main.py"
+    source.write_text(
+        "from pathlib import Path\np=Path('count')\nn=int(p.read_text())+1 if p.exists() else 1\n"
+        "p.write_text(str(n))\nprint(n)\n"
+    )
+    for index in range(1, 11):
+        runner.files.write(f"{runner.channel}/{index}.request.json", {**command(), "id": f"check{index}"})
+    runner.tick()
+    replacement = ApplicationRunner(runner.executor, runner.request, dict(runner.ledger))
+    replacement.tick()
+    for index in range(1, 11):
+        response = runner.files.read(f"{runner.channel}/{index}.response.json")
+        assert object_value(response["result"])["stdout"] == f"{index}\n"
+    assert replacement.execute(command())["stdout"] == "11\n"

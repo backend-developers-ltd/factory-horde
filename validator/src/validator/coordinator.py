@@ -16,9 +16,11 @@ from pydantic import UUID4, Field, model_validator
 from validator.discovery import DiscoverySnapshot
 from validator.record_files import RecordFormatError
 from validator.records import (
+    CohortMember,
     Criterion,
     Deadlines,
     EvaluationPolicy,
+    FrozenTask,
     ImageReference,
     JobIdentity,
     JobRequest,
@@ -97,6 +99,8 @@ class RoundSeed(Record):
     stop_grace_seconds: Annotated[int, Field(ge=0, le=60)]
     specification: Annotated[str, Field(min_length=1)] = SPECIFICATION
     evaluation: EvaluationPolicy | None = Field(default=None, exclude_if=lambda v: v is None)
+    tasks: tuple[FrozenTask, ...] = Field(default=(), exclude_if=lambda v: not v)
+    plan: RoundPlan | None = Field(default=None, exclude_if=lambda v: v is None)
 
 
 class Schedule(Record):
@@ -136,14 +140,14 @@ class RoundCoordinator:
         discover: Callable[[UUID], DiscoverySnapshot],
         specification: str = SPECIFICATION,
         requirements: tuple[str, ...] = (),
-        task_file: Path | None = None,
+        task_directory: Path | None = None,
     ):
         self.repository = repository
         self.rounds = repository.rounds
         self.timing = timing
         self.judge_image = judge_image
         self.discover = discover
-        self.task_file = task_file
+        self.task_directory = task_directory
         self.specification = specification
         self.evaluation = EvaluationPolicy(mode=repository.judge_mode, requirements=requirements or (specification,))
 
@@ -162,21 +166,37 @@ class RoundCoordinator:
         seed = schedule.pending
         if seed is None:
             specification, evaluation = self.specification, self.evaluation
-            if self.task_file is not None:
+            tasks: list[FrozenTask] = []
+            if self.task_directory is not None:
                 try:
-                    with self.task_file.open("rb") as source:
-                        content = source.read(1_048_577)
-                    if len(content) > 1_048_576:
-                        raise ValueError("Task file exceeds one MiB")
-                    task = TaskDefinition.model_validate_json(content)
-                    specification = task.specification
-                    evaluation = EvaluationPolicy(
-                        mode=self.repository.judge_mode,
-                        requirements=task.requirements or (specification,),
+                    sources = sorted(
+                        path
+                        for path in self.task_directory.iterdir()
+                        if path.suffix == ".json" and not path.name.startswith(".")
                     )
+                    if not sources:
+                        raise ValueError("Task directory contains no JSON tasks")
+                    for path in sources:
+                        with path.open("rb") as source:
+                            content = source.read(1_048_577)
+                        if len(content) > 1_048_576:
+                            raise ValueError("Task file exceeds one MiB")
+                        task = TaskDefinition.model_validate_json(content)
+                        tasks.append(
+                            FrozenTask(
+                                task_id=sha256(path.name.encode()).hexdigest(),
+                                filename=path.name,
+                                specification=task.specification,
+                                evaluation=EvaluationPolicy(
+                                    mode=self.repository.judge_mode,
+                                    requirements=task.requirements or (task.specification,),
+                                ),
+                            )
+                        )
+                    specification, evaluation = tasks[0].specification, tasks[0].evaluation
                 except OSError, ValueError:
                     _events.labels("invalid_task_file").inc()
-                    _logger.exception("task_file_admission_blocked", path=str(self.task_file))
+                    _logger.exception("task_directory_admission_blocked", path=str(self.task_directory))
                     raise
             seed = RoundSeed(
                 sequence=schedule.next_sequence,
@@ -185,23 +205,38 @@ class RoundCoordinator:
                 stop_grace_seconds=self.timing.stop_grace_seconds,
                 specification=specification,
                 evaluation=evaluation,
+                tasks=tuple(tasks),
             )
             schedule = schedule.model_copy(update={"pending": seed})
             self._save_schedule(schedule)
-        snapshot = self.discover(seed.round_id)
-        plan = RoundPlan(
-            round_id=seed.round_id,
-            sequence=seed.sequence,
-            deadlines=seed.deadlines,
-            discovery_block=snapshot.block,
-            discovery_block_hash=snapshot.block_hash,
-            membership_snapshot="commitment_block",
-            cohort=snapshot.cohort,
-            judge_image=seed.judge_image,
-            evaluation=seed.evaluation,
-            stop_grace_seconds=seed.stop_grace_seconds,
-            specification_sha256=sha256(seed.specification.encode()).hexdigest(),
-        )
+        plan = seed.plan
+        if plan is None:
+            snapshot = self.discover(seed.round_id)
+            cohort = snapshot.cohort
+            if seed.tasks:
+                cohort = tuple(
+                    CohortMember(
+                        miner_hotkey=member.miner_hotkey, uid=member.uid, image=member.image, task_id=task.task_id
+                    )
+                    for member in snapshot.cohort
+                    for task in seed.tasks
+                )
+            plan = RoundPlan(
+                round_id=seed.round_id,
+                sequence=seed.sequence,
+                deadlines=seed.deadlines,
+                discovery_block=snapshot.block,
+                discovery_block_hash=snapshot.block_hash,
+                membership_snapshot="commitment_block",
+                cohort=cohort,
+                judge_image=seed.judge_image,
+                evaluation=seed.evaluation,
+                tasks=seed.tasks,
+                stop_grace_seconds=seed.stop_grace_seconds,
+                specification_sha256=sha256(seed.specification.encode()).hexdigest(),
+            )
+            seed = seed.model_copy(update={"plan": plan})
+            self._save_schedule(schedule.model_copy(update={"pending": seed}))
         record = self.rounds.prepare_round(plan, seed.specification)
         self._save_schedule(Schedule(next_start=plan.deadlines.round_end, next_sequence=seed.sequence + 1))
         _events.labels("admitted").inc()

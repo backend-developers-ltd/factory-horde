@@ -2,6 +2,7 @@
 
 import re
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from typing import Annotated, Literal, Self
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
@@ -96,6 +97,7 @@ class CohortMember(Record):
     image: ImageReference
     factory_job_id: UUID4 = Field(default_factory=uuid4)
     judge_job_id: UUID4 = Field(default_factory=uuid4)
+    task_id: Sha256 | None = Field(default=None, exclude_if=lambda v: v is None)
 
 
 class EvaluationPolicy(Record):
@@ -110,6 +112,20 @@ class EvaluationPolicy(Record):
         if len(set(value)) != len(value):
             raise ValueError("Evaluation requirements must be unique")
         return value
+
+
+class FrozenTask(Record):
+    """One discovered task, frozen with its source filename and scoring criteria."""
+
+    task_id: Sha256
+    filename: str
+    specification: Annotated[str, Field(min_length=1)]
+    evaluation: EvaluationPolicy
+
+    @property
+    def specification_sha256(self) -> str:
+        """Hash the exact text supplied to factories and judges."""
+        return sha256(self.specification.encode()).hexdigest()
 
 
 class RoundPlan(Record):
@@ -127,15 +143,36 @@ class RoundPlan(Record):
     stop_grace_seconds: Annotated[int, Field(ge=0, le=60)] = 60
     specification_sha256: Sha256
     evaluation: EvaluationPolicy | None = Field(default=None, exclude_if=lambda v: v is None)
+    tasks: tuple[FrozenTask, ...] = Field(default=(), exclude_if=lambda v: not v)
 
     @model_validator(mode="after")
     def _unique_membership(self) -> Self:
-        hotkeys = [m.miner_hotkey for m in self.cohort]
-        uids = [m.uid for m in self.cohort]
+        hotkeys = [(m.miner_hotkey, m.task_id) for m in self.cohort]
+        uids = [(m.uid, m.task_id) for m in self.cohort]
         jobs = [job for m in self.cohort for job in (m.factory_job_id, m.judge_job_id)]
         if len(set(hotkeys)) != len(hotkeys) or len(set(uids)) != len(uids) or len(set(jobs)) != len(jobs):
             raise ValueError("cohort identities, UIDs and job IDs must be unique")
+        task_ids = {task.task_id for task in self.tasks}
+        if len(task_ids) != len(self.tasks) or len({task.filename for task in self.tasks}) != len(self.tasks):
+            raise ValueError("task identities and filenames must be unique")
+        if any(m.task_id not in (task_ids or {None}) for m in self.cohort):
+            raise ValueError("cohort execution refers to an unknown task")
+        for hotkey in {m.miner_hotkey for m in self.cohort}:
+            members = [m for m in self.cohort if m.miner_hotkey == hotkey]
+            if {m.task_id for m in members} != (task_ids or {None}):
+                raise ValueError("every miner must have an execution for every task")
+            if len({(m.uid, m.image) for m in members}) != 1:
+                raise ValueError("miner identity and image must agree across tasks")
+        if self.tasks and (
+            self.specification_sha256 != self.tasks[0].specification_sha256
+            or self.evaluation != self.tasks[0].evaluation
+        ):
+            raise ValueError("primary task differs from the round compatibility fields")
         return self
+
+    def task_for(self, member: CohortMember) -> FrozenTask | None:
+        """Return task-specific inputs, or None for a legacy single-task round."""
+        return next((task for task in self.tasks if task.task_id == member.task_id), None)
 
     @property
     def directory(self) -> str:
@@ -403,6 +440,8 @@ def request_for(plan: RoundPlan, member: CohortMember, kind: JobKind) -> JobRequ
     if member not in plan.cohort:
         raise ValueError("member is not in the frozen cohort")
     base = f"{plan.directory}/{member.miner_hotkey}"
+    if member.task_id is not None:
+        base += f"/tasks/{member.task_id}"
     return JobRequest(
         round_id=plan.round_id,
         job_id=member.factory_job_id if kind == "factory" else member.judge_job_id,

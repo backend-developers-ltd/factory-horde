@@ -77,7 +77,7 @@ class ResultRepository:
         """
         location = self.files.read(f"control/rounds/{request.round_id}.json", RoundLocation)
         plan = self.rounds.read_round(location.directory).plan
-        member = next((m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey), None)
+        member = next((m for m in plan.cohort if m.factory_job_id == request.factory_job_id), None)
         if (
             plan.round_id != request.round_id
             or member is None
@@ -116,7 +116,9 @@ class ResultRepository:
     def _accept(
         self, request: JobRequest, plan: RoundPlan, status: JobStatus, block: CompletionBlock
     ) -> AcceptedResult:
-        member = next(m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey)
+        member = next(m for m in plan.cohort if m.factory_job_id == request.factory_job_id)
+        task = plan.task_for(member)
+        policy = task.evaluation if task else plan.evaluation
         factory = request_for(plan, member, "factory")
         self.authorize(factory)
         factory_status = self._terminal(factory)
@@ -135,8 +137,8 @@ class ResultRepository:
             raise ResultRejected("Judge finished after the evaluation window")
         try:
             report = self.rounds.report(request)
-            if report.score is not None and plan.evaluation is not None and plan.evaluation.mode == "review":
-                if not self.rounds.review(request).matches(plan.evaluation, report.score):
+            if report.score is not None and policy is not None and policy.mode == "review":
+                if not self.rounds.review(request).matches(policy, report.score):
                     raise ResultRejected("Review differs from the frozen criteria or report score")
         except (FileNotFoundError, RecordFormatError, ValidationError, json.JSONDecodeError) as error:
             raise ResultRejected(f"Judge report rejected: {type(error).__name__}") from error
@@ -245,6 +247,7 @@ class ResultRepository:
                 if mode == "review" and self.judge_image != record.plan.judge_image:
                     continue
                 scores: list[AcceptedResult] = []
+                rejected: set[str] = set()
                 for member in record.plan.cohort:
                     request = request_for(record.plan, member, "judge")
                     result = self.read(request)
@@ -252,7 +255,10 @@ class ResultRepository:
                         scores.append(result.accepted)
                     elif mode == "review" and not self._submission_rejected(request, result):
                         break
+                    else:
+                        rejected.add(member.miner_hotkey)
                 else:
+                    scores = [score for score in scores if score.miner_hotkey not in rejected]
                     if scores:
                         return record.plan, tuple(scores)
         return None

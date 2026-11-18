@@ -23,6 +23,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from itertools import count
 from pathlib import Path
 from types import FrameType
 from typing import cast
@@ -320,7 +321,14 @@ class Request:
             raise ProtocolError("Expected immutable GHCR reference")
         input_dir, output_dir = string(value["input_dir"]), string(value["output_dir"])
         parts = relative_parts(input_dir)
-        if len(parts) != 5 or parts[0] != "rounds" or parts[-2:] != (hotkey, "input"):
+        legacy = len(parts) == 5 and parts[-2:] == (hotkey, "input")
+        task_scoped = (
+            len(parts) == 7
+            and parts[3:5] == (hotkey, "tasks")
+            and re.fullmatch(r"[0-9a-f]{64}", parts[5]) is not None
+            and parts[6] == "input"
+        )
+        if parts[0] != "rounds" or not (legacy or task_scoped):
             raise ProtocolError("Input must belong to this job's canonical round/miner directory")
         if not parts[2].endswith("-" + string(value["round_id"])):
             raise ProtocolError("Round directory identity mismatch")
@@ -855,7 +863,7 @@ class ApplicationRunner:
             raise ProtocolError("Invalid application command")
         arguments = cast(list[str], args)
         started = time.monotonic()
-        limit = min(60.0, (self.request.deadline - datetime.now(UTC)).total_seconds() - 5)
+        limit = (self.request.deadline - datetime.now(UTC)).total_seconds() - 5
         if limit <= 0:
             raise DockerError("No application execution time remains")
         created = docker_api(
@@ -972,12 +980,12 @@ class ApplicationRunner:
         }
 
     def tick(self) -> None:
-        """Consume at most six immutable commands, never replay an ambiguous invocation.
+        """Consume immutable commands without an action-count limit, never replay an ambiguous invocation.
 
         Raises:
             ProtocolError: A command changed after execution.
         """
-        for index in range(1, 7):
+        for index in count(1):
             path = f"{self.channel}/{index}"
             try:
                 command = self.files.read(path + ".request.json")

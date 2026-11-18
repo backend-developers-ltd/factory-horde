@@ -14,6 +14,7 @@ from tenacity import Retrying, stop_after_attempt
 from validator.records import request_for
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
+from validator.weighing import mean_task_scores
 
 from .check import Registrations
 from .check_rounds import wait_for
@@ -28,10 +29,10 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
     """
     results = ResultRepository(rounds, "review", runtime.image("judge"))
     selected = results.latest_usable_round()
-    if selected is None or len(selected[1]) != 5:
+    if selected is None or len(selected[1]) != 5 * max(1, len(selected[0].tasks)):
         raise RuntimeError("Behavioral round has unavailable or missing evaluations")
     plan = selected[0]
-    scores = {row.miner_hotkey: row.score for row in selected[1]}
+    scores = {str(key): score for key, score in mean_task_scores(selected[1]).items()}
     working = [score for hotkey, score in scores.items() if variants[hotkey] == 0]
     defective = [score for hotkey, score in scores.items() if variants[hotkey] != 0]
     if min(working) <= max(defective):
@@ -61,13 +62,19 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
                 raise RuntimeError("Working control removal lacks an executed verification")
             if review["requirements"][5]["verdict"] != "met":
                 raise RuntimeError("Working control deletion was not fully verified and credited")
-        reports[member.miner_hotkey] = {
+        reports[member.miner_hotkey + ("/" + member.task_id if member.task_id else "")] = {
+            "task_id": member.task_id,
             "variant": variants[member.miner_hotkey],
-            "score": scores[member.miner_hotkey],
+            "score": review["score"],
             "review": review,
             "execution": execution,
         }
-    summary = {"round": plan.model_dump(mode="json"), "reports": reports, "working_outranks_defects": True}
+    summary = {
+        "round": plan.model_dump(mode="json"),
+        "reports": reports,
+        "working_outranks_defects": True,
+        "mean_scores": scores,
+    }
     (runtime.state / "behavioral-round.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(f"PASS: real behavioral discrimination: {scores}", flush=True)
 
@@ -126,7 +133,9 @@ def main() -> None:
     try:
         wait_for(lambda: len(rounds.rounds()) == 1, "No behavioral admission", 90)
         plan = rounds.rounds()[0].plan
-        if len(plan.cohort) != 5 or any(member.image != args.factory_image for member in plan.cohort):
+        if len(plan.cohort) != 5 * max(1, len(plan.tasks)) or any(
+            member.image != args.factory_image for member in plan.cohort
+        ):
             raise RuntimeError("Unexpected frozen behavioral cohort")
         print(f"Admitted {plan.round_id}; waiting for real Claude evaluations", flush=True)
         wait_for(lambda: rounds.rounds()[0].stage == "complete", "Behavioral round did not complete", 1270)

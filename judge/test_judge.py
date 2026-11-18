@@ -26,7 +26,7 @@ class FakeModel:
         self.calls: list[tuple[str, str]] = []
 
     def __call__(self, instructions: str, data: str) -> object:
-        if instructions.startswith("Plan at most"):
+        if instructions.startswith("Plan complete"):
             return {"structured_output": {"checks": [pair("setup", "cli")]}}
         self.calls.append((instructions, data))
         reply = self.replies.pop(0)
@@ -84,7 +84,7 @@ def directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Directories:
     (submission / "main.py").write_text("print('hello')\n")
     (submission / "README.md").write_text("Run main.py\n")
 
-    def observations(_checks: list[dict[str, object]], _deadline: float) -> list[dict[str, object]]:
+    def observations(_checks: list[dict[str, object]]) -> list[dict[str, object]]:
         return [
             {
                 "id": planned["id"],
@@ -259,7 +259,7 @@ def test_concurrent_evaluations_publish_only_the_first_review(
     monkeypatch.setattr(fcntl, "flock", observe_lock)
 
     def slow_model(_rules: str, _data: str) -> object:
-        if _rules.startswith("Plan at most"):
+        if _rules.startswith("Plan complete"):
             return FakeModel()(_rules, _data)
         entered.set()
         assert release.wait(5)
@@ -301,7 +301,7 @@ def test_verdicts_are_saved_in_the_order_of_the_frozen_criteria(directories: Dir
     "checks", [[], [{}], [{"id": "x", "args": [], "stdin": "", "observation": "ok", "shell": "id"}]]
 )
 def test_invalid_plan_never_executes(directories: Directories, monkeypatch: pytest.MonkeyPatch, checks: object) -> None:
-    def forbidden(_checks: object, _deadline: float) -> object:
+    def forbidden(_checks: object) -> object:
         pytest.fail("Invalid plan reached runner")
 
     monkeypatch.setattr(judge, "run_checks", forbidden)
@@ -314,7 +314,7 @@ def test_completed_execution_survives_interrupted_grading(directories: Directori
 
     def interrupted(rules: str, data: str) -> object:
         calls.append(rules)
-        if rules.startswith("Plan at most"):
+        if rules.startswith("Plan complete"):
             return FakeModel()(rules, data)
         raise OSError("process interrupted before review publication")
 
@@ -340,13 +340,13 @@ def test_last_mutation_without_verification_never_executes(
         check("remove", requires_verification=True),
     ]
 
-    def forbidden(_checks: object, _deadline: float) -> object:
+    def forbidden(_checks: object) -> object:
         pytest.fail("Incomplete verification plan reached application execution")
 
     monkeypatch.setattr(judge, "run_checks", forbidden)
     assert evaluate(*directories, call=lambda rules, data: {"structured_output": {"checks": checks}}) == 75
     report = load(directories[2] / "report.json")
-    assert report["score"] is None and "action/verification pairs" in str(report["failure"])
+    assert report["score"] is None and "Invalid paired check" in str(report["failure"])
 
 
 def test_six_commands_can_verify_all_three_state_changes() -> None:
@@ -366,8 +366,7 @@ def test_paired_plan_reserves_all_verification_commands() -> None:
     checks = judge.parse_plan(plan)
     assert len(checks) == 6
     assert checks[-1]["verifies"] == ["remove"]
-    with pytest.raises(ReviewError, match="one to three"):
-        judge.parse_plan([*plan, pair("extra", "after_extra")])
+    assert len(judge.parse_plan([*plan, pair("extra", "after_extra")])) == 8
     with pytest.raises(ReviewError, match="Invalid paired check"):
         judge.parse_plan([{"action": plan[0]["action"]}])
 
@@ -436,5 +435,5 @@ def test_runner_receives_only_its_existing_command_contract(tmp_path: Path, monk
         return tmp_path
 
     monkeypatch.setattr(judge, "Path", channel_path)
-    assert judge.run_checks([planned], float("inf")) == [outcome]
+    assert judge.run_checks([planned]) == [outcome]
     assert load(tmp_path / "1.request.json") == command

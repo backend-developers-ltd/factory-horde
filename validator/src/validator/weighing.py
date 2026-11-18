@@ -1,11 +1,11 @@
 """Winner 90/10 allocation over compatible accepted scores and current registration."""
 
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
-from math import isfinite
+from math import fsum, isfinite
 from typing import Literal
 from uuid import UUID
 
@@ -15,7 +15,7 @@ from prometheus_client import Counter, Histogram
 from pylon_client.artanis import Config, PylonClient
 from pylon_client.artanis.v1 import GetNeuronsResponse
 
-from validator.records import MinerHotkey, NonnegativeInt, Record, Score, UtcTime
+from validator.records import AcceptedResult, MinerHotkey, NonnegativeInt, Record, Score, UtcTime
 from validator.result_store import FileTaskResultStore
 
 _logger = structlog.get_logger(__name__)
@@ -99,6 +99,14 @@ class WeightCalculation(Record):
     weights: dict[MinerHotkey, Score]
 
 
+def mean_task_scores(accepted: Sequence[AcceptedResult]) -> dict[Hotkey, float]:
+    """Give every frozen task equal weight in each eligible miner's round score."""
+    grouped: dict[Hotkey, list[float]] = {}
+    for result in accepted:
+        grouped.setdefault(Hotkey(result.miner_hotkey), []).append(result.score)
+    return {key: fsum(values) / len(values) for key, values in grouped.items()}
+
+
 class Weigher:
     """Read the shared task provider's repository; chain epoch never expires application scores."""
 
@@ -116,9 +124,7 @@ class Weigher:
             raise NoUsableScores("No completed round with accepted scores")
         plan, accepted = usable
         current = self.membership()
-        scores = {
-            Hotkey(result.miner_hotkey): result.score for result in accepted if result.miner_hotkey in current.uids
-        }
+        scores = {hotkey: score for hotkey, score in mean_task_scores(accepted).items() if hotkey in current.uids}
         if not scores:
             raise NoUsableScores("No accepted hotkeys remain registered")
         return plan.round_id, current, scores
