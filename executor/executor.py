@@ -649,6 +649,7 @@ class Docker:
             with self.files.directory(relative_parts(channel), create=True):
                 pass
             args.extend(("--mount", f"type=bind,src={self.files.mount(channel)},dst=/runner"))
+            args.extend(("--env", f"FACTORY_HORDE_JUDGE_IMAGE={request.image}"))
         if network:
             for variable in (
                 f"ANTHROPIC_BASE_URL={self.settings.inference_url}",
@@ -766,7 +767,8 @@ class ApplicationRunner:
                 self.request.image,
                 "-I",
                 "-c",
-                "import shutil,time; shutil.copyfile('/submission/main.py','/app/main.py'); time.sleep(86400)",
+                "import shutil,time,pathlib; shutil.copyfile('/submission/main.py','/app/main.py'); "
+                "pathlib.Path('/app/.ready').touch(); time.sleep(86400)",
             )
             self.ledger.update(app_id=identifier, app_phase="created")
             self.save()
@@ -780,6 +782,8 @@ class ApplicationRunner:
             self.docker.require("start", self.name)
         elif state["Running"] is not True:
             raise DockerError("Application stopped or startup ambiguous")
+        if self.ledger.get("app_phase") == "running":
+            return
         # Initialization is a fixed image-owned command; this is readiness, never application execution.
         self.docker.require(
             "exec",
@@ -787,7 +791,11 @@ class ApplicationRunner:
             "/usr/local/bin/python3",
             "-I",
             "-c",
-            "from pathlib import Path; assert Path('/app/main.py').is_file()",
+            "import pathlib,time,sys\n"
+            "for _ in range(100):\n"
+            " if pathlib.Path('/app/.ready').is_file(): sys.exit(0)\n"
+            " time.sleep(0.05)\n"
+            "sys.exit(1)",
         )
         self.ledger["app_phase"] = "running"
         self.save()

@@ -503,7 +503,16 @@ def execution_evidence(
                 )
             )
             checks = parse_checks(as_object(reply.get("structured_output")).get("checks"))
-            plan = publish_json(plan_path, {**identity, "model": MODEL, "checks": checks})
+            plan = publish_json(
+                plan_path,
+                {
+                    **identity,
+                    "model": MODEL,
+                    "checks": checks,
+                    "specification_sha256": hashlib.sha256(specification).hexdigest(),
+                    "judge_image": os.environ.get("FACTORY_HORDE_JUDGE_IMAGE", ""),
+                },
+            )
         checks = parse_checks(plan.get("checks"))
         if any(plan.get(k) != v for k, v in identity.items()) or plan.get("model") != MODEL:
             raise ReviewError("Persisted check plan attribution mismatch") from None
@@ -511,10 +520,28 @@ def execution_evidence(
         evidence = publish_json(path, {**plan, "observations": outcomes})
     if any(evidence.get(k) != v for k, v in identity.items()) or evidence.get("model") != MODEL:
         raise ReviewError("Persisted execution attribution mismatch")
-    parse_checks(evidence.get("checks"))
+    if evidence.get("specification_sha256") != hashlib.sha256(specification).hexdigest():
+        raise ReviewError("Execution task hash mismatch")
+    checks = parse_checks(evidence.get("checks"))
     observations = evidence.get("observations")
     if not isinstance(observations, list) or not observations:
         raise ReviewError("No completed execution evidence")
+    observed = cast(list[object], observations)
+    if len(observed) > len(checks):
+        raise ReviewError("Unexpected execution observations")
+    for check, raw in zip(checks, observed, strict=False):
+        outcome = as_object(raw)
+        if (
+            outcome.get("id") != check["id"]
+            or type(outcome.get("exit_code")) is not int
+            or any(type(outcome.get(key)) is not bool for key in ("timed_out", "stdout_truncated", "stderr_truncated"))
+            or any(
+                not isinstance(outcome.get(key), str) or len(str(outcome[key])) > 16384 for key in ("stdout", "stderr")
+            )
+        ):
+            raise ReviewError("Unusable execution capture")
+    if len(observed) != len(checks) and as_object(observed[-1]).get("timed_out") is not True:
+        raise ReviewError("Incomplete execution evidence")
     return evidence
 
 

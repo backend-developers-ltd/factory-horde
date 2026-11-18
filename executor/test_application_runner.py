@@ -9,7 +9,7 @@ from uuid import uuid4
 
 import pytest
 
-from executor.executor import ApplicationRunner, Executor, Request, Settings, object_value, parse
+from executor.executor import ApplicationRunner, DockerError, Executor, Request, Settings, object_value, parse
 
 IMAGE = "docker.io/library/python@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8"
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
@@ -153,3 +153,29 @@ print('proxy-only verified')
             runner.docker.call("rm", "-f", name)
         runner.docker.release_network(first)
         runner.docker.release_network(second)
+
+
+def test_judge_stop_terminates_application(runner: ApplicationRunner) -> None:
+    source = runner.files.root / runner.request.output_dir / "main.py"
+    source.write_text("import os,time\nif os.fork() == 0: os.setsid()\nwhile True: time.sleep(1)\n")
+    runner.start()
+    runner.docker.require("kill", runner.request.name)
+    with pytest.raises(DockerError, match="Judge stopped"):
+        runner.execute(command())
+    assert runner.ledger["app_stopped"] is True
+
+
+def test_interrupted_command_is_never_replayed(runner: ApplicationRunner) -> None:
+    source = runner.files.root / runner.request.output_dir / "main.py"
+    source.write_text("print('only once')\n")
+    runner.start()
+    runner.files.write(runner.channel + "/1.request.json", command())
+    runner.ledger["app_command"] = 1
+    runner.save()
+    replacement = ApplicationRunner(runner.executor, runner.request, dict(runner.ledger))
+    replacement.tick()
+    outcome = runner.files.read(runner.channel + "/1.response.json")
+    assert "cannot be replayed" in str(outcome)
+    assert replacement.ledger["app_stopped"] is True
+    replacement.tick()
+    assert runner.files.read(runner.channel + "/1.response.json") == outcome
