@@ -6,12 +6,14 @@ from __future__ import annotations
 import argparse
 import fcntl
 import hashlib
+import http.client
 import json
 import math
 import os
 import re
 import selectors
 import signal
+import socket
 import stat
 import subprocess
 import threading
@@ -659,6 +661,37 @@ class Docker:
         return self.require(*args, request.image)
 
 
+@contextmanager
+def docker_socket() -> Generator[socket.socket]:
+    """Connect only to the local daemon already trusted by the host executor."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stream:
+        stream.settimeout(5)
+        stream.connect("/var/run/docker.sock")
+        yield stream
+
+
+def docker_api(method: str, path: str, body: dict[str, object] | None = None) -> dict[str, object]:
+    """Use daemon exec records to distinguish application exits from transport failures.
+
+    Raises:
+        DockerError: Docker did not return bounded successful JSON.
+    """
+    with docker_socket() as stream:
+        connection = http.client.HTTPConnection("localhost", timeout=5)
+        connection.sock = stream
+        try:
+            connection.request(
+                method, "/v1.45" + path, None if body is None else encode(body), {"Content-Type": "application/json"}
+            )
+            response = connection.getresponse()
+            data = response.read(LIMIT + 1)
+            if response.status >= 300 or len(data) > LIMIT:
+                raise DockerError(f"Docker exec API failed: HTTP {response.status}")
+            return parse(data)
+        finally:
+            connection.close()
+
+
 class ApplicationRunner:
     """Executor-owned, networkless application container and bounded command channel."""
 
@@ -823,87 +856,116 @@ class ApplicationRunner:
         limit = min(60.0, (self.request.deadline - datetime.now(UTC)).total_seconds() - 5)
         if limit <= 0:
             raise DockerError("No application execution time remains")
-        argv = [
-            "docker",
-            "--config",
-            self.docker.config_dir,
-            "exec",
-            "-i",
-            self.name,
-            "/usr/local/bin/python3",
-            "-I",
-            "/app/main.py",
-            *arguments,
-        ]
-        streams = {"stdout": bytearray(), "stderr": bytearray()}
-        truncated = {"stdout": False, "stderr": False}
+        created = docker_api(
+            "POST",
+            f"/containers/{self.name}/exec",
+            {
+                "AttachStdin": True,
+                "AttachStdout": True,
+                "AttachStderr": True,
+                "Tty": False,
+                "Cmd": ["/usr/local/bin/python3", "-I", "/app/main.py", *arguments],
+            },
+        )
+        exec_id = string(created["Id"])
+        if re.fullmatch(r"[a-f0-9]{64}", exec_id) is None:
+            raise DockerError("Invalid Docker exec identity")
+        self.ledger["app_exec_id"] = exec_id
+        self.save()
+        streams = {1: bytearray(), 2: bytearray()}
+        truncated = {1: False, 2: False}
         timed_out = False
         parent_checked = time.monotonic()
-        with subprocess.Popen(
-            argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
-        ) as process:
-            if process.stdin is None or process.stdout is None or process.stderr is None:
-                raise DockerError("Application capture unavailable")
+        with docker_socket() as stream:
+            body = b'{"Detach":false,"Tty":false}'
+            headers = (
+                f"POST /v1.45/exec/{exec_id}/start HTTP/1.1\r\nHost: localhost\r\n"
+                f"Connection: Upgrade\r\nUpgrade: tcp\r\nContent-Type: application/json\r\n"
+                f"Content-Length: {len(body)}\r\n\r\n"
+            ).encode()
+            stream.sendall(headers + body)
+            response = bytearray()
+            while not response.endswith(b"\r\n\r\n"):
+                byte = stream.recv(1)
+                if not byte or len(response) >= 16384:
+                    raise DockerError("Docker exec upgrade response unavailable")
+                response.extend(byte)
+            if not response.startswith(b"HTTP/1.1 101 "):
+                raise DockerError("Docker rejected application exec stream")
+            stream.setblocking(False)
+            pending = memoryview(stdin.encode())
+            frame_header = bytearray()
+            remaining, channel = 0, 0
             with selectors.DefaultSelector() as selector:
-                for stream, name in ((process.stdout, "stdout"), (process.stderr, "stderr")):
-                    os.set_blocking(stream.fileno(), False)
-                    selector.register(stream, selectors.EVENT_READ, name)
-                pending = memoryview(stdin.encode())
-                os.set_blocking(process.stdin.fileno(), False)
-                if pending:
-                    selector.register(process.stdin, selectors.EVENT_WRITE, "stdin")
-                else:
-                    process.stdin.close()
-                try:
-                    while selector.get_map():
-                        if self.executor.shutdown.is_set():
-                            raise DockerError("Executor interrupted application capture")
-                        if time.monotonic() - parent_checked >= 2:
-                            parent = self.docker.inspect(self.request)
-                            if parent is None or object_value(parent["State"])["Running"] is not True:
-                                self.stop()
-                                raise DockerError("Judge stopped during application check")
-                            parent_checked = time.monotonic()
-                        if time.monotonic() - started >= limit or self.executor.cancelled(self.request):
-                            timed_out = True
+                selector.register(stream, selectors.EVENT_READ | (selectors.EVENT_WRITE if pending else 0))
+                if not pending:
+                    stream.shutdown(socket.SHUT_WR)
+                finished = False
+                while not finished:
+                    if self.executor.shutdown.is_set():
+                        raise DockerError("Executor interrupted application capture")
+                    if time.monotonic() - parent_checked >= 2:
+                        parent = self.docker.inspect(self.request)
+                        if parent is None or object_value(parent["State"])["Running"] is not True:
                             self.stop()
-                            break
-                        for key, _ in selector.select(0.1):
-                            name = str(key.data)
-                            if name == "stdin":
+                            raise DockerError("Judge stopped during application check")
+                        parent_checked = time.monotonic()
+                    if time.monotonic() - started >= limit or self.executor.cancelled(self.request):
+                        timed_out = True
+                        self.stop()
+                        break
+                    for _, events in selector.select(0.1):
+                        if events & selectors.EVENT_WRITE:
+                            try:
+                                pending = pending[stream.send(pending) :]
+                            except BrokenPipeError:
+                                pending = pending[len(pending) :]
+                            if not pending:
+                                selector.modify(stream, selectors.EVENT_READ)
                                 try:
-                                    pending = pending[os.write(key.fd, pending) :]
-                                except BrokenPipeError:
-                                    pending = pending[len(pending) :]
-                                if not pending:
-                                    selector.unregister(key.fileobj)
-                                    process.stdin.close()
-                                continue
-                            chunk = os.read(key.fd, 8192)
-                            if not chunk:
-                                selector.unregister(key.fileobj)
-                                continue
-                            remaining = 16384 - len(streams[name])
-                            streams[name].extend(chunk[:remaining])
-                            truncated[name] |= len(chunk) > remaining
-                    if not timed_out:
-                        process.wait(timeout=max(0.1, limit - (time.monotonic() - started)))
-                finally:
-                    if process.poll() is None:
-                        os.killpg(process.pid, signal.SIGKILL)
-                    process.wait()
+                                    stream.shutdown(socket.SHUT_WR)
+                                except OSError:
+                                    pass
+                        if not events & selectors.EVENT_READ:
+                            continue
+                        chunk = stream.recv(8192)
+                        if not chunk:
+                            finished = True
+                            break
+                        while chunk:
+                            if remaining == 0:
+                                size = min(8 - len(frame_header), len(chunk))
+                                frame_header.extend(chunk[:size])
+                                chunk = chunk[size:]
+                                if len(frame_header) != 8:
+                                    continue
+                                channel = frame_header[0]
+                                remaining = int.from_bytes(frame_header[4:8], "big")
+                                if channel not in streams or frame_header[1:4] != b"\0\0\0":
+                                    raise DockerError("Invalid Docker output frame")
+                                frame_header.clear()
+                            size = min(remaining, len(chunk))
+                            capacity = 16384 - len(streams[channel])
+                            streams[channel].extend(chunk[: min(size, capacity)])
+                            truncated[channel] |= size > capacity
+                            remaining -= size
+                            chunk = chunk[size:]
+                if not timed_out and (remaining or frame_header):
+                    raise DockerError("Docker capture ended within an output frame")
+        inspected = docker_api("GET", f"/exec/{exec_id}/json")
+        if inspected.get("Running") is not False or inspected.get("ContainerID") != self.ledger.get("app_id"):
+            raise DockerError("Application execution completion is unconfirmed")
+        exit_code = integer(inspected["ExitCode"])
         duration = time.monotonic() - started
         self.executor.metrics.observe("application", "timeout" if timed_out else "ok", duration)
-        if process.returncode in (125, 126, 127) and not timed_out:
-            raise DockerError("Docker application exec failed")
         return {
             "id": command["id"],
-            "exit_code": process.returncode,
+            "exit_code": exit_code,
             "timed_out": timed_out,
-            "stdout": streams["stdout"].decode(errors="replace"),
-            "stderr": streams["stderr"].decode(errors="replace"),
-            "stdout_truncated": truncated["stdout"],
-            "stderr_truncated": truncated["stderr"],
+            "stdout": streams[1].decode(errors="replace"),
+            "stderr": streams[2].decode(errors="replace"),
+            "stdout_truncated": truncated[1],
+            "stderr_truncated": truncated[2],
             "seconds": duration,
         }
 
@@ -933,7 +995,13 @@ class ApplicationRunner:
                         self.ledger["app_command"] = index
                         self.save()
                         outcome = self.execute(command)
-                    except (OSError, ValueError, DockerError, subprocess.SubprocessError) as error:
+                    except (
+                        OSError,
+                        ValueError,
+                        DockerError,
+                        subprocess.SubprocessError,
+                        http.client.HTTPException,
+                    ) as error:
                         self.stop()
                         outcome = {"failure": str(error)[:512]}
                 outcome = {"command": command, "result": outcome}

@@ -179,3 +179,13 @@ def test_interrupted_command_is_never_replayed(runner: ApplicationRunner) -> Non
     assert replacement.ledger["app_stopped"] is True
     replacement.tick()
     assert runner.files.read(runner.channel + "/1.response.json") == outcome
+
+
+def test_application_exit_codes_and_stdin_are_grading_evidence(runner: ApplicationRunner) -> None:
+    source = runner.files.root / runner.request.output_dir / "main.py"
+    source.write_text("import sys\nprint(sys.stdin.read(), end='')\nsys.exit(127)\n")
+    runner.start()
+    request = command()
+    request["stdin"] = "expected input\n"
+    outcome = runner.execute(request)
+    assert outcome["exit_code"] == 127 and outcome["stdout"] == "expected input\n"

@@ -9,6 +9,7 @@ from uuid import UUID
 import pytest
 from nexus.v1 import BlockBeat, ContextId, ReceiveEvent, SubnetBuilder
 from pydantic import ValidationError
+
 from validator.coordinator import (
     FactoryEligibility,
     RoundCoordinator,
