@@ -41,6 +41,7 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
         job = request_for(plan, member, "judge")
         evidence = runtime.data / str(job.report_dir)
         execution = json.loads((evidence / "execution.json").read_text())
+        review = json.loads((evidence / "review.json").read_text())
         if not execution["observations"]:
             raise RuntimeError("Missing actual application observations")
         if variants[member.miner_hotkey] == 0:
@@ -50,12 +51,20 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
                 for check in execution["checks"]
                 if check["args"] and observed[check["id"]]["exit_code"] == 0
             }
-            if not {"add", "list"} <= successful:
-                raise RuntimeError("Working control lacks successful creation and persistence checks")
+            if not {"add", "list", "done", "remove"} <= successful:
+                raise RuntimeError("Working control lacks successful core operations")
+            removal = next(check for check in execution["checks"] if check["args"][0] == "remove")
+            if not any(
+                removal["id"] in check["verifies"] and observed[check["id"]]["exit_code"] == 0
+                for check in execution["checks"]
+            ):
+                raise RuntimeError("Working control removal lacks an executed verification")
+            if review["requirements"][5]["verdict"] != "met":
+                raise RuntimeError("Working control deletion was not fully verified and credited")
         reports[member.miner_hotkey] = {
             "variant": variants[member.miner_hotkey],
             "score": scores[member.miner_hotkey],
-            "review": json.loads((evidence / "review.json").read_text()),
+            "review": review,
             "execution": execution,
         }
     summary = {"round": plan.model_dump(mode="json"), "reports": reports, "working_outranks_defects": True}

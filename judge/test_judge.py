@@ -27,11 +27,7 @@ class FakeModel:
 
     def __call__(self, instructions: str, data: str) -> object:
         if instructions.startswith("Plan at most"):
-            return {
-                "structured_output": {
-                    "checks": [{"id": "cli", "args": [], "stdin": "", "observation": "Print greeting"}]
-                }
-            }
+            return {"structured_output": {"checks": [check("cli", changes_state=False)]}}
         self.calls.append((instructions, data))
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
@@ -44,7 +40,22 @@ def requirements(*verdicts: object) -> list[dict[str, object]]:
 
 
 def reply(*verdicts: object) -> dict[str, object]:
-    return {"structured_output": {"requirements": requirements(*verdicts)}}
+    return {"structured_output": {"requirements": assessment(requirements(*verdicts))}}
+
+
+def assessment(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    return [{**item, "evidence": "observed", "check_ids": ["cli"]} for item in items]
+
+
+def check(identity: str, *, changes_state: bool, verifies: tuple[str, ...] = ()) -> dict[str, object]:
+    return {
+        "id": identity,
+        "args": [],
+        "stdin": "",
+        "observation": "Observe application behavior",
+        "changes_state": changes_state,
+        "verifies": list(verifies),
+    }
 
 
 def load(path: Path) -> dict[str, object]:
@@ -65,10 +76,9 @@ def directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Directories:
     shutil.copy(FIXTURES / "specification.md", inputs / "specification.md")
     (submission / "main.py").write_text("print('hello')\n")
     (submission / "README.md").write_text("Run main.py\n")
-    monkeypatch.setattr(
-        judge,
-        "run_checks",
-        lambda checks, deadline: [
+
+    def observations(_checks: list[dict[str, object]], _deadline: float) -> list[dict[str, object]]:
+        return [
             {
                 "id": "cli",
                 "exit_code": 0,
@@ -78,8 +88,9 @@ def directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Directories:
                 "stdout_truncated": False,
                 "stderr_truncated": False,
             }
-        ],
-    )
+        ]
+
+    monkeypatch.setattr(judge, "run_checks", observations)
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://inference-proxy:8080")
     return inputs, submission, report
 
@@ -271,7 +282,7 @@ def test_frozen_ids_must_be_covered_once(directories: Directories, ids: tuple[ob
 def test_verdicts_are_saved_in_the_order_of_the_frozen_criteria(directories: Directories) -> None:
     policy(directories[0], ["Add", "Remove"])
     items = requirements("unmet", "partial")
-    model = FakeModel({"structured_output": {"requirements": items[::-1]}})
+    model = FakeModel({"structured_output": {"requirements": assessment(items[::-1])}})
     assert evaluate(*directories, call=model) == 0
     review = load(directories[2] / "review.json")
     assert review["requirements"] == [{**items[0], "requirement": "Add"}, {**items[1], "requirement": "Remove"}]
@@ -307,3 +318,99 @@ def test_completed_execution_survives_interrupted_grading(directories: Directori
     assert len(model.calls) == 1 and len(calls) == 2
     assert (directories[2] / "execution.json").read_bytes() == evidence
     assert '"stdout": "hello"' in model.calls[0][1]
+
+
+def test_last_mutation_without_verification_never_executes(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checks = [
+        check("add1", changes_state=True),
+        check("add2", changes_state=True),
+        check("list1", changes_state=False, verifies=("add1", "add2")),
+        check("done", changes_state=True),
+        check("list2", changes_state=False, verifies=("done",)),
+        check("remove", changes_state=True),
+    ]
+
+    def forbidden(_checks: object, _deadline: float) -> object:
+        pytest.fail("Incomplete verification plan reached application execution")
+
+    monkeypatch.setattr(judge, "run_checks", forbidden)
+    assert evaluate(*directories, call=lambda rules, data: {"structured_output": {"checks": checks}}) == 75
+    report = load(directories[2] / "report.json")
+    assert report["score"] is None and "Unverified state changes" in str(report["failure"])
+
+
+def test_six_commands_can_verify_all_three_state_changes() -> None:
+    checks: list[dict[str, object]] = []
+    for verb in ("add", "done", "remove"):
+        checks.extend([check(verb, changes_state=True), check("after_" + verb, changes_state=False, verifies=(verb,))])
+    assert judge.parse_checks(checks) == checks
+
+
+@pytest.mark.parametrize(
+    "checks",
+    [
+        [check("list", changes_state=False, verifies=("future",)), check("future", changes_state=True)],
+        [check("add", changes_state=True), check("remove", changes_state=True, verifies=("add",))],
+        [check("list", changes_state=False, verifies=("list",))],
+    ],
+)
+def test_verification_must_observe_an_earlier_mutation(checks: list[dict[str, object]]) -> None:
+    with pytest.raises(ReviewError):
+        judge.parse_checks(checks)
+
+
+@pytest.mark.parametrize("verdict", ["unassessed", "partial", "unmet", "met"])
+def test_missing_evidence_never_becomes_a_score(directories: Directories, verdict: str) -> None:
+    items: list[dict[str, object]] = [
+        {"id": 1, "verdict": verdict, "reason": "No follow-up observation", "evidence": "insufficient", "check_ids": []}
+    ]
+    assert evaluate(*directories, call=FakeModel({"structured_output": {"requirements": items}})) == 75
+    report = load(directories[2] / "report.json")
+    assert report["score"] is None and "Insufficient evidence" in str(report["failure"])
+    assert not (directories[2] / "review.json").exists()
+    assert (directories[2] / "assessment.json").exists()
+    assert evaluate(*directories, call=FakeModel()) == 75
+
+
+def test_nonexistent_observation_cannot_support_a_verdict(directories: Directories) -> None:
+    items = [
+        {"id": 1, "verdict": "met", "reason": "Claimed follow-up", "evidence": "observed", "check_ids": ["missing"]}
+    ]
+    assert evaluate(*directories, call=FakeModel({"structured_output": {"requirements": items}})) == 75
+    assert load(directories[2] / "report.json")["score"] is None
+
+
+def test_saved_assessment_is_reused_after_interrupted_review(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    publish = judge.publish_json
+
+    def interrupted(path: Path, record: dict[str, object]) -> dict[str, object]:
+        if path.name == "review.json":
+            raise OSError("interrupted after assessment")
+        return publish(path, record)
+
+    monkeypatch.setattr(judge, "publish_json", interrupted)
+    with pytest.raises(OSError):
+        evaluate(*directories, call=FakeModel(reply("met")))
+    saved = (directories[2] / "assessment.json").read_bytes()
+    monkeypatch.setattr(judge, "publish_json", publish)
+    assert evaluate(*directories, call=FakeModel()) == 0
+    assert (directories[2] / "assessment.json").read_bytes() == saved
+
+
+def test_runner_receives_only_its_existing_command_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    planned = check("cli", changes_state=False)
+    command = {key: planned[key] for key in ("id", "args", "stdin", "observation")}
+    outcome = {"id": "cli", "exit_code": 0}
+    (tmp_path / "1.response.json").write_text(json.dumps({"command": command, "result": outcome}))
+
+    def channel_path(value: str) -> Path:
+        assert value == "/runner"
+        return tmp_path
+
+    monkeypatch.setattr(judge, "Path", channel_path)
+    assert judge.run_checks([planned], float("inf")) == [outcome]
+    assert load(tmp_path / "1.request.json") == command
