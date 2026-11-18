@@ -14,7 +14,7 @@ The existing rendered scaffold must not be rendered again.
 |---|---|---|
 | Miner submitter | Validate and commit a public digest using its own Pylon identity; exact read-back; exit | `miner/miner.py` and `miner/Dockerfile` |
 | Baseline factory | Invoke pinned Pi help/version without inference, wait approximately 60 seconds, write fresh greeting project | `miner/factory/` |
-| Judge | Check readable `main.py` and `README.md` without executing them; score the frozen criteria using Claude in review mode, or draw a uniform random score in explicit fixture mode; write one report | `judge/` |
+| Judge | Plan isolated CLI checks and grade their captured observations against frozen criteria with two Claude calls, or draw a uniform random score in explicit fixture mode; write one report | `judge/` |
 | Validator | Discover/freeze cohort, schedule, publish jobs/stops, accept scores, calculate weights | `validator/src/validator/` |
 | Host executor | Poll files, pull/create/start/inspect/stop Docker jobs, reconcile after restart | `executor/executor.py` (one standard-library-only file) |
 | Operator installation | Configure ownership, host paths, executor system unit, Compose and coherent updates | `installer/`, `envs/deployed/` |
@@ -39,7 +39,7 @@ actor-owned wall-clock producer
                                        -> shared-tree result adapter
 
 Nexus chain clock -> SetWeightsBeatNode -> usable-result gate
-  -> WeightSetterNode + FactoryHorde softmax callback -> Pylon
+  -> WeightSetterNode + FactoryHorde 90/10 callback -> Pylon
 
 shared files <-> host executor <-> detached factory / judge containers
 ```
@@ -143,10 +143,8 @@ that range, including zero. The weight gate uses the latest eligible completed r
 in the selected mode. An unavailable reviewer disqualifies a review round. When
 there is no earlier eligible round, the gate skips the weight submission.
 
-Filter accepted scores to currently registered hotkeys; UID reuse must not transfer
-scores. Compute `exp((score - max_score) / temperature)` and normalize over eligible
-miners only, with finite positive temperature default `0.1`. Failures are excluded,
-not assigned zero. Registration changes during calculation require revalidation.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write.
+
 Pass configured `MECHANISM_ID` to both weight-status gating and actual writes; retain
 the scaffold default `0` and explicitly exercise `1` on a capable local runtime.
 
@@ -178,3 +176,7 @@ Generic HTTP, validator-only, inference and host-tmux recipes yield to V2. Mainn
 subnet 12 / Compute Horde changes, public emissions, judge quality calibration,
 private/encrypted submissions, stronger isolation, TEE and scale systems are future
 work. A random-score demonstration is neither economic nor security validation.
+
+## Behavioral judging extension
+
+Server task JSON is read once at admission and frozen before discovery. The host executor owns a networkless application container and a narrow file command channel for each judge. It captures bounded results outside the application, preserves shared disposable state across checks, never replays ambiguous commands, and confirms child termination before parent acceptance. Each factory/judge has a separate internal network connected only to the inference proxy. The [judge guide](judge/README.md) specifies limits, evidence and failure handling. Historical V2 acceptance remains evidence for its original revisions.

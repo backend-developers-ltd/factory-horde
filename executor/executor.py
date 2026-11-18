@@ -526,10 +526,73 @@ class Docker:
             raise ProtocolError("Existing Docker container conflicts with immutable request")
         return value
 
+    def inference_network(self, request: Request) -> str:
+        """Connect only this workload and the configured proxy to an isolated bridge.
+
+        Raises:
+            DockerError: The proxy or network identity cannot be verified.
+        """
+        name = request.name + "-inference"
+        template = parse(self.require("network", "inspect", self.settings.factory_network, "--format", "{{json .}}"))
+        proxies: list[str] = []
+        for identifier in object_value(template.get("Containers", {})):
+            container = parse(self.require("container", "inspect", identifier, "--format", "{{json .}}"))
+            labels = object_value(object_value(container["Config"])["Labels"])
+            if labels.get("com.docker.compose.service") == "inference-proxy":
+                proxies.append(identifier)
+        if len(proxies) != 1:
+            raise DockerError("Expected one inference proxy on the configured network")
+        result = self.call("network", "inspect", name, "--format", "{{json .}}")
+        if result.returncode:
+            if "not found" not in result.stderr and "No such network" not in result.stderr:
+                raise DockerError("Inference network inspection failed")
+            self.require(
+                "network",
+                "create",
+                "--internal",
+                "--opt",
+                "com.docker.network.bridge.gateway_mode_ipv4=isolated",
+                "--label",
+                f"factory_horde.request_sha256={request.digest}",
+                name,
+            )
+            result = self.call("network", "inspect", name, "--format", "{{json .}}")
+        network = parse(result.stdout)
+        if (
+            object_value(network.get("Labels", {})).get("factory_horde.request_sha256") != request.digest
+            or network.get("Internal") is not True
+            or object_value(network.get("Options", {})).get("com.docker.network.bridge.gateway_mode_ipv4") != "isolated"
+        ):
+            raise DockerError("Inference network identity or isolation mismatch")
+        if proxies[0] not in object_value(network.get("Containers", {})):
+            self.require("network", "connect", "--alias", "inference-proxy", name, proxies[0])
+        return name
+
+    def release_network(self, request: Request) -> None:
+        """Remove only this job's retained network after workload termination.
+
+        Raises:
+            DockerError: Ownership or network cleanup is uncertain.
+        """
+        if not self.settings.factory_network:
+            return
+        name = request.name + "-inference"
+        result = self.call("network", "inspect", name, "--format", "{{json .}}")
+        if result.returncode:
+            if "not found" in result.stderr or "No such network" in result.stderr:
+                return
+            raise DockerError("Inference network cleanup inspection failed")
+        network = parse(result.stdout)
+        if object_value(network.get("Labels", {})).get("factory_horde.request_sha256") != request.digest:
+            raise DockerError("Refusing to remove an unrelated inference network")
+        for identifier in object_value(network.get("Containers", {})):
+            self.require("network", "disconnect", name, identifier)
+        self.require("network", "rm", name)
+
     def create(self, request: Request) -> str:
         """Create a detached, non-restarting workload with only its fixed job mounts.
 
-        Factories and judges both join the configured inference network, if any.
+        Each workload gets a separate proxy-only network when inference is enabled.
         """
         destination = "/output" if request.kind == "factory" else "/submission,readonly"
         mounts = [
@@ -538,7 +601,7 @@ class Docker:
         ]
         if request.report_dir is not None:
             mounts.append(f"type=bind,src={self.files.mount(request.report_dir)},dst=/report")
-        network = self.settings.factory_network
+        network = self.inference_network(request) if self.settings.factory_network else ""
         args = [
             "create",
             "--name",
@@ -741,8 +804,8 @@ class ApplicationRunner:
         if (
             set(command) != {"id", "args", "stdin", "observation"}
             or not isinstance(args, list)
-            or len(args) > 32
-            or any(not isinstance(a, str) or len(a) > 4096 or "\0" in a for a in args)
+            or len(cast(list[object], args)) > 32
+            or any(not isinstance(a, str) or len(a) > 4096 or "\0" in a for a in cast(list[object], args))
             or not isinstance(stdin, str)
             or len(stdin.encode()) > 16384
         ):
@@ -842,6 +905,7 @@ class ApplicationRunner:
             except FileNotFoundError:
                 return
             retained = f"control/executor/{self.request.job_id}.check-{index}.json"
+            outcome: dict[str, object]
             try:
                 outcome = self.files.read(retained)
             except FileNotFoundError:
@@ -926,6 +990,7 @@ class Executor:
         if value["execution"] in ("exited", "never_started"):
             if request.kind == "judge":
                 ApplicationRunner(self, request, ledger).stop()
+            self.docker.release_network(request)
             ledger.update(closed=True, terminal=value)
             self.save_ledger(request, ledger)
         self.files.write(f"control/statuses/{request.job_id}.json", value)
@@ -1105,6 +1170,8 @@ class Executor:
                         self.save_ledger(request, ledger)
                         raise
                 else:
+                    if self.settings.factory_network and state["Running"] is True:
+                        self.docker.inference_network(request)
                     if request.kind == "judge" and state["Running"] is True:
                         ApplicationRunner(self, request, ledger).tick()
                     self.observe(request, ledger, container)

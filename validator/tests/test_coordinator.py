@@ -9,7 +9,6 @@ from uuid import UUID
 import pytest
 from nexus.v1 import BlockBeat, ContextId, ReceiveEvent, SubnetBuilder
 from pydantic import ValidationError
-
 from validator.coordinator import (
     FactoryEligibility,
     RoundCoordinator,
@@ -292,7 +291,7 @@ def test_configured_specification_is_frozen_with_the_admission(fixture: Fixture)
 @pytest.mark.parametrize("second_outcome", ["outage", "invalid submission", "legacy score", "wrong criteria"])
 @pytest.mark.parametrize("round_count", [1, 2])
 def test_review_weights_require_a_comparable_round(tmp_path: Path, second_outcome: str, round_count: int) -> None:
-    repo = ResultRepository(RoundRepository(tmp_path), "review")
+    repo = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
     fixture = Fixture(repo)
     coordinator = RoundCoordinator(repo, TIMING, JUDGE, fixture.discovery, "Build a CLI.", ("Add",))
     for sequence in range(1, round_count + 1):
@@ -336,7 +335,7 @@ def test_review_weights_require_a_comparable_round(tmp_path: Path, second_outcom
                     )
                     repo.files.publish(f"{job.report_dir}/review.json", evidence)
         assert not coordinator.tick(plan.deadlines.round_end - timedelta(seconds=1), BEAT).errors
-    recovered = ResultRepository(RoundRepository(tmp_path), "review")
+    recovered = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
     selected = recovered.latest_usable_round()
     if second_outcome == "invalid submission":
         assert selected is not None and selected[0].sequence == round_count and len(selected[1]) == 1
@@ -601,3 +600,10 @@ def test_judge_actual_finish_controls_recovered_score(fixture: Fixture, offset: 
         assert decision is not None
         assert (decision.accepted is not None) == (offset <= 0)
         assert bool(decision.failure) == (offset > 0)
+
+
+def test_review_history_requires_selected_judge_revision(tmp_path: Path) -> None:
+    test_review_weights_require_a_comparable_round(tmp_path, "invalid submission", 1)
+    assert ResultRepository(RoundRepository(tmp_path), "review", JUDGE).latest_usable_round() is not None
+    assert ResultRepository(RoundRepository(tmp_path), "review", IMAGE).latest_usable_round() is None
+    assert ResultRepository(RoundRepository(tmp_path), "review").latest_usable_round() is None

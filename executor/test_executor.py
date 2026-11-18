@@ -14,7 +14,6 @@ from typing import override
 from uuid import uuid4
 
 import pytest
-
 from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 
@@ -718,8 +717,9 @@ def test_default_workloads_stay_offline_without_environment(
 
 
 def test_factories_and_judges_join_the_inference_network(
-    executor: Executor, job_request: Request, judge_request: Request
+    executor: Executor, job_request: Request, judge_request: Request, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(Docker, "inference_network", lambda self, request: request.name + "-inference")
     settings = Settings(
         executor.settings.root,
         os.getuid(),
@@ -729,19 +729,19 @@ def test_factories_and_judges_join_the_inference_network(
         inference_url="http://proxy.example:8080",
     )
     factory = create_arguments(executor, job_request, settings)
-    assert values(factory, "--network") == ["factory-horde-inference"]
+    assert values(factory, "--network") == [job_request.name + "-inference"]
     assert values(factory, "--env") == [
         "ANTHROPIC_BASE_URL=http://proxy.example:8080",
         "CLAUDE_CODE_OAUTH_TOKEN=inference-proxy",
     ]
     assert values(factory, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and factory[-1] == job_request.image
     judge = create_arguments(executor, judge_request, settings)
-    assert values(judge, "--network") == ["factory-horde-inference"]
+    assert values(judge, "--network") == [judge_request.name + "-inference"]
     assert values(judge, "--env") == values(factory, "--env")
     assert values(judge, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and judge[-1] == judge_request.image
     unchanged = create_arguments(executor, job_request, executor.settings)
     assert [a for a in factory if a not in unchanged] == [
-        "factory-horde-inference",
+        job_request.name + "-inference",
         "/tmp:rw,nosuid,nodev,size=1g",
         "--env",
         "ANTHROPIC_BASE_URL=http://proxy.example:8080",

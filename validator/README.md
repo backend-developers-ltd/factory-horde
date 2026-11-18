@@ -62,10 +62,9 @@ For review weights, each admitted job must have a verified review, a confirmed
 miner-specific rejection or a recorded miner-specific skip. A reviewer outage,
 incomplete evaluation or legacy random score cannot supply review weights. With
 no comparable completed round the gate skips the weight opportunity. Explicit
-fixture mode can still use historical localnet fixture results. Successful zeros remain eligible. Weighing uses
-`exp((score - maximum) / temperature)`, normalized over currently registered
-accepted hotkeys, with finite positive `VALIDATOR_WEIGHT_TEMPERATURE` default `0.1`.
-Membership is read again after calculation; a detected change aborts that attempt.
+fixture mode can still use historical localnet fixture results. Successful zeros remain eligible.
+
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write.
 
 `VALIDATOR_WEIGHT_TEMPO` defaults to 360 blocks and must match the subnet;
 `VALIDATOR_WEIGHT_EPOCH_OFFSET` defaults to zero. These opportunities do not control
@@ -191,3 +190,5 @@ env -u UV_EXCLUDE_NEWER uv run ruff format
 env -u UV_EXCLUDE_NEWER uv run basedpyright
 env -u UV_EXCLUDE_NEWER uv run pytest -q --tb=line -r f
 ```
+
+Server task files use `VALIDATOR_TASK_FILE` (`TASK_FILE` in Compose), mounted through the operator-owned `TASK_DIRECTORY`. Admission freezes `specification` and optional ordered `requirements` before discovery. See the [operator task-file instructions](../installer/README.md#server-task-files). Behavioral evaluations retain check plans, captured execution and final reasons; see the [judge guide](../judge/README.md).

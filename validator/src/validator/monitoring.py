@@ -297,7 +297,7 @@ class HealthSampler:
             )
             try:
                 self.weights = files.read("control/weight-calculation.json", WeightCalculation)
-            except (FileNotFoundError, ValueError):
+            except FileNotFoundError, ValueError:
                 # Legacy softmax diagnostics are disposable; accepted results remain intact.
                 self.weights = None
             checks["records"] = True

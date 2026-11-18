@@ -160,8 +160,8 @@ services:
 
   # Optional inference proxy, started only with COMPOSE_PROFILES=inference in .env. It holds the Claude
   # credential and is the only service factories and judges can reach on the internal network that the
-  # executor attaches them to (EXECUTOR_FACTORY_NETWORK). Workloads on that network can also reach each
-  # other, and the proxy applies no per-workload quota.
+  # executor discovers it on (EXECUTOR_FACTORY_NETWORK). Each workload gets a separate isolated network
+  # connected only to this proxy. The proxy applies no per-workload quota.
   inference-proxy:
     # caddy:2.11.9
     image: docker.io/library/caddy@sha256:e40b94d0a43b5ff69cb20568d73f10c70703df7b0ffc2298eb3d723cdc9d0bd1

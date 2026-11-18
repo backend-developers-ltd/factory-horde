@@ -350,7 +350,7 @@ def parse_requirements(items: object, criteria: Sequence[str]) -> list[Requireme
         index, verdict, reason = fields.get("id"), fields.get("verdict"), fields.get("reason")
         if type(index) is not int or not 1 <= index <= len(criteria) or index in requirements:
             raise ReviewError("Unknown or repeated criterion id")
-        if not isinstance(reason, str) or not reason.strip():
+        if not isinstance(reason, str) or not reason.strip() or len(reason) > 2048:
             raise ReviewError("Missing verdict reason")
         if not isinstance(verdict, str) or verdict not in VERDICT_POINTS:
             raise ReviewError("Unknown verdict")
@@ -415,8 +415,10 @@ def parse_checks(value: object) -> list[dict[str, object]]:
     Raises:
         ReviewError: The model supplied an unsupported command plan.
     """
-    if not isinstance(value, list) or not 1 <= len(value) <= 6:
+    if not isinstance(value, list) or not 1 <= len(cast(list[object], value)) <= 6:
         raise ReviewError("Expected one to six application checks")
+    if len(json.dumps(value).encode()) > 65536:
+        raise ReviewError("Check plan exceeds 64 KiB")
     checks: list[dict[str, object]] = []
     ids: set[str] = set()
     for item in cast(list[object], value):
@@ -429,8 +431,8 @@ def parse_checks(value: object) -> list[dict[str, object]]:
             or re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", identity) is None
             or identity in ids
             or not isinstance(args, list)
-            or len(args) > 32
-            or any(not isinstance(a, str) or len(a) > 4096 or "\0" in a for a in args)
+            or len(cast(list[object], args)) > 32
+            or any(not isinstance(a, str) or len(a) > 4096 or "\0" in a for a in cast(list[object], args))
             or not isinstance(stdin, str)
             or len(stdin.encode()) > 16384
             or not isinstance(observation, str)

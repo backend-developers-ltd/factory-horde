@@ -7,6 +7,7 @@ on:
       - '.github/workflows/build-baselines.yml'
       - 'miner/factory/**'
       - 'judge/**'
+      - 'localnet/fixtures/behavioral/**'
   workflow_dispatch:
 
 jobs:
@@ -23,6 +24,8 @@ jobs:
             context: miner/factory
           - kind: judge
             context: judge
+          - kind: behavioral-fixture
+            context: localnet/fixtures/behavioral
     env:
       IMAGE: ghcr.io/backend-developers-ltd/factory-horde-${{ matrix.kind }}
     steps:

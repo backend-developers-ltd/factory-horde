@@ -19,6 +19,7 @@ from nexus.v1 import (
     WeightSetterNode,
 )
 from pylon_client.artanis.v1 import GetNeuronsResponse
+
 from validator.main import Settings, Validator
 from validator.records import RoundPlan, RoundRecord
 from validator.result_repository import ResultRepository

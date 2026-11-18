@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+
 from validator.coordinator import RoundCoordinator, Schedule
 from validator.records import request_for
 from validator.result_repository import ResultRepository
@@ -54,3 +55,18 @@ def test_invalid_file_blocks_new_admission(tmp_path: Path, content: str) -> None
     coordinator.tick(START, BEAT)
     plan = fixture.repository.rounds.rounds()[0].plan
     assert plan.evaluation is not None and plan.evaluation.requirements == ("repaired",)
+
+
+def test_task_replacement_changes_only_next_round(tmp_path: Path) -> None:
+    source = tmp_path / "task.json"
+    source.write_text('{"specification":"first"}')
+    fixture = Fixture(ResultRepository(RoundRepository(tmp_path)), count=0)
+    coordinator = RoundCoordinator(fixture.repository, TIMING, JUDGE, fixture.discovery, task_file=source)
+    coordinator.tick(START, BEAT)
+    first = fixture.repository.rounds.rounds()[0].plan
+    source.write_text('{"specification":"second"}')
+    coordinator.tick(START + TIMING.interval, BEAT)
+    second = fixture.repository.rounds.rounds()[-1].plan
+    assert second.sequence == 2 and first.specification_sha256 != second.specification_sha256
+    assert first.evaluation is not None and first.evaluation.requirements == ("first",)
+    assert second.evaluation is not None and second.evaluation.requirements == ("second",)

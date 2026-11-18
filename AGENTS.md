@@ -2,7 +2,7 @@
 
 FactoryHorde is a localnet-first orchestration prototype for software factories submitted as immutable
 container images. A Nexus validator coordinates host Docker execution through shared files; a separate judge
-produces persistent scores: one tool-less Claude review of the submitted files against frozen criteria, with
+produces persistent scores: two tool-less Claude phases that plan isolated CLI checks and grade observed behavior against frozen criteria, with
 random scoring available in explicit fixture mode. No public deployment is included.
 Origin: the Copier-rendered Nexus subnet template.
 
@@ -62,7 +62,7 @@ Factory eligibility retains the minute-65 finish cutoff: late observation of a t
 can qualify, but actual late completion cannot. Executor shutdown interrupts local Docker CLI calls
 so held pulls do not delay restart for their full timeout; interrupted effects remain unresolved.
 `weighing.py` selects the latest usable completed round, filters current registration and revalidates
-membership before returning stable softmax weights. `weight_gate.py` suppresses empty opportunities;
+membership before returning 90/10 winner weights with stable round/hotkey SHA-256 ties. `weight_gate.py` suppresses empty opportunities;
 both Nexus weight nodes receive `Settings.mechanism_id` and use the tasks' shared store provider.
 Weight writes are independently opt-in. `localnet/check_weights.py` uses the miner bootstrap SDK to
 verify the actual chain vector and mechanism-0 non-interference without relying on Pylon acknowledgements.
@@ -80,7 +80,7 @@ is persisted before replacing Compose assets and cleared only after successful C
 Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared.
 
-Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories and judges to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; review mode requires the proxy, and localnet explicitly selects fixture mode; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. Factories on that network can reach each other and share one credential without a quota. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds. Admission freezes `TASK_REQUIREMENTS` and `JUDGE_MODE` with that text. Review weights skip rounds with an unavailable judge and exclude legacy fixture scores.
+Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories and judges to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; review mode requires the proxy, and localnet explicitly selects fixture mode; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. The configured network identifies the proxy; each workload gets its own internal isolated-gateway network connected only to that proxy. Application checks run in executor-owned networkless containers with a narrow judge-only file channel; parent terminal publication requires confirmed child termination. Inference shares one credential without a quota. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds. Admission freezes `TASK_REQUIREMENTS` and `JUDGE_MODE` with that text. Review weights skip rounds with an unavailable judge and require the configured judge image digest. `TASK_FILE` optionally selects server JSON under read-only `TASK_DIRECTORY`; admission freezes it before discovery. Check plans, execution captures and final reasons are retained in each report directory.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.

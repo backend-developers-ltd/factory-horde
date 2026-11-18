@@ -41,6 +41,8 @@ rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
     input/{specification.md,task.json,evaluation.json}
     output/{main.py,README.md}
     evaluation/report.json
+    evaluation/checks.json        # bounded CLI plan and model attribution
+    evaluation/execution.json     # captured observations, published before review
     evaluation/review.json        # verdicts for a successful model review
     factory-result.json           # immutable factory JobResult
     result.json                   # immutable judge JobResult, containing AcceptedResult on success
@@ -91,9 +93,9 @@ Requests cannot supply shell commands, Docker flags, wallets or arbitrary mount
 destinations. Operator settings supply UID/GID, resource limits and Docker access;
 task 4 establishes actual ownership, with installer verification in task 15.
 
-By default every workload runs with `--network none`, no environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory and judge containers then join that Docker network instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable. Missing `ANTHROPIC_BASE_URL` in review mode returns exit 75. Random scoring requires a frozen fixture policy.
+By default every workload runs with `--network none`, no environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory and judge containers each join a separate executor-owned internal network linked only to that network's inference proxy instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable. Missing `ANTHROPIC_BASE_URL` in review mode returns exit 75. Random scoring requires a frozen fixture policy.
 
-The network is the internal one that the `inference` Compose profile creates together with the proxy. It has no route to the internet or to the host, so the proxy is the only service a factory can reach. The proxy forwards only paths matching `/v1/messages*` to `https://api.anthropic.com` and answers 404 for everything else. Factories that run at the same time share this network and can reach each other, and the proxy applies no per-factory quota: all factories draw on the same credential.
+The configured network identifies the inference proxy. Each workload gets its own labelled internal bridge with isolated gateway mode; the executor reconnects the proxy on recovery and removes that bridge after confirmed workload termination. Peers and host/internet services are unreachable. The proxy forwards `/v1/messages*` to Anthropic, provides `/healthz`, and returns 404 otherwise. All inference still shares one subscription without quotas.
 
 `RoundRepository.prepare_round` records the plan/IDs before preparing input. It
 publishes the complete specification, manifest and frozen evaluation policy, creates output/report
@@ -199,11 +201,7 @@ A review round needs at least one accepted score and an outcome for every miner.
 A reviewer outage or missing evidence skips the whole round. An attributed invalid
 submission excludes only that miner. Without a usable review round the weight gate
 skips submission. Explicit fixtures can use a subset of accepted scores.
-The weight gate and setter use `AcceptedResult.miner_hotkey` to filter accepted
-hotkeys against current registration, apply stable softmax at the configured positive
-temperature and recheck registration after calculation. A detected membership change
-aborts that attempt. `WeightCalculation` records the source round, membership block,
-epoch, UID mapping, temperature and derived weights without copying accepted scores.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write. `WeightCalculation` records policy `winner-90-10`, winner, tie rule, source round, membership block, epoch, UID mapping and weights. Legacy temperature-based diagnostic files are ignored by monitoring; historical accepted scores are preserved.
 Absent usable history/recipients suppresses the opportunity before the setter;
 an empty mapping is never used as a skip signal. Only an independent Subtensor read
 proves the resulting mechanism-specific chain vector.
@@ -298,3 +296,9 @@ env -u UV_EXCLUDE_NEWER uv run ruff format
 env -u UV_EXCLUDE_NEWER uv run basedpyright
 env -u UV_EXCLUDE_NEWER uv run pytest -q --tb=line -r f
 ```
+
+## Internal application runner channel
+
+A judge receives `/runner`, a job-local executor channel that is never mounted into the application. For indices 1 through 6 it publishes `<index>.request.json` with exactly `id`, `args`, `stdin` and `observation`. The executor persists command intent and a private immutable result before exposing `<index>.response.json` containing the original `command` and `result`. An interrupted ambiguous command is unavailable and never repeated. This extends internal execution only; miner submissions and protocol-v1 reports retain their existing schemas.
+
+The executor records the application container identity and permanent stop intent in the parent ledger. Application code sees only its runtime, read-only submission, 256 MiB writable `/app` and 256 MiB `/tmp`, without a network or inference variables. Captures are limited to 16 KiB per stream; commands to 60 seconds. Timeout kills the full container and stops further checks. Parent terminal publication waits for confirmed child termination, including recovery after executor interruption. Runner counters and latency use the existing executor metric transport with bounded `application` operation labels.

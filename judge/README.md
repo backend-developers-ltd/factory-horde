@@ -1,54 +1,21 @@
-# FactoryHorde judge
+# FactoryHorde behavioral judge
 
-The judge reads the frozen specification and the stopped factory's `main.py` and
-`README.md`. It evaluates them without importing or executing the submission.
-The executor mounts `/input` and `/submission` read-only and gives each job a
-writable `/report` directory.
+The judge reads the frozen task, criteria, `main.py` and `README.md`. In review mode it makes two tool-less Claude calls using the same configured model (default `sonnet`): plan up to six representative CLI checks, then grade their captured observations. Behavioral criteria require observed behavior; README claims cannot substitute for execution. Source and documentation criteria can use the submitted files. The controller averages `met=1`, `partial=0.5`, and `unmet=0`. An accepted zero remains eligible.
 
-## Scoring
+## Application isolation
 
-`JUDGE_MODE=review` is the validator default. At admission the validator freezes
-`TASK_REQUIREMENTS`, an ordered JSON list of acceptance criteria, alongside the
-specification. Omitting the list makes the full specification one criterion.
-Every miner receives the same `/input/evaluation.json`. IDs start at 1 and
-follow the order in the list. With older inputs that have only `task.json` and
-`specification.md`, this judge uses review mode and the whole-task criterion.
+Bubblewrap 0.12.0 could not create namespaces under the executor's production restrictions. The host executor therefore owns a separate application container associated with the judge job. It copies `main.py` into a disposable 256 MiB `/app` workspace and runs the fixed packaged interpreter with an argument vector and optional stdin. Checks share that workspace. The application has no network, inference environment, input task, report directory, runner channel, controller processes or Docker socket. Its read-only submission mount preserves the original output. Container memory, CPU and PID limits also apply; `/tmp` has a separate 256 MiB bound.
 
-Claude Code receives its grading instructions through `--append-system-prompt`.
-Standard input contains the criteria, specification and both files, delimited by
-a fresh random boundary. The CLI disables its ordinary tools. Its structured
-response must supply exactly one known ID, verdict and reason per criterion.
-The judge assigns 1 for met, 0.5 for partial and 0 for unmet, then averages
-these points. The model defaults to `sonnet`. One CLI invocation has a 600-second
-limit. The specification and generated files together can use up to 200,000 bytes.
+Each command has at most 60 seconds and 16 KiB per captured stream. A timeout kills the entire application container, including descendants, and ends further checks in that workspace. The judge can grade the observed timeout. Sandbox, capture or model failures instead produce an unavailable evaluation. The whole evaluation session has a 1,200-second limit, also constrained by the frozen job deadline. The parent result cannot become terminal until Docker confirms application termination. Interrupted commands are never silently replayed.
 
-An explicit `JUDGE_MODE=fixture` in the round configuration produces a random
-score for offline orchestration tests. Losing access to the proxy in review mode
-produces an unavailable evaluation.
+## Evidence and recovery
 
-## Outcomes and recovery
+The judge publishes `checks.json`, then bounded `execution.json`, then protocol-v1 `review.json` and `report.json`. Evidence includes job/round/hotkey attribution, the model, check arguments and intended observations, captured stdout/stderr, exit status, duration, truncation and timeout flags. The frozen round plan carries the judge image digest; `task.json` carries the specification hash. No credentials or process environment are recorded. A directory lock serializes the session. Saved execution supports pending grading; saved reviews and reports are reused without fresh model calls. Accepted results remain immutable.
 
-- A successful judge exits 0 and publishes a linked protocol-v1 `report.json`.
-  For review scores the validator also checks the job identity, ordered criteria,
-  verdicts and arithmetic in `review.json`.
-- A missing, oversized or invalid submission exits 1 with a linked failure
-  starting with `Invalid submission: `. Other miners remain eligible.
-- Missing inference configuration, a timeout, an unusable model reply or invalid
-  review inputs produce exit 75 and a failure starting with `Review unavailable: `.
-  The validator skips the entire round when selecting review weights and can use
-  the previous comparable round. Confirmed judge crashes or missing evidence also
-  prevent selection of a partial ranking.
-- A per-job directory lock covers the first check through publication. The judge
-  fsyncs and publishes review evidence before the report. After an interruption
-  between those writes it reconstructs the score from the saved verdicts. A
-  completed report, including its failure classification, is reused on replay.
+Missing or unsafe required files produce `Invalid submission:` and exclude that miner. Model/proxy failures, unavailable isolation or unusable replies produce `Review unavailable:` (exit 75) and make the whole review round unusable. Fallback history must match the configured judge image digest, so earlier static reviews cannot enter behavioral comparisons. Explicit `JUDGE_MODE=fixture` retains random scores for offline orchestration tests.
 
-Run the focused tests from the repository root.
+Factories and judges each receive their own internal proxy-only network. The real subscription credential stays at the proxy. Application checks always use `--network none`.
 
-```sh
-env -u UV_EXCLUDE_NEWER uv run --frozen --project validator pytest judge/test_judge.py -q
-```
+## Verification
 
-The [image checks](../localnet/build-baselines.sh) exercise the explicit offline
-fixture. The [file protocol](../spec/file-protocol.md) defines the mounted inputs
-and acceptance rules.
+Run `uv run --frozen --project validator pytest judge/test_judge.py executor/test_executor.py`. Explicit real container tests use `FH_RUNNER_IMAGE_TEST=1` with `executor/test_application_runner.py`; set `FH_TEST_PROXY_NETWORK` to a configured test proxy network to include peer/internet boundary checks. The development controls in `localnet/fixtures/behavioral` test a working CLI, missing persistence and a broken primary function through the real judge. Retain each round's execution and review files as the grading evidence.

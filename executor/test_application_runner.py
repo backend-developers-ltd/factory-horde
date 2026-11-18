@@ -5,10 +5,11 @@ import subprocess
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
-from executor.executor import ApplicationRunner, Executor, Request, Settings, parse
+from executor.executor import ApplicationRunner, Executor, Request, Settings, object_value, parse
 
 IMAGE = "docker.io/library/python@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8"
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
@@ -81,4 +82,55 @@ while True: time.sleep(1)
     assert len(str(outcome["stdout"])) == 16384
     assert runner.ledger["app_stopped"] is True
     inspected = runner.inspect()
-    assert inspected is not None and inspected["State"]["Running"] is False
+    assert inspected is not None and object_value(inspected["State"])["Running"] is False
+
+
+def test_workloads_reach_proxy_but_not_peers_or_internet(runner: ApplicationRunner) -> None:
+    network = os.environ.get("FH_TEST_PROXY_NETWORK")
+    if not network:
+        pytest.skip("Requires a test proxy on its configured template network")
+    settings = replace(runner.executor.settings, factory_network=network)
+    runner.executor.settings = settings
+    runner.docker.settings = settings
+    first = runner.request
+    second = replace(first, job_id=str(uuid4()))
+    names = [first.name + "-probe", second.name + "-probe"]
+    try:
+        net1 = runner.docker.inference_network(first)
+        net2 = runner.docker.inference_network(second)
+        for name, net in zip(names, [net1, net2], strict=True):
+            runner.docker.require(
+                "run",
+                "-d",
+                "--name",
+                name,
+                "--network",
+                net,
+                "--read-only",
+                "--cap-drop",
+                "ALL",
+                "--security-opt",
+                "no-new-privileges",
+                IMAGE,
+                "python",
+                "-m",
+                "http.server",
+                "8081",
+            )
+        peer = runner.docker.require(
+            "inspect", names[1], "--format", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"
+        )
+        code = """import socket, urllib.request
+assert urllib.request.urlopen('http://inference-proxy:8080/healthz', timeout=5).status == 200
+for host, port in [(PEER, 8081), ('1.1.1.1', 80), ('172.17.0.1', 22)]:
+    try: socket.create_connection((host, port), timeout=1)
+    except OSError: pass
+    else: raise RuntimeError('Forbidden connection: ' + host)
+print('proxy-only verified')
+""".replace("PEER", repr(peer))
+        assert "proxy-only verified" in runner.docker.require("exec", names[0], "python", "-c", code)
+    finally:
+        for name in names:
+            runner.docker.call("rm", "-f", name)
+        runner.docker.release_network(first)
+        runner.docker.release_network(second)

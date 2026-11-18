@@ -337,7 +337,7 @@ admission disabled, using the existing accepted scores. The Nexus opportunity no
 result gate and setter handle submission through Pylon. The checker itself uses
 the bootstrap SDK to read Subtensor directly: subnet 2, both mechanisms, the
 validator's UID/hotkey, current recipient mapping, constraints and integer weight
-vector at the same block. It independently recomputes softmax and accounts for
+vector at the same block. It independently recomputes the 90/10 allocation and accounts for
 u16 quantization, restarts the validator between two actual updates, verifies
 identical score-derived weights and unchanged mechanism 0, then restores the
 ordinary validator. Raw evidence is in `state/task12-weights.json` and
@@ -351,7 +351,7 @@ their normalized integer vectors differ from the requested softmax by at most
 
 For continuous writes, set `VALIDATOR_WEIGHTS_ENABLED=true` in `localnet/.env`
 and recreate the validator. It is independent of `VALIDATOR_DISPATCH_ENABLED`.
-`WEIGHT_TEMPERATURE` defaults to `0.1`; `SUBNET_TEMPO` and `WEIGHT_EPOCH_OFFSET`
+`SUBNET_TEMPO` and `WEIGHT_EPOCH_OFFSET`
 configure Nexus weight opportunities. No usable registered scores means no write.
 
 ## Adversarial application acceptance
@@ -455,3 +455,7 @@ per-epoch space allowance, with a minimum charge of 100 bytes per commitment.
 Rapid updates seven blocks apart succeeded. Unregistered writes and an atomic
 4,096-byte batch failed with the expected chain errors. These observations replace
 the older generic 100-block interval guidance for this selected local runtime.
+
+## Behavioral acceptance
+
+Use a fresh data root for behavioral experiments and the selected judge digest for compatible history. The development factory at `fixtures/behavioral` supplies working, missing-persistence and broken applications, selected by public hotkey hash. Require all three controls in the cohort, one evaluation per output, retained execution/review evidence, and a working score above both defects. The production weight checker independently recomputes the 90/10 allocation and verifies mechanism-0 non-interference; earlier task-12 evidence remains the historical softmax experiment.
