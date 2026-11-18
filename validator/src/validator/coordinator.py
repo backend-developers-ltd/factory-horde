@@ -340,8 +340,8 @@ class RoundCoordinator:
             return False
         else:
             try:
-                for name in ("main.py", "README.md"):
-                    self.repository.files.read_artifact(f"{factory.output_dir}/{name}")
+                if not self.repository.files.list_names(factory.output_dir):
+                    reason = "missing_output"
             except FileNotFoundError:
                 reason = "missing_output"
             except RecordFormatError:

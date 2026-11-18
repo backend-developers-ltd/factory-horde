@@ -2,7 +2,7 @@
 
 FactoryHorde is a localnet-first orchestration prototype for software factories submitted as immutable
 container images. A Nexus validator coordinates host Docker execution through shared files; a separate judge
-produces persistent scores: two tool-less Claude phases that plan isolated CLI checks and grade observed behavior against frozen criteria, with
+produces persistent scores: an adaptive Claude controller that chooses isolated project tests and grades observed behavior against frozen criteria, with
 random scoring available in explicit fixture mode. No public deployment is included.
 Origin: the Copier-rendered Nexus subnet template.
 
@@ -247,3 +247,5 @@ tested. Take great care to avoid drift between these files.
 ---
 
 `AGENTS.md` is the repository's sole agent instruction file.
+
+The adaptive judge uses trusted guides in `judge/skills/` and an observe/act loop. Model commands go through the executor to a separate networkless application container; never execute submitted code or model-selected commands on the host or in the judge controller. The application receives the full project in writable `/app`, a read-only `/submission`, and no controller mounts, credentials or Docker socket. Python, Node.js and POSIX shell are packaged; additional dependencies must be bundled or the judge reports unavailable evidence. Persist each decision before execution and each attributed observation afterward; recovery must not replay an ambiguous command. The output contract accepts arbitrary nonempty regular project trees, with no fixed entry-point filenames.

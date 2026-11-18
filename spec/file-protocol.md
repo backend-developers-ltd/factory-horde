@@ -39,10 +39,12 @@ rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   specification.md
   <miner-hotkey>/
     input/{specification.md,task.json,evaluation.json}
-    output/{main.py,README.md}
+    output/<project files>
     evaluation/report.json
-    evaluation/checks.json        # bounded CLI plan and model attribution
-    evaluation/execution.json     # captured observations, published before review
+    evaluation/step-N.decision.json    # attributed next action, persisted before execution
+    evaluation/step-N.observation.json # executor capture or retrieved earlier evidence
+    evaluation/execution.json         # final agent-v1 step/command summary
+    evaluation/assessment.json        # final verdicts with evidence references
     evaluation/review.json        # verdicts for a successful model review
     factory-result.json           # immutable factory JobResult
     result.json                   # immutable judge JobResult, containing AcceptedResult on success
@@ -78,20 +80,13 @@ Selected platform is `linux/amd64`, matching task 2's Pylon image.
 | `factory-v1` | `/usr/local/bin/factory-horde-factory` | `input_dir` → `/input:ro`, `output_dir` → `/output:rw` |
 | `judge-v1` | `/usr/local/bin/factory-horde-judge` | `input_dir` → `/input:ro`, `output_dir` → `/submission:ro`, `report_dir` → `/report:rw` |
 
-The factory writes `/output/main.py` and `/output/README.md`. The judge reads
-`/input/task.json` for round/miner and both job IDs, checks the specification and
-submission, and writes `/report/report.json`. No generated code is executed. A
-reviewing judge first publishes `/report/review.json`. The validator verifies its
-identity, ordered rubric and arithmetic against the round's frozen evaluation policy
-before accepting the protocol-v1 score. The optional `evaluation` field in a round
-plan contains protocol version 1, the mode and ordered requirements. The validator
-copies it into each job's read-only `/input/evaluation.json`. Historical round plans
-without this field are eligible only for explicit fixture weights. The judge uses a
-per-job directory lock during review and durable publication.
-Images must provide these executables; task 5 supplies their implementation.
-Requests cannot supply shell commands, Docker flags, wallets or arbitrary mount
-destinations. Operator settings supply UID/GID, resource limits and Docker access;
-task 4 establishes actual ownership, with installer verification in task 15.
+The factory writes the project required by the task into `/output`. No fixed entry-point filenames are required. Admission requires a nonempty output directory; the judge inventories the full tree, rejecting symlinks, non-regular or unreadable files and projects larger than 64 MiB or 4096 files. `checked_files` contains unique relative project paths, nonempty for a successful score.
+
+The judge reads `/input/task.json` for attribution and verifies the frozen specification and evaluation policy. Its tool-less Claude controller chooses one action at a time using trusted packaged testing guides. Commands are published through an executor-owned `/runner` exchange, never run by the host or judge controller. The executor executes the requested `argv` and stdin inside a separate networkless application container containing a writable project copy. Python, Node.js and POSIX shell are packaged; dependencies cannot be downloaded. The sandbox has no controller mounts, credentials or Docker socket. The legacy `args` request remains supported for already-frozen CLI judge images. Captures include exit status, stdout/stderr (16 KiB each), truncation, duration and stop status. There is no action-count or additional judging time limit; the existing round deadline still closes work and requires confirmed application termination.
+
+Each decision is durable before its command; captured results are returned before the next decision. The judge can request older evidence when it no longer fits recent context. The final assessment must reference observed commands for every criterion, including commands that read source/documentation. Unassessed requirements make evaluation unavailable. Successful `/report/review.json` contains the verdict mean; the validator verifies identity, ordered rubric and arithmetic before accepting `/report/report.json`. Decisions, captures and final reports are retained and reused after interruptions, without replaying ambiguous commands. A directory lock serializes the judge session.
+
+The optional `evaluation` field in a round plan contains protocol version 1, mode and ordered requirements; each task freezes its own policy. The validator copies it into `/input/evaluation.json`. Historical round plans without this field are eligible only for explicit fixture weights. Images must provide the fixed factory/judge executables. Job requests cannot supply Docker flags, wallets or arbitrary mounts. Operator settings supply UID/GID, resource limits and Docker access; only the trusted host executor operates Docker.
 
 By default every workload runs with `--network none`, no inference environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory and judge containers each join a separate executor-owned internal network linked only to that network's inference proxy instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable. Judges also receive `FACTORY_HORDE_JUDGE_IMAGE`, derived by the executor from the immutable request for evidence attribution. Missing `ANTHROPIC_BASE_URL` in review mode returns exit 75. Random scoring requires a frozen fixture policy.
 

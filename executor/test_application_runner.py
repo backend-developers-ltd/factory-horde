@@ -10,7 +10,15 @@ from uuid import uuid4
 
 import pytest
 
-from executor.executor import ApplicationRunner, DockerError, Executor, Request, Settings, object_value, parse
+from executor.executor import (
+    ApplicationRunner,
+    DockerError,
+    Executor,
+    Request,
+    Settings,
+    object_value,
+    parse,
+)
 
 IMAGE = "docker.io/library/python@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8"
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
@@ -21,7 +29,8 @@ pytestmark = pytest.mark.skipif(os.environ.get("FH_RUNNER_IMAGE_TEST") != "1", r
 def runner(tmp_path: Path):
     record = parse((FIXTURES / "judge-request.json").read_bytes())
     record.update(
-        created_at=datetime.now(UTC).isoformat(), deadline=(datetime.now(UTC) + timedelta(minutes=3)).isoformat()
+        created_at=datetime.now(UTC).isoformat(),
+        deadline=(datetime.now(UTC) + timedelta(minutes=3)).isoformat(),
     )
     request = replace(Request.load(record, str(record["job_id"]) + ".json"), image=IMAGE)
     executor = Executor(Settings(tmp_path, os.getuid(), os.getgid()))
@@ -54,7 +63,12 @@ def runner(tmp_path: Path):
 
 
 def command(*args: str) -> dict[str, object]:
-    return {"id": "probe", "args": list(args), "stdin": "", "observation": "boundary probe"}
+    return {
+        "id": "probe",
+        "args": list(args),
+        "stdin": "",
+        "observation": "boundary probe",
+    }
 
 
 def test_workspace_boundaries_and_persistence(runner: ApplicationRunner):
@@ -109,7 +123,9 @@ while True: time.sleep(1)
     assert inspected is not None and object_value(inspected["State"])["Running"] is False
 
 
-def test_workloads_reach_proxy_but_not_peers_or_internet(runner: ApplicationRunner) -> None:
+def test_workloads_reach_proxy_but_not_peers_or_internet(
+    runner: ApplicationRunner,
+) -> None:
     network = os.environ.get("FH_TEST_PROXY_NETWORK")
     if not network:
         pytest.skip("Requires a test proxy on its configured template network")
@@ -156,7 +172,10 @@ def test_workloads_reach_proxy_but_not_peers_or_internet(runner: ApplicationRunn
                 "8081",
             )
         peer = runner.docker.require(
-            "inspect", names[1], "--format", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"
+            "inspect",
+            names[1],
+            "--format",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
         )
         code = """import socket, urllib.request
 assert urllib.request.urlopen('http://inference-proxy:8080/healthz', timeout=5).status == 200
@@ -201,7 +220,9 @@ def test_interrupted_command_is_never_replayed(runner: ApplicationRunner) -> Non
     assert runner.files.read(runner.channel + "/1.response.json") == outcome
 
 
-def test_application_exit_codes_and_stdin_are_grading_evidence(runner: ApplicationRunner) -> None:
+def test_application_exit_codes_and_stdin_are_grading_evidence(
+    runner: ApplicationRunner,
+) -> None:
     source = runner.files.root / runner.request.output_dir / "main.py"
     source.write_text("import sys\nprint(sys.stdin.read(), end='')\nsys.exit(127)\n")
     runner.start()
@@ -211,14 +232,19 @@ def test_application_exit_codes_and_stdin_are_grading_evidence(runner: Applicati
     assert outcome["exit_code"] == 127 and outcome["stdout"] == "expected input\n"
 
 
-def test_more_than_six_commands_execute_once_across_recovery(runner: ApplicationRunner) -> None:
+def test_more_than_six_commands_execute_once_across_recovery(
+    runner: ApplicationRunner,
+) -> None:
     source = runner.files.root / runner.request.output_dir / "main.py"
     source.write_text(
         "from pathlib import Path\np=Path('count')\nn=int(p.read_text())+1 if p.exists() else 1\n"
         "p.write_text(str(n))\nprint(n)\n"
     )
     for index in range(1, 11):
-        runner.files.write(f"{runner.channel}/{index}.request.json", {**command(), "id": f"check{index}"})
+        runner.files.write(
+            f"{runner.channel}/{index}.request.json",
+            {**command(), "id": f"check{index}"},
+        )
     runner.tick()
     replacement = ApplicationRunner(runner.executor, runner.request, dict(runner.ledger))
     replacement.tick()
@@ -228,10 +254,80 @@ def test_more_than_six_commands_execute_once_across_recovery(runner: Application
     assert replacement.execute(command())["stdout"] == "11\n"
 
 
-def test_command_can_run_longer_than_the_removed_sixty_second_limit(runner: ApplicationRunner) -> None:
+def test_command_can_run_longer_than_the_removed_sixty_second_limit(
+    runner: ApplicationRunner,
+) -> None:
     source = runner.files.root / runner.request.output_dir / "main.py"
     source.write_text("import time\ntime.sleep(61)\nprint('completed')\n")
     runner.start()
     outcome = runner.execute(command())
     assert outcome["exit_code"] == 0 and outcome["timed_out"] is False
     assert outcome["stdout"] == "completed\n"
+
+
+def generic(*argv: str, stdin: str = "") -> dict[str, object]:
+    return {"id": "probe", "argv": list(argv), "stdin": stdin, "observation": "independent sandbox check"}
+
+
+def test_library_harness_and_shell_stay_inside_sandbox(runner: ApplicationRunner):
+    root = runner.files.root / runner.request.output_dir
+    package = root / "samplelib"
+    package.mkdir()
+    (package / "__init__.py").write_text("from .maths import add\n")
+    (package / "maths.py").write_text("def add(a, b): return a + b\n")
+    runner.start()
+    outcome = runner.execute(
+        generic(
+            "python",
+            "-",
+            stdin="""import pathlib, unittest
+from samplelib import add
+class Check(unittest.TestCase):
+    def test_values(self):
+        self.assertEqual(add(2, 3), 5)
+        self.assertEqual(add(-7, 7), 0)
+        self.assertEqual(add(0.5, 0.25), 0.75)
+pathlib.Path('harness-ran').write_text('yes')
+unittest.main()
+""",
+        )
+    )
+    assert outcome["exit_code"] == 0 and "OK" in str(outcome["stderr"])
+    host_marker = runner.files.root / "host-marker"
+    attack = runner.execute(
+        generic("/bin/sh", "-c", f"touch {host_marker}; touch /report/forged; cat /var/run/docker.sock")
+    )
+    assert attack["exit_code"] != 0 and not host_marker.exists()
+    assert not (root / "harness-ran").exists()
+    state = runner.execute(
+        generic("/bin/sh", "-c", "cat harness-ran; test ! -e /report; test ! -e /runner; test ! -e /input")
+    )
+    assert state["exit_code"] == 0 and state["stdout"] == "yes"
+    assert runner.docker.require("exec", runner.request.name, "cat", "/report/sentinel") == "secret"
+
+
+def test_http_service_can_be_started_and_queried_on_localhost(runner: ApplicationRunner):
+    root = runner.files.root / runner.request.output_dir
+    (root / "data.json").write_text('{"answer":42}')
+    runner.start()
+    started = runner.execute(generic("/bin/sh", "-c", "python -m http.server 8080 >/tmp/server.log 2>&1 </dev/null &"))
+    assert started["exit_code"] == 0
+    outcome = runner.execute(
+        generic(
+            "python",
+            "-",
+            stdin="""import json, time, urllib.request
+for _ in range(100):
+    try:
+        response = urllib.request.urlopen('http://127.0.0.1:8080/data.json')
+        break
+    except OSError:
+        time.sleep(.05)
+assert json.load(response) == {'answer': 42}
+print('HTTP behavior verified')
+""",
+        )
+    )
+    assert outcome["exit_code"] == 0 and outcome["stdout"] == "HTTP behavior verified\n"
+    runner.stop()
+    assert runner.ledger["app_stopped"] is True

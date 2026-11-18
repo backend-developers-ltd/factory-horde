@@ -1,0 +1,3 @@
+# Python library evaluation
+
+Read the package layout, public API and dependency metadata. Choose an import path appropriate to the submitted layout, including `src/` where needed. Use `python -` with stdin or create a separate evaluator harness. Exercise public functions with independently chosen inputs and compare actual values, exceptions and state against the frozen requirements. Standard-library `unittest` is available. Submitted tests can help explain usage but are not independent evidence. Do not modify the implementation to make a failing test pass. If required dependencies are unavailable, report that limitation instead of inventing a functionality score.

@@ -379,7 +379,8 @@ def test_ineligible_factory_never_authorizes_judge(fixture: Fixture, failure: st
     factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
     fixture.status(factory, code=7 if failure == "nonzero" else 0, forced=failure == "forced")
     if failure == "missing_output":
-        (fixture.repository.files.root / factory.output_dir / "main.py").unlink()
+        for path in (fixture.repository.files.root / factory.output_dir).iterdir():
+            path.unlink()
     now = plan.deadlines.judge_end if failure == "late" else plan.deadlines.evaluation_start
     result = fixture.coordinator().tick(now, BEAT)
     assert not result.errors
@@ -525,38 +526,31 @@ def test_completed_legacy_fixture_does_not_override_new_schedule(fixture: Fixtur
     assert fixture.repository.rounds.rounds()[0].stage == "complete"
 
 
-@pytest.mark.parametrize("artifact", ["symlink", "directory", "unreadable"])
-def test_unsafe_output_is_ineligible_but_host_io_failure_stays_unresolved(
-    fixture: Fixture, monkeypatch: pytest.MonkeyPatch, artifact: str
+def test_arbitrary_project_layout_is_admitted_and_host_io_remains_retryable(
+    fixture: Fixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture.count = 1
     plan = fixture.start()
     factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
     fixture.status(factory)
-    original = RecordFiles.read_artifact
+    original = RecordFiles.list_names
 
-    def unavailable(files: RecordFiles, relative: str) -> bytes:
-        if relative.endswith("/main.py"):
+    def unavailable(files: RecordFiles, relative: str) -> tuple[str, ...]:
+        if relative == factory.output_dir:
             raise OSError("injected disk failure")
         return original(files, relative)
 
     with monkeypatch.context() as patch:
-        patch.setattr(RecordFiles, "read_artifact", unavailable)
+        patch.setattr(RecordFiles, "list_names", unavailable)
         failed = fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT)
         assert failed.errors and judge.job_id in failed.unresolved
-    path = fixture.repository.files.root / factory.output_dir / "main.py"
-    if artifact == "unreadable":
-        path.chmod(0)
-    else:
+    root = fixture.repository.files.root / factory.output_dir
+    for path in root.iterdir():
         path.unlink()
-        if artifact == "directory":
-            path.mkdir()
-        else:
-            path.symlink_to("/etc/passwd")
+    (root / "library.py").write_text("def add(a, b): return a + b")
     observed = fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT)
-    assert not observed.errors and not observed.unresolved
-    skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
-    assert skipped.reason == "invalid_output"
+    assert not observed.errors
+    assert judge in fixture.repository.rounds.requests()
 
 
 @pytest.mark.parametrize("raw", [b"\xff", b'{"score":' + b"9" * 5000 + b"}"], ids=["utf8", "integer"])

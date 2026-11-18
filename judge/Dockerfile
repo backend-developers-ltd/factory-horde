@@ -6,6 +6,8 @@ RUN npm install -g --no-audit --no-fund @anthropic-ai/claude-code@2.1.325
 FROM docker.io/library/python@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8
 # Claude Code ships as one self-contained binary.
 COPY --from=claude /usr/local/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe /usr/local/bin/claude
+COPY --from=claude /usr/local/bin/node /usr/local/bin/node
+COPY skills /usr/local/bin/skills
 COPY --chmod=0555 judge.py /usr/local/bin/factory-horde-judge
 # The root filesystem is read-only at run time; /tmp is the only writable scratch space.
 ENV HOME=/tmp/home \
@@ -14,5 +16,5 @@ ENV HOME=/tmp/home \
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 USER 1000:1000
 LABEL org.opencontainers.image.source="https://github.com/backend-developers-ltd/factory-horde"
-LABEL org.opencontainers.image.description="FactoryHorde behavioral judge with isolated CLI checks and frozen criteria"
+LABEL org.opencontainers.image.description="FactoryHorde adaptive project judge with isolated execution and frozen criteria"
 ENTRYPOINT ["/usr/local/bin/factory-horde-judge"]

@@ -104,7 +104,7 @@ def test_real_factory_and_judge_offline(directories: tuple[Path, Path, Path]) ->
     assert parsed.score is not None and 0 <= parsed.score <= 1 and parsed.failure is None
 
 
-def test_judge_never_executes_submission_and_preserves_report(directories: tuple[Path, Path, Path]) -> None:
+def test_fixture_mode_never_executes_submission_and_preserves_report(directories: tuple[Path, Path, Path]) -> None:
     _, output, report = directories
     (output / "main.py").write_text('raise RuntimeError("must never execute")\n')
     (output / "README.md").write_text("readable fixture")
@@ -123,11 +123,13 @@ def test_broken_submission_is_linked_failure(directories: tuple[Path, Path, Path
     elif broken == "fifo":
         os.mkfifo(output / "main.py")
     elif broken == "large":
-        (output / "main.py").write_bytes(b"x" * (1024 * 1024 + 1))
+        with (output / "main.py").open("wb") as artifact:
+            artifact.truncate(64 * 1024 * 1024 + 1)
     elif broken == "unreadable":
         (output / "main.py").write_text("inaccessible")
         (output / "main.py").chmod(0)
-    (output / "README.md").write_text("readable")
+    if broken != "missing":
+        (output / "README.md").write_text("readable")
     outcome = judge(directories)
     assert outcome.returncode == 1, outcome.stderr
     result = JudgeReport.model_validate_json((report / "report.json").read_bytes())

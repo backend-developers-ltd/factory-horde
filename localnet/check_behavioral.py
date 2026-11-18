@@ -7,14 +7,14 @@ import subprocess
 from pathlib import Path
 from uuid import uuid4
 
-from miner.miner import submit
 from pylon_client.artanis import Config, IdentityName, PylonAuthToken, PylonClient, PylonTimeout
 from tenacity import Retrying, stop_after_attempt
-
 from validator.records import request_for
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
 from validator.weighing import mean_task_scores
+
+from miner.miner import submit
 
 from .check import Registrations
 from .check_rounds import wait_for
@@ -43,24 +43,26 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
         evidence = runtime.data / str(job.report_dir)
         execution = json.loads((evidence / "execution.json").read_text())
         review = json.loads((evidence / "review.json").read_text())
-        if not execution["observations"]:
-            raise RuntimeError("Missing actual application observations")
+        observations = [
+            json.loads(path.read_text())
+            for path in sorted(
+                evidence.glob("step-*.observation.json"), key=lambda p: int(p.name.split("-")[1].split(".")[0])
+            )
+        ]
+        if execution.get("format") != "agent-v1" or not observations:
+            raise RuntimeError("Missing actual adaptive application observations")
+        commands = [row for row in observations if row["decision"]["kind"] == "command"]
+        if len(commands) != execution["commands"]:
+            raise RuntimeError("Command inventory differs from execution summary")
         if variants[member.miner_hotkey] == 0:
-            observed = {row["id"]: row for row in execution["observations"]}
-            successful = {
-                check["args"][0]
-                for check in execution["checks"]
-                if check["args"] and observed[check["id"]]["exit_code"] == 0
-            }
-            if not {"add", "list", "done", "remove"} <= successful:
-                raise RuntimeError("Working control lacks successful core operations")
-            removal = next(check for check in execution["checks"] if check["args"][0] == "remove")
-            if not any(
-                removal["id"] in check["verifies"] and observed[check["id"]]["exit_code"] == 0
-                for check in execution["checks"]
-            ):
-                raise RuntimeError("Working control removal lacks an executed verification")
-            if review["requirements"][5]["verdict"] != "met":
+            if not any(row["outcome"]["exit_code"] == 0 for row in commands):
+                raise RuntimeError("Working control lacks successful application execution")
+            requirements = review["requirements"]
+            task = plan.task_for(member)
+            if task is not None and "samplelib" in task.specification:
+                if any(row["verdict"] != "met" for row in requirements):
+                    raise RuntimeError("Working library was not fully verified and credited")
+            elif requirements[5]["verdict"] != "met":
                 raise RuntimeError("Working control deletion was not fully verified and credited")
         reports[member.miner_hotkey + ("/" + member.task_id if member.task_id else "")] = {
             "task_id": member.task_id,
@@ -68,6 +70,7 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
             "score": review["score"],
             "review": review,
             "execution": execution,
+            "observations": observations,
         }
     summary = {
         "round": plan.model_dump(mode="json"),

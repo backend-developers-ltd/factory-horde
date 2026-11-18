@@ -14,7 +14,6 @@ from typing import override
 from uuid import uuid4
 
 import pytest
-
 from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 

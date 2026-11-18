@@ -432,7 +432,13 @@ class Metrics:
 class Docker:
     """Docker is operated only here, using argument arrays and fixed commands."""
 
-    def __init__(self, settings: Settings, files: Files, metrics: Metrics, shutdown: threading.Event):
+    def __init__(
+        self,
+        settings: Settings,
+        files: Files,
+        metrics: Metrics,
+        shutdown: threading.Event,
+    ):
         self.settings, self.files = settings, files
         self.metrics = metrics
         self.shutdown = shutdown
@@ -543,7 +549,15 @@ class Docker:
             DockerError: The proxy or network identity cannot be verified.
         """
         name = request.name + "-inference"
-        template = parse(self.require("network", "inspect", self.settings.factory_network, "--format", "{{json .}}"))
+        template = parse(
+            self.require(
+                "network",
+                "inspect",
+                self.settings.factory_network,
+                "--format",
+                "{{json .}}",
+            )
+        )
         proxies: list[str] = []
         for identifier in object_value(template.get("Containers", {})):
             container = parse(self.require("container", "inspect", identifier, "--format", "{{json .}}"))
@@ -689,7 +703,10 @@ def docker_api(method: str, path: str, body: dict[str, object] | None = None) ->
         connection.sock = stream
         try:
             connection.request(
-                method, "/v1.45" + path, None if body is None else encode(body), {"Content-Type": "application/json"}
+                method,
+                "/v1.45" + path,
+                None if body is None else encode(body),
+                {"Content-Type": "application/json"},
             )
             response = connection.getresponse()
             data = response.read(LIMIT + 1)
@@ -752,7 +769,11 @@ class ApplicationRunner:
             if container is None:
                 raise DockerError("Application disappeared during stop")
             state = object_value(container["State"])
-        if state["Running"] is not False or state["Status"] not in ("exited", "dead", "created"):
+        if state["Running"] is not False or state["Status"] not in (
+            "exited",
+            "dead",
+            "created",
+        ):
             raise DockerError("Application stop remains unresolved")
         self.ledger["app_stopped"] = True
         self.save()
@@ -810,8 +831,8 @@ class ApplicationRunner:
                 self.request.image,
                 "-I",
                 "-c",
-                "import shutil,time,pathlib; shutil.copyfile('/submission/main.py','/app/main.py'); "
-                "pathlib.Path('/app/.ready').touch(); time.sleep(86400)",
+                "import shutil,time,pathlib; shutil.copytree('/submission','/app',dirs_exist_ok=True,symlinks=True); "
+                "pathlib.Path('/tmp/factory-horde-ready').touch(); time.sleep(86400)",
             )
             self.ledger.update(app_id=identifier, app_phase="created")
             self.save()
@@ -836,7 +857,7 @@ class ApplicationRunner:
             "-c",
             "import pathlib,time,sys\n"
             "for _ in range(100):\n"
-            " if pathlib.Path('/app/.ready').is_file(): sys.exit(0)\n"
+            " if pathlib.Path('/tmp/factory-horde-ready').is_file(): sys.exit(0)\n"
             " time.sleep(0.05)\n"
             "sys.exit(1)",
         )
@@ -844,24 +865,32 @@ class ApplicationRunner:
         self.save()
 
     def execute(self, command: dict[str, object]) -> dict[str, object]:
-        """Capture bounded application streams outside its container, without a shell.
+        """Execute argv inside the sandbox and capture bounded streams outside it.
 
         Raises:
-            ProtocolError: The command exceeds the narrow CLI contract.
+            ProtocolError: The command violates the sandbox request contract.
             DockerError: Capture or executor lifetime is interrupted.
         """
-        args = command.get("args")
+        # Retain args for already-frozen jobs from the earlier CLI-only judge image.
+        key = "argv" if "argv" in command else "args"
+        args = command.get(key)
         stdin = command.get("stdin", "")
         if (
-            set(command) != {"id", "args", "stdin", "observation"}
+            set(command) != {"id", key, "stdin", "observation"}
             or not isinstance(args, list)
-            or len(cast(list[object], args)) > 32
-            or any(not isinstance(a, str) or len(a) > 4096 or "\0" in a for a in cast(list[object], args))
+            or any(not isinstance(a, str) or "\0" in a for a in cast(list[object], args))
             or not isinstance(stdin, str)
-            or len(stdin.encode()) > 16384
+            or not isinstance(command["id"], str)
+            or not command["id"]
+            or not isinstance(command["observation"], str)
+            or len(json.dumps(command).encode()) > 262144
         ):
             raise ProtocolError("Invalid application command")
         arguments = cast(list[str], args)
+        if key == "args":
+            arguments = ["/usr/local/bin/python3", "-I", "/app/main.py", *arguments]
+        elif not arguments or not arguments[0]:
+            raise ProtocolError("Empty application argv")
         started = time.monotonic()
         limit = (self.request.deadline - datetime.now(UTC)).total_seconds() - 5
         if limit <= 0:
@@ -874,7 +903,7 @@ class ApplicationRunner:
                 "AttachStdout": True,
                 "AttachStderr": True,
                 "Tty": False,
-                "Cmd": ["/usr/local/bin/python3", "-I", "/app/main.py", *arguments],
+                "Cmd": arguments,
             },
         )
         exec_id = string(created["Id"])
@@ -907,7 +936,10 @@ class ApplicationRunner:
             frame_header = bytearray()
             remaining, channel = 0, 0
             with selectors.DefaultSelector() as selector:
-                selector.register(stream, selectors.EVENT_READ | (selectors.EVENT_WRITE if pending else 0))
+                selector.register(
+                    stream,
+                    selectors.EVENT_READ | (selectors.EVENT_WRITE if pending else 0),
+                )
                 if not pending:
                     stream.shutdown(socket.SHUT_WR)
                 finished = False
@@ -1167,7 +1199,10 @@ class Executor:
         ledger["closed"] = True
         self.save_ledger(request, ledger)
         state = object_value(container["State"])
-        if state["Status"] == "created" and ledger.get("phase") not in ("start_attempted", "start_rejected"):
+        if state["Status"] == "created" and ledger.get("phase") not in (
+            "start_attempted",
+            "start_rejected",
+        ):
             ledger["container_id"] = string(container["Id"])
             self.status(
                 request,
@@ -1351,7 +1386,13 @@ class Executor:
                 raise
             ledger.update(phase="created", container_id=identifier)
             self.save_ledger(request, ledger)
-        except (OSError, ValueError, KeyError, DockerError, subprocess.SubprocessError) as error:
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            DockerError,
+            subprocess.SubprocessError,
+        ) as error:
             self.status(request, ledger, reason=str(error)[:512] or type(error).__name__)
             print(
                 json.dumps(
@@ -1378,7 +1419,13 @@ class Executor:
                     self.observed_jobs.discard(job_id)
                     rejected += 1
                     print(
-                        json.dumps({"event": "request_rejected", "job_id": job_id, "reason": str(error)[:512]}),
+                        json.dumps(
+                            {
+                                "event": "request_rejected",
+                                "job_id": job_id,
+                                "reason": str(error)[:512],
+                            }
+                        ),
                         flush=True,
                     )
         requested: set[str] = set()
@@ -1398,7 +1445,14 @@ class Executor:
             except (OSError, ValueError) as error:
                 rejected += 1
                 print(
-                    json.dumps({"event": "request_rejected", "filename": name, "reason": str(error)[:512]}), flush=True
+                    json.dumps(
+                        {
+                            "event": "request_rejected",
+                            "filename": name,
+                            "reason": str(error)[:512],
+                        }
+                    ),
+                    flush=True,
                 )
         snapshot = self.metrics.snapshot()
         snapshot["active_workers"] = sum(not future.done() for future in self.active.values())

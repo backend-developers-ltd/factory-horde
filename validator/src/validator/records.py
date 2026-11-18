@@ -366,7 +366,7 @@ class JudgeReport(JobIdentity):
     """Untrusted report, structurally parsed before task 9's acceptance gate."""
 
     kind: JobKind = "judge"
-    checked_files: tuple[Literal["main.py", "README.md"], ...]
+    checked_files: tuple[RelativePath, ...]
     score: Score | None
     failure: Annotated[str, StringConstraints(min_length=1, max_length=512)] | None
 
@@ -378,8 +378,8 @@ class JudgeReport(JobIdentity):
             raise ValueError("report must contain either a successful score or a failure")
         if len(set(self.checked_files)) != len(self.checked_files):
             raise ValueError("file checks cannot be repeated")
-        if self.score is not None and set(self.checked_files) != {"main.py", "README.md"}:
-            raise ValueError("successful report requires both expected file checks")
+        if self.score is not None and not self.checked_files:
+            raise ValueError("successful report requires a nonempty project inventory")
         return self
 
 

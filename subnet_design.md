@@ -14,7 +14,7 @@ The existing rendered scaffold must not be rendered again.
 |---|---|---|
 | Miner submitter | Validate and commit a public digest using its own Pylon identity; exact read-back; exit | `miner/miner.py` and `miner/Dockerfile` |
 | Baseline factory | Invoke pinned Pi help/version without inference, wait approximately 60 seconds, write fresh greeting project | `miner/factory/` |
-| Judge | Plan isolated CLI checks and grade their captured observations against frozen criteria with two Claude calls, or draw a uniform random score in explicit fixture mode; write one report | `judge/` |
+| Judge | Adaptively inspect and test projects in an isolated application sandbox, then grade captured observations against frozen criteria, or draw a uniform random score in explicit fixture mode; write one report | `judge/` |
 | Validator | Discover/freeze cohort, schedule, publish jobs/stops, accept scores, calculate weights | `validator/src/validator/` |
 | Host executor | Poll files, pull/create/start/inspect/stop Docker jobs, reconcile after restart | `executor/executor.py` (one standard-library-only file) |
 | Operator installation | Configure ownership, host paths, executor system unit, Compose and coherent updates | `installer/`, `envs/deployed/` |

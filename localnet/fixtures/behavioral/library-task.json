@@ -1,0 +1,9 @@
+{
+  "specification": "Write a Python library named samplelib exposing mean(values) and unique(values). mean accepts a list of numbers and returns their arithmetic mean, raising ValueError on an empty list. unique accepts a list of hashable values and returns a new list containing the first occurrence of each value in input order. Neither function may mutate the input list. Use only the standard library. No CLI or README is required.",
+  "requirements": [
+    "samplelib.mean returns the arithmetic mean of nonempty numeric lists, including negative and fractional numbers.",
+    "samplelib.mean raises ValueError for an empty list.",
+    "samplelib.unique removes duplicates while preserving the order of first occurrence, including empty input.",
+    "Both functions leave their input list unchanged and use only the standard library."
+  ]
+}
