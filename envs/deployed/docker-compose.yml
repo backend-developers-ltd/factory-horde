@@ -60,6 +60,7 @@ services:
       VALIDATOR_STOP_GRACE_SECONDS: "${STOP_GRACE_SECONDS:-60}"
       # Empty keeps the validator's built-in specification.
       VALIDATOR_SPECIFICATION: "${TASK_SPECIFICATION:-}"
+      VALIDATOR_TASK_FILE: "${TASK_FILE:-}"
       VALIDATOR_REQUIREMENTS: "${TASK_REQUIREMENTS:-[]}"
       VALIDATOR_JUDGE_MODE: "${JUDGE_MODE:-review}"
       VALIDATOR_WEIGHTS_ENABLED: "${VALIDATOR_WEIGHTS_ENABLED:-false}"
@@ -75,6 +76,7 @@ services:
       BITTENSOR_NETWORK: "${BITTENSOR_NETWORK:?}"
     volumes:
       - "${FACTORY_HORDE_DATA_ROOT:?}:${VALIDATOR_DATA_ROOT:-/var/lib/factory-horde}"
+      - "${TASK_DIRECTORY:-../../tasks}:/tasks:ro"
     read_only: true
     tmpfs:
       - /tmp

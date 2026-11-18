@@ -230,3 +230,7 @@ credentials. See [validator operations](../validator/README.md), the
 Keep unresolved requests, stops, ledgers, containers and results for diagnosis.
 Restoring Docker access and restarting the same service resumes reconciliation;
 missing expected executions are not permission to create replacements.
+
+### Server task files
+
+Set `TASK_DIRECTORY` to an operator-owned directory and `TASK_FILE=/tasks/current.json` to load a JSON object with `specification` and an optional ordered `requirements` list. The directory is mounted read-only into the validator. Write a complete replacement beside the current file, then rename it atomically over `current.json`. Each new admission freezes the file before discovery; recovery uses that saved task. Invalid files block new admissions while existing work continues to reconcile. Omitted or empty requirements use the whole specification. Without `TASK_FILE`, the existing `TASK_SPECIFICATION` and `TASK_REQUIREMENTS` settings apply. Task files are operator data and are not release assets.

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
+from pathlib import Path
 from typing import Annotated, Literal, Self
 from uuid import UUID, uuid4
 
@@ -15,6 +16,7 @@ from pydantic import UUID4, Field, model_validator
 from validator.discovery import DiscoverySnapshot
 from validator.record_files import RecordFormatError
 from validator.records import (
+    Criterion,
     Deadlines,
     EvaluationPolicy,
     ImageReference,
@@ -72,6 +74,19 @@ class RoundTiming(Record):
         )
 
 
+class TaskDefinition(Record):
+    """Operator task data read once before admission intent is persisted."""
+
+    specification: Annotated[str, Field(min_length=1, max_length=200_000)]
+    requirements: tuple[Criterion, ...] = ()
+
+    @model_validator(mode="after")
+    def _nonempty(self) -> Self:
+        if not self.specification.strip():
+            raise ValueError("Task specification is empty")
+        return self
+
+
 class RoundSeed(Record):
     """Retained admission intent lets partial discovery/input publication resume with the same IDs."""
 
@@ -121,12 +136,14 @@ class RoundCoordinator:
         discover: Callable[[UUID], DiscoverySnapshot],
         specification: str = SPECIFICATION,
         requirements: tuple[str, ...] = (),
+        task_file: Path | None = None,
     ):
         self.repository = repository
         self.rounds = repository.rounds
         self.timing = timing
         self.judge_image = judge_image
         self.discover = discover
+        self.task_file = task_file
         self.specification = specification
         self.evaluation = EvaluationPolicy(mode=repository.judge_mode, requirements=requirements or (specification,))
 
@@ -144,13 +161,30 @@ class RoundCoordinator:
     def _admit(self, schedule: Schedule) -> RoundRecord:
         seed = schedule.pending
         if seed is None:
+            specification, evaluation = self.specification, self.evaluation
+            if self.task_file is not None:
+                try:
+                    with self.task_file.open("rb") as source:
+                        content = source.read(1_048_577)
+                    if len(content) > 1_048_576:
+                        raise ValueError("Task file exceeds one MiB")
+                    task = TaskDefinition.model_validate_json(content)
+                    specification = task.specification
+                    evaluation = EvaluationPolicy(
+                        mode=self.repository.judge_mode,
+                        requirements=task.requirements or (specification,),
+                    )
+                except OSError, ValueError:
+                    _events.labels("invalid_task_file").inc()
+                    _logger.exception("task_file_admission_blocked", path=str(self.task_file))
+                    raise
             seed = RoundSeed(
                 sequence=schedule.next_sequence,
                 deadlines=self.timing.deadlines(schedule.next_start),
                 judge_image=self.judge_image,
                 stop_grace_seconds=self.timing.stop_grace_seconds,
-                specification=self.specification,
-                evaluation=self.evaluation,
+                specification=specification,
+                evaluation=evaluation,
             )
             schedule = schedule.model_copy(update={"pending": seed})
             self._save_schedule(schedule)

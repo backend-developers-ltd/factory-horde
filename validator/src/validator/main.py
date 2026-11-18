@@ -65,6 +65,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     judge_stop_reserve: timedelta = timedelta(minutes=5)
     stop_grace_seconds: int = Field(default=60, ge=0, le=60)
     specification: str = Field(default=SPECIFICATION, min_length=1)
+    task_file: Path | None = None
     requirements: tuple[Criterion, ...] = ()
     judge_mode: JudgeMode = "review"
     weights_enabled: bool = False
@@ -75,7 +76,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     metrics_port: int = Field(default=9101, ge=1, le=65535)
     observation_max_age_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
 
-    @field_validator("validator_hotkey", "judge_image", mode="before")
+    @field_validator("validator_hotkey", "judge_image", "task_file", mode="before")
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
@@ -176,6 +177,7 @@ class Validator(NexusValidator):
                     discovery,
                     settings.specification,
                     settings.requirements,
+                    settings.task_file,
                 )
             )
             self.connect(self.tasks.poll_clock.source, coordinator.sink)
