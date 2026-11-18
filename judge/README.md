@@ -2,7 +2,7 @@
 
 The judge reads the frozen task, criteria, `main.py` and `README.md`. In review mode it makes two tool-less Claude calls using the same configured model (default `sonnet`): plan up to six representative CLI checks, then grade their captured observations. Behavioral criteria require observed behavior; README claims cannot substitute for execution. Source and documentation criteria can use the submitted files. The controller averages `met=1`, `partial=0.5`, and `unmet=0`. An accepted zero remains eligible.
 
-Plans identify state-changing commands and link each to a later read-only verification. The controller rejects incomplete plans before executing any command. A six-command to-do plan can use `add → list → done → list → remove → list`; success messages alone do not verify persisted changes. The model still interprets application semantics, so structural validation does not guarantee that every planned observation is useful.
+Plans contain up to three action/verification pairs, with at most six commands total. Each pair reserves an actual read-only follow-up command; the controller flattens pairs into linked commands. The controller rejects incomplete plans before executing any command. A six-command to-do plan can use `add → list → done → list → remove → list`; success messages alone do not verify persisted changes. The model still interprets application semantics, so structural validation does not guarantee that every planned observation is useful.
 
 The grader cites actual check IDs for behavioral verdicts and distinguishes observed defects from missing evidence. `partial` means observed incomplete functionality. An unassessed criterion or insufficient evidence makes the evaluation unavailable, without assigning a miner score.
 

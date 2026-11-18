@@ -27,7 +27,7 @@ class FakeModel:
 
     def __call__(self, instructions: str, data: str) -> object:
         if instructions.startswith("Plan at most"):
-            return {"structured_output": {"checks": [check("cli", changes_state=False)]}}
+            return {"structured_output": {"checks": [pair("setup", "cli")]}}
         self.calls.append((instructions, data))
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
@@ -47,14 +47,21 @@ def assessment(items: list[dict[str, object]]) -> list[dict[str, object]]:
     return [{**item, "evidence": "observed", "check_ids": ["cli"]} for item in items]
 
 
-def check(identity: str, *, changes_state: bool, verifies: tuple[str, ...] = ()) -> dict[str, object]:
+def check(identity: str, *, requires_verification: bool, verifies: tuple[str, ...] = ()) -> dict[str, object]:
     return {
         "id": identity,
         "args": [],
         "stdin": "",
         "observation": "Observe application behavior",
-        "changes_state": changes_state,
+        "requires_verification": requires_verification,
         "verifies": list(verifies),
+    }
+
+
+def pair(action: str, verification: str) -> dict[str, object]:
+    return {
+        kind: {"id": identity, "args": [], "stdin": "", "observation": "Observe behavior"}
+        for kind, identity in (("action", action), ("verification", verification))
     }
 
 
@@ -80,7 +87,7 @@ def directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Directories:
     def observations(_checks: list[dict[str, object]], _deadline: float) -> list[dict[str, object]]:
         return [
             {
-                "id": "cli",
+                "id": planned["id"],
                 "exit_code": 0,
                 "stdout": "hello",
                 "stderr": "",
@@ -88,6 +95,7 @@ def directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Directories:
                 "stdout_truncated": False,
                 "stderr_truncated": False,
             }
+            for planned in _checks
         ]
 
     monkeypatch.setattr(judge, "run_checks", observations)
@@ -324,12 +332,12 @@ def test_last_mutation_without_verification_never_executes(
     directories: Directories, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     checks = [
-        check("add1", changes_state=True),
-        check("add2", changes_state=True),
-        check("list1", changes_state=False, verifies=("add1", "add2")),
-        check("done", changes_state=True),
-        check("list2", changes_state=False, verifies=("done",)),
-        check("remove", changes_state=True),
+        check("add1", requires_verification=True),
+        check("add2", requires_verification=True),
+        check("list1", requires_verification=False, verifies=("add1", "add2")),
+        check("done", requires_verification=True),
+        check("list2", requires_verification=False, verifies=("done",)),
+        check("remove", requires_verification=True),
     ]
 
     def forbidden(_checks: object, _deadline: float) -> object:
@@ -338,22 +346,38 @@ def test_last_mutation_without_verification_never_executes(
     monkeypatch.setattr(judge, "run_checks", forbidden)
     assert evaluate(*directories, call=lambda rules, data: {"structured_output": {"checks": checks}}) == 75
     report = load(directories[2] / "report.json")
-    assert report["score"] is None and "Unverified state changes" in str(report["failure"])
+    assert report["score"] is None and "action/verification pairs" in str(report["failure"])
 
 
 def test_six_commands_can_verify_all_three_state_changes() -> None:
     checks: list[dict[str, object]] = []
     for verb in ("add", "done", "remove"):
-        checks.extend([check(verb, changes_state=True), check("after_" + verb, changes_state=False, verifies=(verb,))])
+        checks.extend(
+            [
+                check(verb, requires_verification=True),
+                check("after_" + verb, requires_verification=False, verifies=(verb,)),
+            ]
+        )
     assert judge.parse_checks(checks) == checks
+
+
+def test_paired_plan_reserves_all_verification_commands() -> None:
+    plan = [pair(verb, "after_" + verb) for verb in ("add", "done", "remove")]
+    checks = judge.parse_plan(plan)
+    assert len(checks) == 6
+    assert checks[-1]["verifies"] == ["remove"]
+    with pytest.raises(ReviewError, match="one to three"):
+        judge.parse_plan([*plan, pair("extra", "after_extra")])
+    with pytest.raises(ReviewError, match="Invalid paired check"):
+        judge.parse_plan([{"action": plan[0]["action"]}])
 
 
 @pytest.mark.parametrize(
     "checks",
     [
-        [check("list", changes_state=False, verifies=("future",)), check("future", changes_state=True)],
-        [check("add", changes_state=True), check("remove", changes_state=True, verifies=("add",))],
-        [check("list", changes_state=False, verifies=("list",))],
+        [check("list", requires_verification=False, verifies=("future",)), check("future", requires_verification=True)],
+        [check("add", requires_verification=True), check("remove", requires_verification=True, verifies=("add",))],
+        [check("list", requires_verification=False, verifies=("list",))],
     ],
 )
 def test_verification_must_observe_an_earlier_mutation(checks: list[dict[str, object]]) -> None:
@@ -402,7 +426,7 @@ def test_saved_assessment_is_reused_after_interrupted_review(
 
 
 def test_runner_receives_only_its_existing_command_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    planned = check("cli", changes_state=False)
+    planned = check("cli", requires_verification=False)
     command = {key: planned[key] for key in ("id", "args", "stdin", "observation")}
     outcome = {"id": "cli", "exit_code": 0}
     (tmp_path / "1.response.json").write_text(json.dumps({"command": command, "result": outcome}))
