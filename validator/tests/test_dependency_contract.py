@@ -1,5 +1,6 @@
 """Selected-version public API checks, without a live chain or private Nexus imports."""
 
+import re
 from collections.abc import Generator, Mapping
 from datetime import timedelta
 from pathlib import Path
@@ -235,3 +236,12 @@ def test_scaffold_settings_and_graph_import(tmp_path: Path) -> None:
     validator = Validator(settings)
     assert validator.settings is settings
     assert validator.context_ttl == CONTEXT_TTL
+
+
+def test_published_baseline_references_fit_a_miner_commitment() -> None:
+    workflow = (Path(__file__).parents[2] / ".github/workflows/build-baselines.yml").read_text()
+    kinds = re.findall(r"^\s+- kind: ([\w-]+)$", workflow, re.MULTILINE)
+    assert "deceptive" in kinds
+    for kind in kinds:
+        # miner.miner.COMMITMENT_MAX_BYTES bounds the full digest reference.
+        assert len(f"ghcr.io/backend-developers-ltd/factory-horde-{kind}@sha256:{'0' * 64}") <= 128

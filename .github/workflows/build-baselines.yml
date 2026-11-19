@@ -26,7 +26,7 @@ jobs:
             context: judge
           - kind: control
             context: localnet/fixtures/behavioral
-          - kind: control-adversarial
+          - kind: deceptive
             context: localnet/fixtures/behavioral
             fixture_set: adversarial
     env:
