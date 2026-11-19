@@ -64,6 +64,15 @@ def assessment(*verdicts: object) -> list[dict[str, object]]:
     ]
 
 
+UNREFERENCED: dict[str, object] = {
+    "id": 2,
+    "verdict": "unmet",
+    "reason": "Not demonstrated",
+    "evidence": "observed",
+    "check_ids": [],
+}
+
+
 def reply(*verdicts: object) -> dict[str, object]:
     return decision("finish", requirements=assessment(*verdicts))
 
@@ -440,7 +449,7 @@ def test_unrunnable_project_is_rejected_after_an_observed_attempt(directories: D
     assert evaluate(*directories, call=model) == 1
     report = load(directories[2] / "report.json")
     assert report["failure"] == "Invalid submission: Project cannot run: Go toolchain is not available: go: not found"
-    assert load(directories[2] / "assessment.json")["assessment"]["kind"] == "reject"
+    assert judge.as_object(load(directories[2] / "assessment.json")["assessment"])["kind"] == "reject"
 
 
 def test_rejection_without_any_observation_is_unavailable(directories: Directories) -> None:
@@ -472,7 +481,6 @@ def test_exhausted_budget_leads_to_a_scored_assessment(
 def test_undemonstrated_requirement_is_unmet_without_references_once_the_budget_is_spent(
     directories: Directories, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    unreferenced: dict[str, object] = {"id": 2, "verdict": "unmet", "reason": "Not demonstrated", "evidence": "observed", "check_ids": []}
     policy(directories[0], ["Add", "Remove"])
     monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) + timedelta(seconds=600))
 
@@ -480,7 +488,7 @@ def test_undemonstrated_requirement_is_unmet_without_references_once_the_budget_
         return {**capture(command["id"]), "timed_out": True, "budget_exhausted": True}
 
     monkeypatch.setattr(judge, "run_command", exhaust)
-    model = FakeModel(decision(), decision("finish", requirements=[*assessment("met"), unreferenced]))
+    model = FakeModel(decision(), decision("finish", requirements=[*assessment("met"), UNREFERENCED]))
     assert evaluate(*directories, call=model) == 0
     assert load(directories[2] / "report.json")["score"] == 0.5
 
@@ -488,10 +496,9 @@ def test_undemonstrated_requirement_is_unmet_without_references_once_the_budget_
 def test_unmet_without_references_stays_unavailable_while_budget_remains(
     directories: Directories, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    unreferenced: dict[str, object] = {"id": 2, "verdict": "unmet", "reason": "Not demonstrated", "evidence": "observed", "check_ids": []}
     policy(directories[0], ["Add", "Remove"])
     monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) + timedelta(seconds=600))
-    model = FakeModel(decision(), decision("finish", requirements=[*assessment("met"), unreferenced]))
+    model = FakeModel(decision(), decision("finish", requirements=[*assessment("met"), UNREFERENCED]))
     assert evaluate(*directories, call=model) == 75
 
 
@@ -520,7 +527,11 @@ def test_remaining_budget_is_shown_to_the_model(directories: Directories, monkey
 def test_lifecycle_stop_without_exhausted_budget_stays_unavailable(
     directories: Directories, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(judge, "run_command", lambda command, _i: {**capture(command["id"]), "timed_out": True})
+
+    def stopped(command: dict[str, object], _index: int) -> dict[str, object]:
+        return {**capture(command["id"]), "timed_out": True}
+
+    monkeypatch.setattr(judge, "run_command", stopped)
     assert evaluate(*directories, call=FakeModel(decision())) == 75
 
 

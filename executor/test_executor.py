@@ -742,7 +742,11 @@ def test_default_workloads_stay_offline_without_environment(
 def test_factories_and_judges_join_the_inference_network(
     executor: Executor, job_request: Request, judge_request: Request, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(Docker, "inference_network", lambda self, request: request.name + "-inference")
+
+    def inference_network(_docker: Docker, request: Request) -> str:
+        return request.name + "-inference"
+
+    monkeypatch.setattr(Docker, "inference_network", inference_network)
     settings = Settings(
         executor.settings.root,
         os.getuid(),
