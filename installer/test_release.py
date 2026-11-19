@@ -192,9 +192,10 @@ def test_clean_localnet_configuration_generates_isolated_paths_and_distinct_toke
         "EXECUTOR_FACTORY_NETWORK",
         "EXECUTOR_INFERENCE_URL",
         "EXECUTOR_JUDGE_RESERVE_SECONDS",
+        "EXECUTOR_MAX_RUNNING_JOBS",
     )
     assert set(workload) < set(release.EXECUTOR_KEYS)
-    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080", "180"]
+    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080", "180", "4"]
     path.write_bytes(release.environment(config))
     assert release.configuration(path, tmp_path / "installation", application=True, localnet=True) == config
     config["HOST_WALLET_DIR"] = str(tmp_path / "outside-wallets")

@@ -383,6 +383,7 @@ class Settings:
     factory_network: str = ""
     inference_url: str = "http://inference-proxy:8080"
     judge_reserve_seconds: int = 180
+    max_running_jobs: int = 4
 
 
 class Metrics:
@@ -1146,6 +1147,8 @@ class Executor:
         self.started_at = now()
         self.observed_jobs: set[str] = set()
         self.completed_jobs: set[str] = set()
+        self.slot_lock = threading.Lock()
+        self.waiting_jobs: set[str] = set()
 
     def cancelled(self, request: Request) -> bool:
         """A valid permanent stop or elapsed deadline closes startup.
@@ -1167,6 +1170,37 @@ class Executor:
         if stop["reason"] not in ("deadline", "operator", "recovery"):
             raise ProtocolError("Unsupported stop reason")
         return True
+
+    def slot_available(self, request: Request) -> bool:
+        """Count workload containers Docker still holds, so the limit survives executor restarts.
+
+        Raises:
+            DockerError: Docker cannot list workload containers.
+        """
+        result = self.docker.call(
+            "ps",
+            "--all",
+            "--filter",
+            "label=factory_horde.job_id",
+            "--filter",
+            "status=created",
+            "--filter",
+            "status=running",
+            "--filter",
+            "status=restarting",
+            "--format",
+            '{{.Label "factory_horde.job_id"}}',
+        )
+        if result.returncode:
+            raise DockerError("Workload containers cannot be listed")
+        holders = set(result.stdout.split())
+        if request.job_id in holders or len(holders) < self.settings.max_running_jobs:
+            return True
+        if request.job_id not in self.waiting_jobs:
+            self.waiting_jobs.add(request.job_id)
+            event = {"event": "workload_slot_wait", "level": "error", "job_id": request.job_id, "running": len(holders)}
+            print(json.dumps(event), flush=True)
+        return False
 
     def save_ledger(self, request: Request, ledger: dict[str, object]) -> None:
         """Persist side-effect intent and startup closure before acting."""
@@ -1399,6 +1433,9 @@ class Executor:
             ) or ledger.get("container_id"):
                 raise DockerError("Expected Docker execution is missing; replacement is forbidden")
             if closed:
+                # The job's whole window passed without a container: capacity or preparation failed.
+                event = {"event": "job_never_created", "level": "error", "job_id": request.job_id}
+                print(json.dumps({**event, "waited_for_slot": request.job_id in self.waiting_jobs}), flush=True)
                 self.status(
                     request,
                     ledger,
@@ -1406,6 +1443,11 @@ class Executor:
                     execution="never_started",
                     startup_forbidden=True,
                     reason="Cancelled before creation",
+                )
+                return
+            if not self.slot_available(request):
+                self.status(
+                    request, ledger, state="pending", execution="unresolved", reason="Waiting for a workload slot"
                 )
                 return
             self.status(request, ledger, state="preparing", execution="unresolved")
@@ -1456,16 +1498,21 @@ class Executor:
                 return
             # Preparation failures leave the job reserved, so a transient proxy or network problem retries.
             arguments = self.docker.prepare(request)
-            ledger["phase"] = "create_attempted"
-            self.save_ledger(request, ledger)
-            try:
-                identifier = self.docker.create(request, arguments)
-            except DockerRejected:
-                ledger.update(phase="create_rejected", closed=True)
+            with self.slot_lock:
+                # Recheck under the lock: concurrent jobs must not both take the last slot.
+                if not self.slot_available(request):
+                    return
+                ledger["phase"] = "create_attempted"
                 self.save_ledger(request, ledger)
-                raise
-            ledger.update(phase="created", container_id=identifier)
-            self.save_ledger(request, ledger)
+                try:
+                    identifier = self.docker.create(request, arguments)
+                except DockerRejected:
+                    ledger.update(phase="create_rejected", closed=True)
+                    self.save_ledger(request, ledger)
+                    raise
+                ledger.update(phase="created", container_id=identifier)
+                self.save_ledger(request, ledger)
+            self.waiting_jobs.discard(request.job_id)
         except (
             OSError,
             ValueError,
@@ -1602,6 +1649,7 @@ def main() -> None:
         workers=int(os.environ.get("EXECUTOR_WORKERS", "32")),
         tmp_size=os.environ.get("EXECUTOR_TMP_SIZE", "64m"),
         judge_reserve_seconds=int(os.environ.get("EXECUTOR_JUDGE_RESERVE_SECONDS", "180")),
+        max_running_jobs=int(os.environ.get("EXECUTOR_MAX_RUNNING_JOBS", "4")),
         factory_network=os.environ.get("EXECUTOR_FACTORY_NETWORK", ""),
         inference_url=os.environ.get("EXECUTOR_INFERENCE_URL", "http://inference-proxy:8080"),
     )
@@ -1615,8 +1663,11 @@ def main() -> None:
         or not math.isfinite(settings.poll_seconds)
         or not 5 <= settings.workers <= 256
         or settings.judge_reserve_seconds < 0
+        or settings.max_running_jobs < 1
     ):
-        parser.error("Require non-root UID/GID, positive CPU, PID and polling settings and a nonnegative judge reserve")
+        parser.error(
+            "Require non-root UID/GID, positive CPU, PID, polling and job limits and a nonnegative judge reserve"
+        )
     if (
         re.fullmatch(r"[1-9][0-9]{0,5}[kmg]", settings.tmp_size) is None
         or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.factory_network) is None

@@ -204,7 +204,17 @@ Workloads run without a network by default. Factories that call Claude need the 
 
 The network has no route to the internet or to the host. The proxy forwards only `/v1/messages*` to `https://api.anthropic.com`, replaces the `Authorization` header with the real token and answers 404 for any other path. Peer workloads are isolated on separate networks. The proxy applies no per-workload quota, so every factory and judge in a round draws on the same subscription. Application checks run in separate networkless containers with 256 MiB each for `/app` and `/tmp`; the executor must confirm their termination before accepting a judge exit.
 
-Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. `EXECUTOR_JUDGE_RESERVE_SECONDS` (default 180) ends each judge's shared sandbox time budget that long before the judge deadline, leaving time for its final assessment. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory and judge containers and those jobs fail without a score.
+Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. `EXECUTOR_JUDGE_RESERVE_SECONDS` (default 180) ends each judge's shared sandbox time budget that long before the judge deadline, leaving time for its final assessment.
+
+`EXECUTOR_MAX_RUNNING_JOBS` (default 4) caps how many factory or judge containers exist at once; a judge's application sandbox shares its slot. Round deadlines never stretch, so set it high enough for every job of a stage (miners × tasks) to run together, within the host's memory and CPU. A job waiting for a slot reports `Waiting for a workload slot` and logs `workload_slot_wait` at error level; one whose window ends before it starts logs `job_never_created` and its miner is excluded from the round.
+
+Each networked workload gets its own small internal network. Docker's default address pools allow only about 31 networks per host, so give it small subnets before raising the limit, for example in `/etc/docker/daemon.json`:
+
+```json
+{"default-address-pools": [{"base": "10.200.0.0/16", "size": 28}]}
+```
+
+That allows 4096 networks. Restart dockerd afterwards (`live-restore` keeps running containers alive) and check that the range does not overlap existing networks or routes. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory and judge containers and those jobs fail without a score.
 
 ## Monitoring and recovery
 

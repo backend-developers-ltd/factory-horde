@@ -56,6 +56,7 @@ class FakeDocker(Docker):
         self.pull_error = False
         self.created = 0
         self.started = 0
+        self.running: list[str] = []
 
     @override
     def inspect(self, request: Request) -> dict[str, object] | None:
@@ -65,6 +66,8 @@ class FakeDocker(Docker):
 
     @override
     def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[0] == "ps":
+            return subprocess.CompletedProcess(args, 0, "\n".join(self.running), "")
         return subprocess.CompletedProcess(
             args, int(self.pull_error), "", "fixture pull failure" if self.pull_error else ""
         )
@@ -398,6 +401,8 @@ def test_sigterm_interrupts_held_pull_before_restart(
         "    sys.exit(1)\n"
         "if command == 'info':\n"
         "    print('fixture-daemon')\n"
+        "elif command == 'ps':\n"
+        "    pass\n"
         "elif command == 'pull':\n"
         f"    pathlib.Path({str(marker)!r}).write_text('held')\n"
         "    time.sleep(600)\n"
@@ -771,7 +776,7 @@ def run_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, environment: dict[
     monkeypatch.setattr(Executor, "run", run)
     monkeypatch.setattr(signal, "signal", keep_handlers)
     monkeypatch.setattr(sys, "argv", ["executor.py", "--root", str(tmp_path)])
-    for key in (*WORKLOAD_KEYS, "EXECUTOR_JUDGE_RESERVE_SECONDS"):
+    for key in (*WORKLOAD_KEYS, "EXECUTOR_JUDGE_RESERVE_SECONDS", "EXECUTOR_MAX_RUNNING_JOBS"):
         monkeypatch.delenv(key, raising=False)
     for key, value in environment.items():
         monkeypatch.setenv(key, value)
@@ -789,7 +794,9 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
     configured = ("factory-horde-inference", "https://proxy.example/base", "1g")
     (settings,) = run_main(tmp_path, monkeypatch, dict(zip(WORKLOAD_KEYS, configured, strict=True)))
     assert (settings.factory_network, settings.inference_url, settings.tmp_size) == configured
-    assert default.judge_reserve_seconds == 180
+    assert default.judge_reserve_seconds == 180 and default.max_running_jobs == 4
+    (limited,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_MAX_RUNNING_JOBS": "6"})
+    assert limited.max_running_jobs == 6
     (reserved,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_JUDGE_RESERVE_SECONDS": "300"})
     assert reserved.judge_reserve_seconds == 300
 
@@ -812,6 +819,7 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
         ("EXECUTOR_TMP_SIZE", "64"),
         ("EXECUTOR_TMP_SIZE", "64m,exec"),
         ("EXECUTOR_JUDGE_RESERVE_SECONDS", "-1"),
+        ("EXECUTOR_MAX_RUNNING_JOBS", "0"),
     ],
 )
 def test_invalid_workload_settings_are_rejected_at_startup(
@@ -925,3 +933,47 @@ def test_spent_budget_returns_an_unexecuted_capture(executor: Executor, judge_re
         {"id": "step-3", "argv": ["ls"], "stdin": "", "observation": "x"}
     )
     assert outcome["id"] == "step-3" and outcome["budget_exhausted"] is True and outcome["exit_code"] == -1
+
+
+def test_jobs_wait_for_a_workload_slot(
+    executor: Executor, job_request: Request, capsys: pytest.CaptureFixture[str]
+) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=2)
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    daemon.running = [str(uuid4()), str(uuid4())]
+    executor.step(job_request)
+    executor.step(job_request)
+    waiting = status(executor, job_request)
+    assert waiting.state == "pending" and waiting.reason == "Waiting for a workload slot" and daemon.created == 0
+    assert capsys.readouterr().out.count('"workload_slot_wait"') == 1
+    daemon.running.pop()
+    executor.step(job_request)
+    assert daemon.created == 1
+
+
+def test_a_job_holding_a_slot_is_never_blocked(executor: Executor, job_request: Request) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=1)
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    daemon.running = [job_request.job_id]
+    assert executor.slot_available(job_request)
+    daemon.running = [str(uuid4())]
+    assert not executor.slot_available(job_request)
+
+
+def test_a_job_never_created_before_its_deadline_is_logged_as_error(
+    executor: Executor, job_request: Request, capsys: pytest.CaptureFixture[str]
+) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=1)
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    daemon.running = [str(uuid4())]
+    executor.step(job_request)
+    cancel(executor, job_request)
+    executor.step(job_request)
+    assert status(executor, job_request).execution == "never_started"
+    logged = [json.loads(line) for line in capsys.readouterr().out.splitlines() if "job_never_created" in line]
+    assert logged == [
+        {"event": "job_never_created", "level": "error", "job_id": job_request.job_id, "waited_for_slot": True}
+    ]

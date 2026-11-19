@@ -56,6 +56,7 @@ EXECUTOR_KEYS = (
     "EXECUTOR_FACTORY_NETWORK",
     "EXECUTOR_INFERENCE_URL",
     "EXECUTOR_JUDGE_RESERVE_SECONDS",
+    "EXECUTOR_MAX_RUNNING_JOBS",
 )
 IDENTITY_KEYS = ("FACTORY_HORDE_DATA_ROOT", "EXECUTOR_USER", "EXECUTOR_GROUP", "EXECUTOR_PYTHON")
 LIMIT = 4 * 1024 * 1024
@@ -367,6 +368,7 @@ def configuration(path: Path, directory: Path, *, application: bool, localnet: b
         "EXECUTOR_FACTORY_NETWORK": "",
         "EXECUTOR_INFERENCE_URL": "http://inference-proxy:8080",
         "EXECUTOR_JUDGE_RESERVE_SECONDS": "180",
+        "EXECUTOR_MAX_RUNNING_JOBS": "4",
         "VALIDATOR_DATA_ROOT": "/var/lib/factory-horde",
         "MECHANISM_ID": "0",
         "VALIDATOR_DISPATCH_ENABLED": "false",
