@@ -982,6 +982,8 @@ class ApplicationRunner:
                         if parent is None or object_value(parent["State"])["Running"] is not True:
                             self.stop()
                             raise DockerError("Judge stopped during application check")
+                        # Keep readiness informed while an unrestricted command runs.
+                        self.executor.observe(self.request, self.ledger, parent)
                         parent_checked = time.monotonic()
                     if time.monotonic() - started >= limit or self.executor.cancelled(self.request):
                         timed_out = True

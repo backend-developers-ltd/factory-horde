@@ -3,6 +3,8 @@
 import os
 import socket
 import subprocess
+import threading
+import time
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -331,3 +333,28 @@ print('HTTP behavior verified')
     assert outcome["exit_code"] == 0 and outcome["stdout"] == "HTTP behavior verified\n"
     runner.stop()
     assert runner.ledger["app_stopped"] is True
+
+
+def test_long_command_keeps_judge_status_fresh(runner: ApplicationRunner) -> None:
+    executor, request = runner.executor, runner.request
+    parent = executor.docker.require("container", "inspect", request.name, "--format", "{{.Id}}")
+    executor.save_ledger(request, {"phase": "start_attempted", "closed": False, "container_id": parent})
+    executor.files.write(
+        f"control/runners/{request.job_id}/1.request.json",
+        {"id": "step-1", "argv": ["sleep", "12"], "stdin": "", "observation": "long check"},
+    )
+    worker = threading.Thread(target=executor.step, args=(request,))
+    worker.start()
+    ages: list[float] = []
+    time.sleep(4)
+    while worker.is_alive():
+        try:
+            observed = executor.files.read(f"control/statuses/{request.job_id}.json")["observed_at"]
+            ages.append((datetime.now(UTC) - datetime.fromisoformat(str(observed))).total_seconds())
+        except FileNotFoundError:
+            ages.append(float("inf"))
+        time.sleep(1)
+    worker.join()
+    assert ages and max(ages) < 6
+    response = executor.files.read(f"control/runners/{request.job_id}/1.response.json")
+    assert object_value(response["result"])["exit_code"] == 0
