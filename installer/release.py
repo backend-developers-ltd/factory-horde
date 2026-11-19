@@ -21,7 +21,7 @@ import time
 import urllib.request
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -61,6 +61,8 @@ EXECUTOR_KEYS = (
 )
 IDENTITY_KEYS = ("FACTORY_HORDE_DATA_ROOT", "EXECUTOR_USER", "EXECUTOR_GROUP", "EXECUTOR_PYTHON")
 LIMIT = 4 * 1024 * 1024
+# Set for an updater started by an older one; holds the revision that one resolved.
+HANDOFF = "FACTORY_HORDE_UPDATER_REVISION"
 
 
 class ReleaseError(RuntimeError):
@@ -314,6 +316,29 @@ def stage_release(selection: Selection, stage: Path) -> tuple[str, bytes]:
     return revision, content
 
 
+def hand_off(selection: Selection, directory: Path) -> tuple[str, int | None]:
+    """Let the selected release's own updater apply it when it differs from this one.
+
+    An older updater would apply a newer release with outdated logic, such as its list of executor settings.
+    Returns the resolved revision and, after a handoff, the exit status of the newer updater.
+
+    Raises:
+        ReleaseError: The selected updater does not match its release manifest.
+    """
+    base, revision = selection.resolve()
+    files = object_value(object_value(json.loads(fetch(f"{base}/{MANIFEST}")))["files"])
+    updater = fetch(f"{base}/installer/release.py")
+    if hashlib.sha256(updater).hexdigest() != string_value(files.get("installer/release.py")):
+        raise ReleaseError("Bad release checksum: installer/release.py")
+    if updater == Path(__file__).read_bytes():
+        return revision, None
+    with tempfile.TemporaryDirectory(prefix=".updater-", dir=directory) as temporary:
+        path = Path(temporary) / "release.py"
+        _ = path.write_bytes(updater)
+        command = [sys.executable, "-I", str(path), *sys.argv[1:]]
+        return revision, subprocess.run(command, env={**os.environ, HANDOFF: revision}, check=False).returncode
+
+
 def read_env(path: Path) -> dict[str, str]:
     """Read literal KEY=value settings; never execute downloaded or operator shell code.
 
@@ -453,6 +478,15 @@ class Installation:
         return result
 
 
+def updated_selection(previous: Installation, arguments: argparse.Namespace) -> Selection:
+    """Keep the persisted selection unless the operator overrides its ref or source."""
+    return Selection(
+        cast(str | None, arguments.ref) or previous.selection.ref,
+        cast(str | None, arguments.source) or previous.selection.source,
+        previous.selection.git_url,
+    )
+
+
 def compose(directory: Path, installation: Installation, *args: str, source: Path | None = None) -> list[str]:
     """The same maintained application file is used with an optional local-chain overlay."""
     source = source or directory
@@ -578,6 +612,7 @@ def apply_release(
     install: bool,
     application: bool,
     prepare_only: bool,
+    pinned: str | None = None,
 ) -> None:
     """Validate everything first, replace atomically, restart once and check actual service health.
 
@@ -589,7 +624,8 @@ def apply_release(
         raise ReleaseError("Service identity/path changes require a fresh explicit installation")
     with tempfile.TemporaryDirectory(prefix=".release-", dir=directory) as temporary:
         stage = Path(temporary)
-        revision, metadata = stage_release(installation.selection, stage)
+        selection = installation.selection if pinned is None else replace(installation.selection, ref=pinned)
+        revision, metadata = stage_release(selection, stage)
         root = Path(config["FACTORY_HORDE_DATA_ROOT"])
         check_protocol_records(root)
         if run([config["EXECUTOR_PYTHON"], "-I", str(stage / "executor/executor.py"), "--protocol-version"]) != str(
@@ -756,16 +792,17 @@ def main() -> None:
             executor_env = read_env(canonical(cast(Path, arguments.env_file)))
             selected_directory = Path(executor_env["FACTORY_HORDE_DATA_ROOT"]).parent
         directory = canonical(selected_directory)
+        pinned = os.environ.get(HANDOFF) if arguments.command == "update" else None
+        if arguments.command == "update" and pinned is None and (directory / "installation.json").exists():
+            pinned, status = hand_off(updated_selection(Installation.read(directory), arguments), directory)
+            if status is not None:
+                sys.exit(status)
         with update_lock(directory):
             install = arguments.command != "update"
             application = arguments.command != "executor"
             if not install:
                 previous = Installation.read(directory)
-                selection = Selection(
-                    arguments.ref or previous.selection.ref,
-                    arguments.source or previous.selection.source,
-                    previous.selection.git_url,
-                )
+                selection = updated_selection(previous, arguments)
                 installation = Installation(
                     previous.service, previous.project, previous.localnet, selection, previous.identity
                 )
@@ -794,6 +831,7 @@ def main() -> None:
                 install=install,
                 application=application,
                 prepare_only=bool(arguments.prepare_only),
+                pinned=pinned,
             )
     except UpdateBusy as error:
         print(str(error), file=sys.stderr)

@@ -47,7 +47,7 @@ to disabled; enabling it requires explicit identity, judge and timing configurat
 `installer/install-executor.sh` installs its standalone file and unit. Concurrent dispatch, permanent
 cancellation and Docker reconciliation have focused unit and real systemd fault checks. Development tests
 live beside it but are not deployed. `installer/install.sh` and `update_compose.sh` use the standard-library
-`installer/release.py` helper and a checksummed asset manifest. Updates resolve a configuration branch once,
+`installer/release.py` helper and a checksummed asset manifest. Updates resolve a configuration branch once, hand off to that release's own updater when it differs,
 stage/validate all files, serialize on an installation lock and atomically replace the executor before
 restarting its exact system unit. The operator's cron receives only that restart sudo grant. System-unit
 changes require installation privileges; health failure is visible without rollback. Regenerate the manifest

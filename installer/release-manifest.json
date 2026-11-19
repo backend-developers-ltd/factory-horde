@@ -8,7 +8,7 @@
     "installer/install-executor.sh": "87f7de9bf302841ed276352610eb98e2aabecff83ef01fc00cf17c749fb8d37b",
     "installer/install.sh": "f3a543ceb1dd8d415d8cd871692b7c20a9c6b258511fb1b7bae5167374c12301",
     "installer/prepare-data-root.sh": "e974c61be9c36e09c3336e14049808ad098caa1eec0ae8f59e67e34b4aa6aa8f",
-    "installer/release.py": "140fff4b6660c6c81eb41f8a84bd876c409bdd15b89951861a881fb186f51e76",
+    "installer/release.py": "25a56038dda74251d89eec4d46470e73785c53ffb9e7d566824fcbf81cabe53b",
     "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
     "localnet/compose.yml": "e009ba4de3363d4719a16233166e6dbc91df84ae020fe65d1dafddad109a21df",
     "miner/docker-compose.yml": "785bcecd54f93e0ec03fc13670a73b7d629370ffe487d3ddafd445add6436260"
