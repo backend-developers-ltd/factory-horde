@@ -969,6 +969,19 @@ def test_a_job_holding_a_slot_is_never_blocked(executor: Executor, job_request: 
     assert not executor.slot_available(job_request)
 
 
+def test_a_terminal_job_left_in_created_state_releases_its_slot(executor: Executor, job_request: Request) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=1)
+    executor.docker = FakeDocker(executor)
+    rejected = str(uuid4())
+    executor.docker.running = [rejected]
+    executor.files.write(f"control/executor/{rejected}.json", {"phase": "start_rejected", "closed": True})
+    assert not executor.slot_available(job_request)
+    executor.files.write(
+        f"control/executor/{rejected}.json", {"phase": "start_rejected", "closed": True, "terminal": {}}
+    )
+    assert executor.slot_available(job_request)
+
+
 def test_a_job_never_created_before_its_deadline_is_logged_as_error(
     executor: Executor, job_request: Request, capsys: pytest.CaptureFixture[str]
 ) -> None:

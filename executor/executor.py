@@ -1321,7 +1321,8 @@ class Executor:
         )
         if result.returncode:
             raise DockerError("Workload containers cannot be listed")
-        holders = set(result.stdout.split())
+        # Rejected or cancelled starts stay `created` forever; a terminal ledger releases their slot.
+        holders = {job_id for job_id in result.stdout.split() if not self.terminal(job_id)}
         if request.job_id in holders or len(holders) < self.settings.max_running_jobs:
             return True
         if request.job_id not in self.waiting_jobs:
@@ -1329,6 +1330,15 @@ class Executor:
             event = {"event": "workload_slot_wait", "level": "error", "job_id": request.job_id, "running": len(holders)}
             print(json.dumps(event), flush=True)
         return False
+
+    def terminal(self, job_id: str) -> bool:
+        """Report whether this executor durably published a terminal status for a job."""
+        if re.fullmatch(r"[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}", job_id) is None:
+            return False
+        try:
+            return self.files.read(f"control/executor/{job_id}.json").get("terminal") is not None
+        except FileNotFoundError:
+            return False
 
     def save_ledger(self, request: Request, ledger: dict[str, object]) -> None:
         """Persist side-effect intent and startup closure before acting."""
