@@ -42,6 +42,9 @@ REVIEW_LIMIT = 200_000
 MODEL = os.environ.get("JUDGE_MODEL", "sonnet")
 MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:\[\]-]{0,127}")
 VERDICT_POINTS = {"met": 1.0, "partial": 0.5, "unmet": 0.0}
+REASON_LIMIT = 2048
+# Model calls have no side effects, so a failed call or malformed decision is asked again before persisting.
+MODEL_ATTEMPTS = 3
 REQUIREMENTS_SCHEMA: dict[str, object] = {
     "type": "array",
     "minItems": 0,
@@ -50,7 +53,7 @@ REQUIREMENTS_SCHEMA: dict[str, object] = {
         "properties": {
             "id": {"type": "integer"},
             "verdict": {"type": "string", "enum": ["met", "partial", "unmet", "unassessed"]},
-            "reason": {"type": "string"},
+            "reason": {"type": "string", "minLength": 1, "maxLength": REASON_LIMIT},
             "evidence": {"type": "string", "enum": ["observed", "source", "insufficient"]},
             "check_ids": {"type": "array", "items": {"type": "string"}},
         },
@@ -142,7 +145,8 @@ is unavailable on this validator (install_unavailable), treat the affected requi
 fails because of the project's own manifest, the project cannot run.
 
 progress.json reports the remaining sandbox seconds. When budget_exhausted is true, no further command \
-runs: finish immediately with the evidence you have, and mark requirements you did not demonstrate as unmet.
+runs: finish immediately with the evidence you have, and mark requirements you did not demonstrate as unmet \
+with empty check_ids; keep insufficient for judge-side failures. Each verdict reason has at most 2048 characters.
 """
 STEP_SCHEMA = {
     "type": "object",
@@ -430,8 +434,10 @@ def parse_requirements(items: object, criteria: Sequence[str]) -> list[Requireme
         )
         if type(index) is not int or not 1 <= index <= len(criteria) or index in requirements:
             raise ReviewError("Unknown or repeated criterion id")
-        if not isinstance(reason, str) or not reason.strip() or len(reason) > 2048:
+        if not isinstance(reason, str) or not reason.strip():
             raise ReviewError("Missing verdict reason")
+        if len(reason) > REASON_LIMIT:
+            raise ReviewError(f"Verdict reason exceeds {REASON_LIMIT} characters")
         if not isinstance(verdict, str) or verdict not in VERDICT_POINTS:
             raise ReviewError("Unknown verdict")
         requirements[index] = Requirement(index, criteria[index - 1], cast(Verdict, verdict), reason.strip())
@@ -622,8 +628,12 @@ def validate_capture(value: object, identity: str) -> dict[str, object]:
     return outcome
 
 
-def assessed_requirements(items: object, criteria: Sequence[str], observed: set[str]) -> list[Requirement]:
+def assessed_requirements(
+    items: object, criteria: Sequence[str], observed: set[str], exhausted: bool = False
+) -> list[Requirement]:
     """Reject missing evidence without assigning a miner penalty.
+
+    Once the sandbox budget is spent, an undemonstrated requirement is unmet without references.
 
     Raises:
         ReviewError: A criterion lacks sufficient evidence or references an unobserved command.
@@ -635,6 +645,8 @@ def assessed_requirements(items: object, criteria: Sequence[str], observed: set[
         if item.get("verdict") == "unassessed" or item.get("evidence") == "insufficient":
             raise ReviewError(f"Insufficient evidence for criterion {item.get('id')}: {str(item.get('reason'))[:256]}")
         references = item.get("check_ids")
+        if exhausted and item.get("verdict") == "unmet" and references == []:
+            continue
         if (
             item.get("evidence") not in ("observed", "source")
             or not isinstance(references, list)
@@ -643,6 +655,26 @@ def assessed_requirements(items: object, criteria: Sequence[str], observed: set[
         ):
             raise ReviewError("Assessment lacks valid evidence references")
     return parse_requirements(cast(list[object], items), criteria)
+
+
+def ask(prompt: Callable[[str], tuple[str, str]], call: ModelCall, model: str, index: int) -> dict[str, object]:
+    """Ask for one decision, repeating a failed call or malformed decision a bounded number of times.
+
+    Raises:
+        ReviewError: Every attempt failed.
+    """
+
+    def attempt() -> dict[str, object]:
+        reply = as_object(call(*prompt(secrets.token_hex(16)), model))
+        parse_step(reply.get("structured_output"))
+        return reply
+
+    for number in range(1, MODEL_ATTEMPTS):
+        try:
+            return attempt()
+        except ReviewError as error:
+            print(json.dumps({"event": "judge_model_retry", "step": index, "attempt": number, "reason": str(error)}))
+    return attempt()
 
 
 def agent_input(
@@ -739,13 +771,14 @@ def review(
             try:
                 retained = read_object(decision_path)
             except FileNotFoundError:
-                boundary = secrets.token_hex(16)
-                reply = as_object(
-                    call(
+                reply = ask(
+                    lambda boundary: (
                         INSTRUCTIONS.format(boundary=boundary) + "\n\n" + skills,
                         agent_input(specification, inventory, criteria, history, boundary, budget()),
-                        model,
-                    )
+                    ),
+                    call,
+                    model,
+                    index,
                 )
                 usage = reply.get("modelUsage")
                 models = sorted(cast(dict[str, object], usage)) if isinstance(usage, dict) else []
@@ -770,7 +803,9 @@ def review(
                     review_path.with_name("assessment.json"),
                     {**attribution, "assessment": decision},
                 )
-                items = assessed_requirements(decision["requirements"], criteria, observed)
+                items = assessed_requirements(
+                    decision["requirements"], criteria, observed, bool(budget()["budget_exhausted"])
+                )
                 publish_json(
                     review_path.with_name("execution.json"),
                     {

@@ -199,9 +199,16 @@ def test_unsafe_artifacts_never_reach_model(directories: Directories, kind: str)
     ],
 )
 def test_invalid_decision_or_model_failure_never_supplies_score(directories: Directories, bad: object) -> None:
-    assert evaluate(*directories, call=FakeModel(bad)) == os.EX_TEMPFAIL
+    assert evaluate(*directories, call=FakeModel(*[bad] * judge.MODEL_ATTEMPTS)) == os.EX_TEMPFAIL
     assert load(directories[2] / "report.json")["score"] is None
     assert evaluate(*directories, call=FakeModel()) == os.EX_TEMPFAIL
+
+
+def test_a_failed_call_or_malformed_decision_is_asked_again_before_persisting(directories: Directories) -> None:
+    model = FakeModel(ReviewError("overloaded"), {"structured_output": None}, decision(), reply("met"))
+    assert evaluate(*directories, call=model) == 0
+    assert len(model.calls) == 4 and load(directories[2] / "report.json")["score"] == 1.0
+    assert load(directories[2] / "step-1.decision.json")["decision"] == decision()["structured_output"]
 
 
 def test_existing_report_is_not_reviewed_again(directories: Directories) -> None:
@@ -462,6 +469,39 @@ def test_exhausted_budget_leads_to_a_scored_assessment(
     assert '"budget_exhausted": true' in model.calls[1][1] and '"not_sent": true' in model.calls[2][1]
 
 
+def test_undemonstrated_requirement_is_unmet_without_references_once_the_budget_is_spent(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    unreferenced: dict[str, object] = {"id": 2, "verdict": "unmet", "reason": "Not demonstrated", "evidence": "observed", "check_ids": []}
+    policy(directories[0], ["Add", "Remove"])
+    monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) + timedelta(seconds=600))
+
+    def exhaust(command: dict[str, object], _index: int) -> dict[str, object]:
+        return {**capture(command["id"]), "timed_out": True, "budget_exhausted": True}
+
+    monkeypatch.setattr(judge, "run_command", exhaust)
+    model = FakeModel(decision(), decision("finish", requirements=[*assessment("met"), unreferenced]))
+    assert evaluate(*directories, call=model) == 0
+    assert load(directories[2] / "report.json")["score"] == 0.5
+
+
+def test_unmet_without_references_stays_unavailable_while_budget_remains(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    unreferenced: dict[str, object] = {"id": 2, "verdict": "unmet", "reason": "Not demonstrated", "evidence": "observed", "check_ids": []}
+    policy(directories[0], ["Add", "Remove"])
+    monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) + timedelta(seconds=600))
+    model = FakeModel(decision(), decision("finish", requirements=[*assessment("met"), unreferenced]))
+    assert evaluate(*directories, call=model) == 75
+
+
+def test_overlong_reason_is_reported_as_such(directories: Directories) -> None:
+    items = [{**assessment("met")[0], "reason": "x" * (judge.REASON_LIMIT + 1)}]
+    assert evaluate(*directories, call=FakeModel(decision(), decision("finish", requirements=items))) == 75
+    assert "exceeds 2048 characters" in str(load(directories[2] / "report.json")["failure"])
+    assert '"maxLength": 2048' in json.dumps(judge.REQUIREMENTS_SCHEMA)
+
+
 def test_commands_after_exhaustion_are_bounded(directories: Directories, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) - timedelta(seconds=1))
     model = FakeModel(*[decision() for _ in range(judge.NOT_SENT_LIMIT + 1)])
@@ -551,4 +591,4 @@ def test_install_decision_is_sent_to_the_runner_as_a_fixed_install_request(
     "argv", [["pip", "requirements.txt"], ["pypi"], ["npm", "../package.json"], ["pypi", "a.txt", "b.txt"]]
 )
 def test_invalid_install_decisions_are_unavailable(directories: Directories, argv: list[str]) -> None:
-    assert evaluate(*directories, call=FakeModel(decision("install", argv=argv))) == 75
+    assert evaluate(*directories, call=FakeModel(*[decision("install", argv=argv)] * judge.MODEL_ATTEMPTS)) == 75
