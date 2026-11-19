@@ -613,3 +613,24 @@ def test_round_completion_logs_validator_side_exclusions(tmp_path: Path) -> None
     assert events["miner_excluded"]["log_level"] == "error"
     assert events["miner_excluded"]["reason"] == "evaluation_unavailable"
     assert "round_without_weights" not in events
+
+
+def test_judge_model_is_frozen_into_round_inputs_and_checked_at_acceptance(tmp_path: Path) -> None:
+    repository = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
+    fixture = Fixture(repository)
+    coordinator = RoundCoordinator(
+        repository, TIMING, JUDGE, fixture.discovery, "Build a CLI.", ("Add",), judge_model="claude-test-1"
+    )
+    result = coordinator.tick(START, BEAT)
+    plan = repository.rounds.rounds()[0].plan
+    assert plan.evaluation is not None and plan.evaluation.model == "claude-test-1"
+    for job in result.jobs:
+        assert repository.files.read(f"{job.input_dir}/evaluation.json", EvaluationPolicy).model == "claude-test-1"
+    item = CriterionVerdict(id=1, requirement="Add", verdict="met", reason="observed")
+    job = request_for(plan, plan.cohort[0], "judge")
+    identity = job.model_dump(include={"round_id", "job_id", "factory_job_id", "kind", "miner_hotkey"})
+    evidence = ReviewEvidence(**identity, model="claude-test-1", score=1.0, requirements=(item,))
+    assert evidence.matches(plan.evaluation, 1.0)
+    assert not evidence.model_copy(update={"model": "sonnet"}).matches(plan.evaluation, 1.0)
+    legacy = EvaluationPolicy(mode="review", requirements=("Add",))
+    assert "model" not in legacy.model_dump() and evidence.model_copy(update={"model": "sonnet"}).matches(legacy, 1.0)

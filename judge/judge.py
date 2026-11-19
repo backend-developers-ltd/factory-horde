@@ -40,6 +40,7 @@ MANIFEST_FIELDS = {
 }
 REVIEW_LIMIT = 200_000
 MODEL = os.environ.get("JUDGE_MODEL", "sonnet")
+MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:\[\]-]{0,127}")
 VERDICT_POINTS = {"met": 1.0, "partial": 0.5, "unmet": 0.0}
 REQUIREMENTS_SCHEMA: dict[str, object] = {
     "type": "array",
@@ -160,7 +161,7 @@ NOT_SENT: dict[str, object] = {
 NOT_SENT_LIMIT = 3
 
 type Verdict = Literal["met", "partial", "unmet"]
-type ModelCall = Callable[[str, str], object]
+type ModelCall = Callable[[str, str, str], object]
 
 
 class ReviewError(ValueError):
@@ -332,7 +333,7 @@ def publish_json(path: Path, record: dict[str, object]) -> dict[str, object]:
     return record
 
 
-def call_model(instructions: str, data: str) -> object:
+def call_model(instructions: str, data: str, model: str = MODEL) -> object:
     """Run one Claude Code review without tools and return its decoded JSON output.
 
     Raises:
@@ -346,7 +347,7 @@ def call_model(instructions: str, data: str) -> object:
         "--append-system-prompt",
         instructions,
         "--model",
-        MODEL,
+        model,
         "--tools",
         "",
         "--json-schema",
@@ -425,11 +426,11 @@ def score_requirements(requirements: Sequence[Requirement]) -> float:
     return math.fsum(VERDICT_POINTS[item.verdict] for item in requirements) / len(requirements)
 
 
-def evaluation_policy(input_dir: Path, specification: bytes) -> tuple[str, list[str]]:
-    """Read the frozen policy. An older validator supplies one immutable, whole-task criterion.
+def evaluation_policy(input_dir: Path, specification: bytes) -> tuple[str, list[str], str]:
+    """Read the frozen policy, including its judging model. An older validator supplies one whole-task criterion.
 
     Raises:
-        ReviewError: The policy cannot identify a scoring mode and a unique nonempty rubric.
+        ReviewError: The policy cannot identify a scoring mode, a unique nonempty rubric and a model.
     """
     try:
         policy = read_object(input_dir / "evaluation.json")
@@ -437,7 +438,7 @@ def evaluation_policy(input_dir: Path, specification: bytes) -> tuple[str, list[
         requirement = specification.decode().strip()
         if not requirement:
             raise ReviewError("No criterion in the legacy specification") from None
-        return "review", [requirement]
+        return "review", [requirement], MODEL
     mode, items = policy.get("mode"), policy.get("requirements")
     if (
         type(policy.get("protocol_version")) is not int
@@ -452,7 +453,10 @@ def evaluation_policy(input_dir: Path, specification: bytes) -> tuple[str, list[
         if not isinstance(item, str) or not item.strip() or item != item.strip() or item in criteria:
             raise ReviewError("Invalid or repeated frozen criterion")
         criteria.append(item)
-    return cast(str, mode), criteria
+    model = policy.get("model", MODEL)
+    if not isinstance(model, str) or MODEL_NAME.fullmatch(model) is None:
+        raise ReviewError("Invalid frozen judging model")
+    return cast(str, mode), criteria, model
 
 
 def relative_file(value: str) -> bool:
@@ -676,6 +680,7 @@ def review(
     review_path: Path,
     identity: Mapping[str, object],
     call: ModelCall,
+    model: str = MODEL,
 ) -> float:
     """Run a durable observe/act loop; only the sandbox executes generated commands.
 
@@ -691,13 +696,14 @@ def review(
             raise ReviewError("ANTHROPIC_BASE_URL is missing") from None
         attribution = {
             **identity,
-            "model": MODEL,
+            "model": model,
             "specification_sha256": hashlib.sha256(specification).hexdigest(),
             "judge_image": os.environ.get("FACTORY_HORDE_JUDGE_IMAGE", ""),
         }
         history: list[dict[str, object]] = []
         observed: set[str] = set()
         command_count = not_sent = 0
+        resolved: set[str] = set()
         deadline, exhausted = sandbox_deadline(), False
 
         def budget() -> dict[str, object]:
@@ -715,14 +721,21 @@ def review(
                     call(
                         INSTRUCTIONS.format(boundary=boundary) + "\n\n" + skills,
                         agent_input(specification, inventory, criteria, history, boundary, budget()),
+                        model,
                     )
                 )
+                usage = reply.get("modelUsage")
+                models = sorted(cast(dict[str, object], usage)) if isinstance(usage, dict) else []
                 retained = publish_json(
                     decision_path,
-                    {**attribution, "decision": reply.get("structured_output")},
+                    {**attribution, "decision": reply.get("structured_output"), "resolved_models": models},
                 )
             if any(retained.get(k) != v for k, v in attribution.items()):
                 raise ReviewError("Decision attribution mismatch") from None
+            models = retained.get("resolved_models", [])
+            if not isinstance(models, list) or any(not isinstance(m, str) for m in cast(list[object], models)):
+                raise ReviewError("Invalid resolved model record") from None
+            resolved.update(cast(list[str], models))
             decision = parse_step(retained.get("decision"))
             if decision["kind"] == "reject":
                 if not observed:
@@ -742,13 +755,15 @@ def review(
                         "format": "agent-v1",
                         "steps": index - 1,
                         "commands": command_count,
+                        "resolved_models": sorted(resolved),
                     },
                 )
                 evidence = publish_json(
                     review_path,
                     {
                         **identity,
-                        "model": MODEL,
+                        "model": model,
+                        "resolved_models": sorted(resolved),
                         "score": score_requirements(items),
                         "requirements": [asdict(item) for item in items],
                     },
@@ -859,7 +874,7 @@ def evaluate_locked(input_dir: Path, submission_dir: Path, report_dir: Path, cal
         specification = read_regular(input_dir / "specification.md")
         if hashlib.sha256(specification).hexdigest() != specification_hash:
             raise ValueError("Specification digest mismatch")
-        mode, criteria = evaluation_policy(input_dir, specification)
+        mode, criteria, model = evaluation_policy(input_dir, specification)
         checked = project_files(submission_dir)
         if mode == "fixture":
             score = secrets.SystemRandom().uniform(0.0, 1.0)
@@ -872,6 +887,7 @@ def evaluate_locked(input_dir: Path, submission_dir: Path, report_dir: Path, cal
                 report_dir / "review.json",
                 identity,
                 call,
+                model,
             )
     except InvalidSubmission as error:
         failure = f"Invalid submission: {error}"[:512]

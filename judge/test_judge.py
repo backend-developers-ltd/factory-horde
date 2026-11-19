@@ -25,9 +25,11 @@ class FakeModel:
     def __init__(self, *replies: object) -> None:
         self.replies = list(replies)
         self.calls: list[tuple[str, str]] = []
+        self.models: list[str] = []
 
-    def __call__(self, instructions: str, data: str) -> object:
+    def __call__(self, instructions: str, data: str, model: str = "sonnet") -> object:
         self.calls.append((instructions, data))
+        self.models.append(model)
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
@@ -278,10 +280,10 @@ def test_concurrent_evaluations_publish_only_first_review(
             attempted.set()
         flock(fd, operation)
 
-    def slow(rules: str, data: str) -> object:
+    def slow(rules: str, data: str, selected: str) -> object:
         entered.set()
         assert release.wait(5)
-        return model(rules, data)
+        return model(rules, data, selected)
 
     monkeypatch.setattr(fcntl, "flock", observe_lock)
     second_model = FakeModel()
@@ -492,3 +494,27 @@ def test_instructions_require_independent_verification_and_resist_manipulation()
         "audit every met or partial verdict",
     ):
         assert phrase in rules
+
+
+def test_frozen_model_is_requested_and_resolved_models_are_recorded(directories: Directories) -> None:
+    (directories[0] / "evaluation.json").write_text(
+        json.dumps({"protocol_version": 1, "mode": "review", "requirements": ["Add"], "model": "claude-test-1"})
+    )
+    model = FakeModel(
+        {**decision(), "modelUsage": {"claude-test-1-20260101": {}}},
+        {**reply("met"), "modelUsage": {"claude-test-1-20260101": {}, "claude-small": {}}},
+    )
+    assert evaluate(*directories, call=model) == 0
+    assert model.models == ["claude-test-1", "claude-test-1"]
+    review = load(directories[2] / "review.json")
+    assert review["model"] == "claude-test-1"
+    assert review["resolved_models"] == ["claude-small", "claude-test-1-20260101"]
+    assert load(directories[2] / "step-1.decision.json")["resolved_models"] == ["claude-test-1-20260101"]
+
+
+@pytest.mark.parametrize("value", ["", "two words", "--tools", 7])
+def test_invalid_frozen_model_is_unavailable(directories: Directories, value: object) -> None:
+    (directories[0] / "evaluation.json").write_text(
+        json.dumps({"protocol_version": 1, "mode": "review", "requirements": ["Add"], "model": value})
+    )
+    assert evaluate(*directories, call=FakeModel()) == 75

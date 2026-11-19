@@ -44,6 +44,7 @@ type ImageReference = Annotated[
 type JobKind = Literal["factory", "judge"]
 type JudgeMode = Literal["review", "fixture"]
 type Criterion = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+type JudgeModel = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:\[\]-]{0,127}$")]
 type Score = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
 type NonnegativeInt = Annotated[int, Field(ge=0)]
 
@@ -105,6 +106,8 @@ class EvaluationPolicy(Record):
 
     mode: JudgeMode
     requirements: Annotated[tuple[Criterion, ...], Field(min_length=1)]
+    # Frozen at admission so every evaluation in a round uses the same grader; absent in older rounds.
+    model: JudgeModel | None = Field(default=None, exclude_if=lambda v: v is None)
 
     @field_validator("requirements")
     @classmethod
@@ -395,13 +398,16 @@ class ReviewEvidence(JobIdentity):
     """The judge's linked, ordered explanation of the protocol-v1 score."""
 
     model: Criterion
+    # Model IDs Claude Code reported using; absent from older judge images.
+    resolved_models: tuple[Criterion, ...] | None = Field(default=None, exclude_if=lambda v: v is None)
     score: Score
     requirements: Annotated[tuple[CriterionVerdict, ...], Field(min_length=1)]
 
     def matches(self, policy: EvaluationPolicy, score: float) -> bool:
         points = {"met": 1.0, "partial": 0.5, "unmet": 0.0}
         return (
-            tuple(item.requirement for item in self.requirements) == policy.requirements
+            (policy.model is None or self.model == policy.model)
+            and tuple(item.requirement for item in self.requirements) == policy.requirements
             and all(item.id == index for index, item in enumerate(self.requirements, 1))
             and self.score == score == sum(points[item.verdict] for item in self.requirements) / len(self.requirements)
         )

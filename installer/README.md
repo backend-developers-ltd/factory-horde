@@ -194,7 +194,7 @@ ownership/permissions preparation command.
 
 `TASK_SPECIFICATION` in `.env` is the task text given to every factory in new rounds. Write it on one line in single quotes, without `$` or backticks. Unset or empty keeps the built-in greeting task, and a round that is already admitted keeps the text it started with.
 
-Set `TASK_REQUIREMENTS` to a single-quoted JSON array of distinct criteria, for example `'["Add a task.","Persist tasks across invocations."]'`. An empty list uses the whole specification as a single criterion. The validator freezes the list and `JUDGE_MODE` at admission. Review is the default. Use `JUDGE_MODE=fixture` explicitly for offline localnet checks.
+Set `TASK_REQUIREMENTS` to a single-quoted JSON array of distinct criteria, for example `'["Add a task.","Persist tasks across invocations."]'`. An empty list uses the whole specification as a single criterion. The validator freezes the list, `JUDGE_MODE` and the optional `JUDGE_MODEL` (a Claude Code alias or full model ID; empty uses the judge image's default) at admission, so changing the model affects only new rounds. Review is the default. Use `JUDGE_MODE=fixture` explicitly for offline localnet checks.
 
 Workloads run without a network by default. Factories that call Claude need the inference proxy, which three settings enable together:
 

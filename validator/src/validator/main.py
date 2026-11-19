@@ -38,7 +38,7 @@ from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
 from validator.monitoring import ChainViewNode, MonitoringNode, read_chain_view
 from validator.otel import OtelSettings, setup_otel
-from validator.records import Criterion, ImageReference, JudgeMode, MinerHotkey
+from validator.records import Criterion, ImageReference, JudgeMode, JudgeModel, MinerHotkey
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
 from validator.result_repository import ResultRepository
 from validator.round_actor import RoundCoordinatorNode
@@ -68,6 +68,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     task_directory: Path | None = None
     requirements: tuple[Criterion, ...] = ()
     judge_mode: JudgeMode = "review"
+    judge_model: JudgeModel | None = None
     weights_enabled: bool = False
     weight_tempo: int = Field(default=360, gt=0)
     weight_epoch_offset: int = Field(default=0, ge=0)
@@ -75,7 +76,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     metrics_port: int = Field(default=9101, ge=1, le=65535)
     observation_max_age_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
 
-    @field_validator("validator_hotkey", "judge_image", "task_directory", mode="before")
+    @field_validator("validator_hotkey", "judge_image", "task_directory", "judge_model", mode="before")
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
@@ -177,6 +178,7 @@ class Validator(NexusValidator):
                     settings.specification,
                     settings.requirements,
                     settings.task_directory,
+                    settings.judge_model,
                 )
             )
             self.connect(self.tasks.poll_clock.source, coordinator.sink)

@@ -141,6 +141,7 @@ class RoundCoordinator:
         specification: str = SPECIFICATION,
         requirements: tuple[str, ...] = (),
         task_directory: Path | None = None,
+        judge_model: str | None = None,
     ):
         self.repository = repository
         self.rounds = repository.rounds
@@ -149,7 +150,10 @@ class RoundCoordinator:
         self.discover = discover
         self.task_directory = task_directory
         self.specification = specification
-        self.evaluation = EvaluationPolicy(mode=repository.judge_mode, requirements=requirements or (specification,))
+        self.judge_model = judge_model
+        self.evaluation = EvaluationPolicy(
+            mode=repository.judge_mode, requirements=requirements or (specification,), model=judge_model
+        )
 
     def _save_schedule(self, schedule: Schedule) -> None:
         self.repository.files.replace("control/schedule.json", schedule)
@@ -188,6 +192,7 @@ class RoundCoordinator:
                                 filename=path.name,
                                 specification=task.specification,
                                 evaluation=EvaluationPolicy(
+                                    model=self.judge_model,
                                     mode=self.repository.judge_mode,
                                     requirements=task.requirements or (task.specification,),
                                 ),
