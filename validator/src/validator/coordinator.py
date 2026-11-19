@@ -145,6 +145,8 @@ class RoundCoordinator:
     ):
         self.repository = repository
         self.rounds = repository.rounds
+        # Finished rounds whose jobs are all terminal and projected; reconciling them again changes nothing.
+        self.settled: set[UUID] = set()
         self.timing = timing
         self.judge_image = judge_image
         self.discover = discover
@@ -477,13 +479,15 @@ class RoundCoordinator:
             unresolved: set[UUID] = set()
             errors: list[str] = []
             for record in records:
-                if (
+                if record.plan.round_id in self.settled or (
                     schedule is not None
                     and schedule.pending is not None
                     and record.plan.round_id == schedule.pending.round_id
                 ):
                     continue
                 result = self._reconcile(record, now, beat, requests)
+                if record.stage == "complete" and not (result.jobs or result.unresolved or result.errors):
+                    self.settled.add(record.plan.round_id)
                 jobs.extend(result.jobs)
                 unresolved.update(result.unresolved)
                 errors.extend(result.errors)

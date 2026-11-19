@@ -26,6 +26,9 @@ class RoundRepository:
 
     def __init__(self, root: Path) -> None:
         self.files = RecordFiles(root)
+        # Finished rounds without unresolved jobs and committed requests never change, so each is read once.
+        self._settled: dict[str, RoundRecord] = {}
+        self._requests: dict[str, JobRequest] = {}
 
     @staticmethod
     def _manifest(plan: RoundPlan, request: JobRequest) -> InputManifest:
@@ -102,6 +105,9 @@ class RoundRepository:
         for name in names:
             if not is_job_filename(name):
                 continue
+            if name in self._settled:
+                result.append(self._settled[name])
+                continue
             location = self.files.read(f"control/rounds/{name}", RoundLocation)
             if name != f"{location.round_id}.json":
                 raise RecordFormatError("round pointer identity differs from filename")
@@ -112,6 +118,8 @@ class RoundRepository:
                 continue
             if record.plan.round_id != location.round_id:
                 raise RecordFormatError("round pointer identity differs from target")
+            if record.stage == "complete" and not record.unresolved_jobs:
+                self._settled[name] = record
             result.append(record)
         return tuple(sorted(result, key=lambda r: (r.plan.deadlines.start, r.plan.sequence, r.plan.round_id)))
 
@@ -125,6 +133,7 @@ class RoundRepository:
             current = self.read_round(record.plan.directory)
             if current.plan != record.plan:
                 raise RecordConflictError("cannot change a frozen round plan")
+            self._settled.pop(f"{record.plan.round_id}.json", None)
             self.files.replace(f"{record.plan.directory}/round.json", record)
 
     def publish_request(self, plan: RoundPlan, request: JobRequest) -> None:
@@ -167,9 +176,13 @@ class RoundRepository:
         for name in self.files.list_names("control/requests"):
             if not is_job_filename(name):
                 continue
-            record = self.files.read(f"control/requests/{name}", JobRequest)
-            if name != f"{record.job_id}.json":
-                raise RecordFormatError("request identity does not match its filename")
+            record = self._requests.get(name)
+            if record is None:
+                record = self.files.read(f"control/requests/{name}", JobRequest)
+                if name != f"{record.job_id}.json":
+                    raise RecordFormatError("request identity does not match its filename")
+                # Requests are immutable publications; a changed file is still detected on publication.
+                self._requests[name] = record
             result.append(record)
         return tuple(result)
 

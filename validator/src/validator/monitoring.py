@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, override
+from uuid import UUID
 
 import structlog
 from nexus.v1 import (
@@ -161,6 +162,9 @@ class HealthSampler:
         self.coordinator_errors: tuple[str, ...] = ()
         self.snapshot: Readiness | None = None
         self.executor_metrics: ExecutorMetrics | None = None
+        # Verified once: confirmed-stopped jobs with a result, and validated immutable projections.
+        self.stopped_jobs: set[UUID] = set()
+        self.projections: set[str] = set()
 
     def sample(self, now: datetime) -> Readiness:
         """An unreadable component fails its check while other evidence stays visible."""
@@ -235,22 +239,28 @@ class HealthSampler:
         try:
             rounds = self.repository.rounds.rounds()
             plans = {record.plan.round_id: record.plan for record in rounds}
+            # Probe writability only where work can still be written: open rounds and the newest one.
             for record in rounds:
-                paths.add(record.plan.directory)
-                paths.update(f"{record.plan.directory}/{m.miner_hotkey}" for m in record.plan.cohort)
+                if record.stage != "complete" or record.unresolved_jobs or record is rounds[-1]:
+                    paths.add(record.plan.directory)
+                    paths.update(f"{record.plan.directory}/{m.miner_hotkey}" for m in record.plan.cohort)
             active = unresolved = 0
             blocked = False
             observed = True
             for request in self.repository.rounds.requests():
+                if request.job_id in self.stopped_jobs:
+                    continue
                 self.repository.authorize(request)
                 status = self.repository.rounds.status(request)
-                self.repository.read(request)
+                result = self.repository.read(request)
                 try:
                     stop = files.read(f"control/stops/{request.job_id}.json", StopRequest)
                     if not stop.same_job(request):
                         raise ValueError("Stop record differs from request")
                 except FileNotFoundError:
                     pass
+                if status is not None and status.confirmed_stopped and result is not None:
+                    self.stopped_jobs.add(request.job_id)
                 if status is None or not status.confirmed_stopped:
                     active += 1
                     current = status is not None and fresh(status.observed_at, now, self.max_age)
@@ -260,7 +270,7 @@ class HealthSampler:
                     unresolved += int(status is None or status.execution == "unresolved" or not current)
                     blocked = blocked or now >= plans[request.round_id].deadlines.round_end
             for name in files.list_names("control/projections"):
-                if is_job_filename(name):
+                if is_job_filename(name) and name not in self.projections:
                     projection = files.read(f"control/projections/{name}", ResultProjection)
                     if str(projection.result_id) + ".json" != name:
                         raise ValueError("Projection filename differs from result ID")
@@ -271,6 +281,7 @@ class HealthSampler:
                     ):
                         raise ValueError("Projection differs from canonical result")
                     self.repository.authorize(result.request)
+                    self.projections.add(name)
             usable = self.repository.latest_usable_round()
             completed_at = next((r.completed_at for r in rounds if usable and r.plan == usable[0]), None)
             snapshot = snapshot.model_copy(

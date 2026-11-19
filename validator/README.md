@@ -51,7 +51,10 @@ remain unresolved. Accepted decisions survive loss of their raw report without r
 score. Nexus routing targets are observation metadata; miner attribution comes from
 the frozen business request. Weighing reads accepted hotkeys, not the router-based
 count helpers. Queries use the newest completed round,
-independently of epoch ranges used for framework queries.
+independently of epoch ranges used for framework queries. Completed rounds without
+unresolved jobs, published requests, confirmed-stopped jobs and validated projections
+never change, so each process verifies them once; later coordinator ticks and
+readiness samples only revisit open work, keeping per-poll cost independent of history.
 
 Weight writes are separately enabled with `VALIDATOR_WEIGHTS_ENABLED=true` and
 Pylon identity credentials. Both Nexus weight opportunity and setter nodes use

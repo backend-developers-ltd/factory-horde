@@ -56,7 +56,7 @@ after editing listed assets, and verify with `--check` before committing. `resul
 and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
 `tasks.py` wires distinct factory/evaluation Nexus tasks with the shared provider;
 `file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
-`coordinator.py` and `round_actor.py` persist admission, enforce stage/stop gates and recover the same
+`coordinator.py` and `round_actor.py` persist admission (verifying settled rounds once per process so poll cost does not grow with history), enforce stage/stop gates and recover the same
 jobs/deadlines without relying on task callbacks. Unresolved old workloads hold new round slots.
 Factory eligibility retains the minute-65 finish cutoff: late observation of a timely Docker exit
 can qualify, but actual late completion cannot. Executor shutdown interrupts local Docker CLI calls
