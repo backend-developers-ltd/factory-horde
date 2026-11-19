@@ -358,3 +358,25 @@ def test_long_command_keeps_judge_status_fresh(runner: ApplicationRunner) -> Non
     assert ages and max(ages) < 6
     response = executor.files.read(f"control/runners/{request.job_id}/1.response.json")
     assert object_value(response["result"])["exit_code"] == 0
+
+
+def test_workspace_runs_project_executables_and_native_extensions(runner: ApplicationRunner) -> None:
+    root = runner.files.root / runner.request.output_dir
+    script = root / "run.sh"
+    script.write_text("#!/bin/sh\necho ran\n")
+    script.chmod(0o755)
+    runner.start()
+    assert runner.execute(generic("./run.sh"))["stdout"] == "ran\n"
+    copied = runner.execute(generic("/bin/sh", "-c", "cp /bin/true /tmp/t && /tmp/t && cp /bin/true ./t && ./t"))
+    assert copied["exit_code"] == 0
+    native = runner.execute(
+        generic(
+            "/bin/sh",
+            "-c",
+            "mkdir vendor && cp \"$(python -c 'import _json; print(_json.__file__)')\" vendor/ && "
+            "python -c 'import importlib.util, pathlib; path = next(pathlib.Path(\"vendor\").iterdir()); "
+            "spec = importlib.util.spec_from_file_location(\"_json\", path); "
+            "spec.loader.exec_module(importlib.util.module_from_spec(spec)); print(\"loaded\")'",
+        )
+    )
+    assert native["exit_code"] == 0 and native["stdout"] == "loaded\n", native["stderr"]
