@@ -192,12 +192,14 @@ A process restart rebuilds by-ID and ordered block indexes from these references
 Epoch queries use inclusive original completion-block ranges. Returned mutable
 Pylon routing models are copied to preserve thread-safe cached observations.
 
-`latest_usable_round` reads completed rounds in the configured scoring mode.
-A review round needs at least one accepted score and an outcome for every miner.
-A reviewer outage or missing evidence skips the whole round. An attributed invalid
-submission excludes only that miner. Without a usable review round the weight gate
-skips submission. Explicit fixtures can use a subset of accepted scores.
-After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write. `WeightCalculation` records policy `winner-90-10`, winner, tie rule, source round, membership block, epoch, UID mapping and weights. Legacy temperature-based diagnostic files are ignored by monitoring; historical accepted scores are preserved.
+`latest_usable_round` reads only the newest completed round; an older round never
+stands in for it. A scoring-mode or judge-image mismatch makes that round unusable.
+While a published judge of that round has no retained result, the round is not yet
+usable. A miner without an accepted score for every task (failed factory, invalid
+submission, unavailable judge) is excluded; the round is usable when any miner was
+fully evaluated, in both review and fixture mode. Without a usable round the weight
+gate skips submission.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. A review round requires the configured judge image digest. No eligible recipients means a skipped write. `WeightCalculation` records policy `winner-90-10`, winner, tie rule, source round, membership block, epoch, UID mapping and weights. Legacy temperature-based diagnostic files are ignored by monitoring; historical accepted scores are preserved.
 Absent usable history/recipients suppresses the opportunity before the setter;
 an empty mapping is never used as a skip signal. Only an independent Subtensor read
 proves the resulting mechanism-specific chain vector.

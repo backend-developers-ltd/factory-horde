@@ -63,11 +63,11 @@ skips opportunities without usable registered scores. Only the newest completed
 round counts; an older round never stands in for it. Each miner is evaluated
 independently: one without an accepted score for every task (failed factory,
 invalid submission, unavailable judge) is excluded from that round, and the round
-is usable when any miner was fully evaluated. Round completion logs validator-side
+is usable when any miner was fully evaluated and no published judge still lacks a result. Round completion logs validator-side
 exclusions and rounds without scored miners at error level. Review rounds must
 use the configured judge image. Successful zeros remain eligible.
 
-After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. A review round requires the configured judge image digest. No eligible recipients means a skipped write.
 
 `VALIDATOR_WEIGHT_TEMPO` defaults to 360 blocks and must match the subnet;
 `VALIDATOR_WEIGHT_EPOCH_OFFSET` defaults to zero. These opportunities do not control

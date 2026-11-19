@@ -139,11 +139,13 @@ evidence, not Nexus success branches or callback counts.
 
 Review mode averages verdicts over the frozen rubric. Explicit fixture mode draws
 once from a uniform distribution on `[0,1]`. Both modes persist finite scores in
-that range, including zero. The weight gate uses the latest eligible completed round
-in the selected mode. An unavailable reviewer disqualifies a review round. When
-there is no earlier eligible round, the gate skips the weight submission.
+that range, including zero. The weight gate uses only the newest completed round in
+the selected mode; older rounds never stand in for it. A miner without an accepted
+score for every task, including one whose reviewer was unavailable, is excluded from
+that round while the other miners are still weighted. Without a usable round the
+gate skips the weight submission.
 
-After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. A review round requires the configured judge image digest. No eligible recipients means a skipped write.
 
 Pass configured `MECHANISM_ID` to both weight-status gating and actual writes; retain
 the scaffold default `0` and explicitly exercise `1` on a capable local runtime.
