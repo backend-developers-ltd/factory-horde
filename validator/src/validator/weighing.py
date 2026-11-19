@@ -108,13 +108,13 @@ def mean_task_scores(accepted: Sequence[AcceptedResult]) -> dict[Hotkey, float]:
 
 
 class Weigher:
-    """Read the shared task provider's repository; chain epoch never expires application scores."""
+    """Read the shared task provider's repository; only the newest completed round supplies scores."""
 
     def __init__(self, store: FileTaskResultStore, membership: Callable[[], Membership]):
         self.store, self.membership = store, membership
 
     def select(self) -> tuple[UUID, Membership, dict[Hotkey, float]]:
-        """Select the latest completed nonempty round, then filter by currently registered hotkeys.
+        """Use the newest completed round if any miner was fully evaluated, then filter by registration.
 
         Raises:
             NoUsableScores: No retained history or no remaining registered recipients.

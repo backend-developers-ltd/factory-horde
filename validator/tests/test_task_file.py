@@ -131,9 +131,7 @@ def test_every_task_runs_for_every_miner_and_scores_are_averaged(tmp_path: Path,
         )
     assert not coordinator.tick(plan.deadlines.evaluation_start + timedelta(seconds=5), BEAT).errors
     usable = fixture.repository.latest_usable_round()
-    if failure == "judge":
-        assert usable is None
-        return
+    # A factory or judge failure on one task excludes only that miner from the round.
     assert usable is not None and len(usable[1]) == (2 if failure else 4)
     membership = Membership(1000, {Hotkey(m.miner_hotkey): m.uid for m in plan.cohort})
     weigher = Weigher(FileTaskResultStore(fixture.repository), lambda: membership)

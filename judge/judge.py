@@ -20,6 +20,7 @@ import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from itertools import count
 from pathlib import Path
 from typing import Literal, cast
@@ -101,14 +102,24 @@ by the controller. purpose explains why this action helps evaluate a requirement
 Finish only with exactly one verdict per criteria.json id. met=fully demonstrated, partial=demonstrated \
 incomplete functionality, unmet=demonstrated missing/broken functionality. Cite actual command check_ids \
 and explain the observed results. Source/documentation criteria may use evidence=source, but cite the command \
-that read the relevant files. Behavioral criteria require evidence=observed. Missing tests, unsupported \
-runtimes or inconclusive results are NOT miner defects: use unassessed/insufficient, making evaluation \
-unavailable without a fabricated score. Before giving up on coverage, attempt useful further checks.
+that read the relevant files. Behavioral criteria require evidence=observed. Behavior that fails, crashes \
+or hangs in your tests is unmet; a hang counts as a defect once you reproduced it with a bounded command. \
+Before giving up on coverage, attempt useful further checks.
+
+If the project cannot be started or exercised AT ALL in this sandbox (unsupported language or toolchain, \
+required dependencies that are not bundled, no runnable entry point), return kind reject with the concrete \
+reason in purpose instead of finishing; first run at least one command that demonstrates the problem. Do not \
+reject a project that runs but implements requirements incompletely: finish with unmet verdicts instead. Use \
+unassessed/insufficient only when YOUR evaluation cannot be completed for reasons unrelated to the \
+submission, such as a harness problem you could not resolve.
+
+progress.json reports the remaining sandbox seconds. When budget_exhausted is true, no further command \
+runs: finish immediately with the evidence you have, and mark requirements you did not demonstrate as unmet.
 """
 STEP_SCHEMA = {
     "type": "object",
     "properties": {
-        "kind": {"type": "string", "enum": ["command", "evidence", "finish"]},
+        "kind": {"type": "string", "enum": ["command", "evidence", "finish", "reject"]},
         "argv": {"type": "array", "items": {"type": "string"}},
         "stdin": {"type": "string"},
         "purpose": {"type": "string"},
@@ -122,6 +133,19 @@ STEP_SCHEMA = {
     "required": ["kind", "argv", "stdin", "purpose", "notes", "step", "requirements"],
     "additionalProperties": False,
 }
+
+# Recorded instead of a command the model requested after the sandbox budget ran out; nothing was sent.
+NOT_SENT: dict[str, object] = {
+    "exit_code": -1,
+    "timed_out": True,
+    "budget_exhausted": True,
+    "not_sent": True,
+    "stdout": "",
+    "stderr": "Not executed: the sandbox time budget is exhausted",
+    "stdout_truncated": False,
+    "stderr_truncated": False,
+}
+NOT_SENT_LIMIT = 3
 
 type Verdict = Literal["met", "partial", "unmet"]
 type ModelCall = Callable[[str, str], object]
@@ -495,7 +519,7 @@ def parse_step(value: object) -> dict[str, object]:
         step["notes"],
     )
     if (
-        step["kind"] not in ("command", "evidence", "finish")
+        step["kind"] not in ("command", "evidence", "finish", "reject")
         or not isinstance(argv, list)
         or any(not isinstance(a, str) or "\0" in a for a in cast(list[object], argv))
         or not isinstance(stdin, str)
@@ -513,6 +537,8 @@ def parse_step(value: object) -> dict[str, object]:
         raise ReviewError("Unexpected command in non-command decision")
     elif step["kind"] == "evidence" and (step["step"] < 1 or step["requirements"]):
         raise ReviewError("Invalid evidence lookup")
+    elif step["kind"] == "reject" and (not purpose.strip() or step["requirements"]):
+        raise ReviewError("Rejection needs a reason and no verdicts")
     return step
 
 
@@ -550,6 +576,7 @@ def validate_capture(value: object, identity: str) -> dict[str, object]:
         or outcome.get("id") != identity
         or type(outcome.get("exit_code")) is not int
         or any(type(outcome.get(k)) is not bool for k in ("timed_out", "stdout_truncated", "stderr_truncated"))
+        or type(outcome.get("budget_exhausted", False)) is not bool
         or any(not isinstance(outcome.get(k), str) or len(str(outcome[k])) > 16384 for k in ("stdout", "stderr"))
     ):
         raise ReviewError("Invalid sandbox capture")
@@ -585,6 +612,7 @@ def agent_input(
     criteria: Sequence[str],
     history: list[dict[str, object]],
     boundary: str,
+    budget: Mapping[str, object] | None = None,
 ) -> str:
     """Provide bounded recent observations and retained progress, with older evidence available on demand."""
     recent: list[dict[str, object]] = []
@@ -603,11 +631,30 @@ def agent_input(
             {
                 "completed_steps": len(history),
                 "notes": as_object(history[-1]["decision"])["notes"] if history else "",
+                **(budget or {}),
             }
         ),
         "recent-evidence.json": json.dumps(list(reversed(recent))),
     }
     return "".join(f"{boundary} BEGIN {name}\n{content}\n{boundary} END {name}\n" for name, content in parts.items())
+
+
+def sandbox_deadline() -> datetime | None:
+    """Read the executor's frozen sandbox deadline; older executors publish none.
+
+    Raises:
+        ReviewError: The budget record is malformed.
+    """
+    try:
+        budget = read_object(Path("/runner") / "budget.json")
+        deadline = datetime.fromisoformat(str(budget["sandbox_deadline"]))
+    except FileNotFoundError, NotADirectoryError:
+        return None
+    except (KeyError, ValueError) as error:
+        raise ReviewError("Invalid sandbox budget") from error
+    if deadline.tzinfo is None:
+        raise ReviewError("Invalid sandbox budget")
+    return deadline
 
 
 def review(
@@ -622,6 +669,7 @@ def review(
 
     Raises:
         ReviewError: Model, runner or retained evidence is unavailable or inconsistent.
+        InvalidSubmission: The model showed that the project cannot run in the sandbox at all.
     """
     evidence: dict[str, object] = {}
     try:
@@ -637,7 +685,13 @@ def review(
         }
         history: list[dict[str, object]] = []
         observed: set[str] = set()
-        command_count = 0
+        command_count = not_sent = 0
+        deadline, exhausted = sandbox_deadline(), False
+
+        def budget() -> dict[str, object]:
+            remaining = None if deadline is None else max(0, int((deadline - datetime.now(UTC)).total_seconds()))
+            return {"sandbox_seconds_remaining": remaining, "budget_exhausted": exhausted or remaining == 0}
+
         skills = "\n\n".join(path.read_text() for path in sorted(SKILLS.glob("*.md")))
         for index in count(1):
             decision_path = review_path.with_name(f"step-{index}.decision.json")
@@ -648,7 +702,7 @@ def review(
                 reply = as_object(
                     call(
                         INSTRUCTIONS.format(boundary=boundary) + "\n\n" + skills,
-                        agent_input(specification, inventory, criteria, history, boundary),
+                        agent_input(specification, inventory, criteria, history, boundary, budget()),
                     )
                 )
                 retained = publish_json(
@@ -658,6 +712,11 @@ def review(
             if any(retained.get(k) != v for k, v in attribution.items()):
                 raise ReviewError("Decision attribution mismatch") from None
             decision = parse_step(retained.get("decision"))
+            if decision["kind"] == "reject":
+                if not observed:
+                    raise ReviewError("A rejection must follow an observed command") from None
+                publish_json(review_path.with_name("assessment.json"), {**attribution, "assessment": decision})
+                raise InvalidSubmission(f"Project cannot run: {str(decision['purpose']).strip()}") from None
             if decision["kind"] == "finish":
                 publish_json(
                     review_path.with_name("assessment.json"),
@@ -688,12 +747,22 @@ def review(
                 if not 1 <= target < index or as_object(history[target - 1]["decision"])["kind"] != "command":
                     raise ReviewError("Evidence lookup must name an earlier command") from None
             observation_path = review_path.with_name(f"step-{index}.observation.json")
-            if decision["kind"] == "command":
-                command_count += 1
             try:
-                captured = read_object(observation_path)
+                captured: dict[str, object] | None = read_object(observation_path)
             except FileNotFoundError:
-                if decision["kind"] == "command":
+                captured = None
+            skip = False
+            if decision["kind"] == "command":
+                if captured is None:
+                    skip = exhausted or budget()["budget_exhausted"] is True
+                else:
+                    skip = as_object(captured.get("outcome")).get("not_sent") is True
+                # Runner request indices stay contiguous: unsent commands consume none.
+                command_count += 0 if skip else 1
+            if captured is None:
+                if skip:
+                    outcome = {**NOT_SENT, "id": f"step-{index}"}
+                elif decision["kind"] == "command":
                     outcome = run_command(
                         {
                             "id": f"step-{index}",
@@ -723,8 +792,15 @@ def review(
             )
             if decision["kind"] == "command":
                 outcome = validate_capture(captured["outcome"], f"step-{index}")
-                observed.add(f"step-{index}")
-                if outcome["timed_out"] is True:
+                if outcome.get("not_sent") is True:
+                    not_sent += 1
+                    if not_sent > NOT_SENT_LIMIT:
+                        raise ReviewError("Commands kept being requested after the sandbox budget ran out") from None
+                else:
+                    observed.add(f"step-{index}")
+                if outcome.get("budget_exhausted") is True:
+                    exhausted = True
+                elif outcome["timed_out"] is True:
                     raise ReviewError("Sandbox was stopped by the round lifecycle") from None
     items = parse_requirements(evidence.get("requirements"), criteria)
     score = score_requirements(items)

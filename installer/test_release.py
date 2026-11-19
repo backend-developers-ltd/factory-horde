@@ -187,9 +187,14 @@ def test_clean_localnet_configuration_generates_isolated_paths_and_distinct_toke
     tokens = [value for key, value in config.items() if "TOKEN" in key]
     assert len(tokens) == len(set(tokens)) == 8
     assert all(len(value) == 48 for value in tokens)
-    workload = ("EXECUTOR_TMP_SIZE", "EXECUTOR_FACTORY_NETWORK", "EXECUTOR_INFERENCE_URL")
+    workload = (
+        "EXECUTOR_TMP_SIZE",
+        "EXECUTOR_FACTORY_NETWORK",
+        "EXECUTOR_INFERENCE_URL",
+        "EXECUTOR_JUDGE_RESERVE_SECONDS",
+    )
     assert set(workload) < set(release.EXECUTOR_KEYS)
-    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080"]
+    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080", "180"]
     path.write_bytes(release.environment(config))
     assert release.configuration(path, tmp_path / "installation", application=True, localnet=True) == config
     config["HOST_WALLET_DIR"] = str(tmp_path / "outside-wallets")

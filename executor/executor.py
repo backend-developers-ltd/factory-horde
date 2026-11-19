@@ -382,6 +382,7 @@ class Settings:
     tmp_size: str = "64m"
     factory_network: str = ""
     inference_url: str = "http://inference-proxy:8080"
+    judge_reserve_seconds: int = 180
 
 
 class Metrics:
@@ -674,6 +675,7 @@ class Docker:
             channel = f"control/runners/{request.job_id}"
             with self.files.directory(relative_parts(channel), create=True):
                 pass
+            self.publish_budget(request, channel)
             args.extend(("--mount", f"type=bind,src={self.files.mount(channel)},dst=/runner"))
             args.extend(("--env", f"FACTORY_HORDE_JUDGE_IMAGE={request.image}"))
         if network:
@@ -683,6 +685,17 @@ class Docker:
             ):
                 args.extend(("--env", variable))
         return (*args, request.image)
+
+    def publish_budget(self, request: Request, channel: str) -> None:
+        """Freeze the judge's shared sandbox deadline once, leaving time for its final assessment."""
+        try:
+            self.files.read(f"{channel}/budget.json")
+        except FileNotFoundError:
+            created = timestamp(request.record["created_at"])
+            reserve = min(timedelta(seconds=self.settings.judge_reserve_seconds), (request.deadline - created) / 2)
+            deadline = (request.deadline - reserve).isoformat()
+            budget: dict[str, object] = {"protocol_version": PROTOCOL_VERSION, "sandbox_deadline": deadline}
+            self.files.write(f"{channel}/budget.json", budget, immutable=True)
 
     def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
         """Create a detached, non-restarting workload from prepared arguments.
@@ -724,6 +737,19 @@ def docker_api(method: str, path: str, body: dict[str, object] | None = None) ->
             return parse(data)
         finally:
             connection.close()
+
+
+# A command that cannot start because the evaluation's sandbox time is spent; nothing was executed.
+EXHAUSTED: dict[str, object] = {
+    "exit_code": -1,
+    "timed_out": True,
+    "budget_exhausted": True,
+    "stdout": "",
+    "stderr": "Not executed: the sandbox time budget is exhausted",
+    "stdout_truncated": False,
+    "stderr_truncated": False,
+    "seconds": 0,
+}
 
 
 class ApplicationRunner:
@@ -923,9 +949,9 @@ class ApplicationRunner:
         elif not arguments or not arguments[0]:
             raise ProtocolError("Empty application argv")
         started = time.monotonic()
-        limit = (self.request.deadline - datetime.now(UTC)).total_seconds() - 5
+        limit = (self.sandbox_deadline() - datetime.now(UTC)).total_seconds()
         if limit <= 0:
-            raise DockerError("No application execution time remains")
+            return {**EXHAUSTED, "id": command["id"]}
         created = docker_api(
             "POST",
             f"/containers/{self.name}/exec",
@@ -944,7 +970,7 @@ class ApplicationRunner:
         self.save()
         streams = {1: bytearray(), 2: bytearray()}
         truncated = {1: False, 2: False}
-        timed_out = False
+        timed_out = budget_exhausted = False
         parent_checked = time.monotonic()
         with docker_socket() as stream:
             body = b'{"Detach":false,"Tty":false}'
@@ -985,7 +1011,8 @@ class ApplicationRunner:
                         # Keep readiness informed while an unrestricted command runs.
                         self.executor.observe(self.request, self.ledger, parent)
                         parent_checked = time.monotonic()
-                    if time.monotonic() - started >= limit or self.executor.cancelled(self.request):
+                    budget_exhausted = time.monotonic() - started >= limit
+                    if budget_exhausted or self.executor.cancelled(self.request):
                         timed_out = True
                         self.stop()
                         break
@@ -1037,12 +1064,28 @@ class ApplicationRunner:
             "id": command["id"],
             "exit_code": exit_code,
             "timed_out": timed_out,
+            "budget_exhausted": budget_exhausted,
             "stdout": streams[1].decode(errors="replace"),
             "stderr": streams[2].decode(errors="replace"),
             "stdout_truncated": truncated[1],
             "stderr_truncated": truncated[2],
             "seconds": duration,
         }
+
+    def sandbox_deadline(self) -> datetime:
+        """Use the frozen budget when present; older jobs keep the previous deadline margin.
+
+        Raises:
+            ProtocolError: The budget record is malformed.
+        """
+        latest = self.request.deadline - timedelta(seconds=5)
+        try:
+            budget = self.files.read(f"{self.channel}/budget.json")
+        except FileNotFoundError:
+            return latest
+        if set(budget) != {"protocol_version", "sandbox_deadline"}:
+            raise ProtocolError("Invalid sandbox budget")
+        return min(timestamp(budget["sandbox_deadline"]), latest)
 
     def tick(self) -> None:
         """Consume immutable commands without an action-count limit, never replay an ambiguous invocation.
@@ -1079,6 +1122,8 @@ class ApplicationRunner:
                     ) as error:
                         self.stop()
                         outcome = {"failure": str(error)[:512]}
+                        event = {"event": "application_check_failed", "level": "error", "job_id": self.request.job_id}
+                        print(json.dumps({**event, "reason": outcome["failure"]}), flush=True)
                 outcome = {"command": command, "result": outcome}
                 self.files.write(retained, outcome, immutable=True)
             if outcome["command"] != command:
@@ -1433,6 +1478,7 @@ class Executor:
                 json.dumps(
                     {
                         "event": "job_unresolved",
+                        "level": "error",
                         "job_id": request.job_id,
                         "round_id": request.record["round_id"],
                         "reason": str(error)[:512],
@@ -1457,6 +1503,7 @@ class Executor:
                         json.dumps(
                             {
                                 "event": "request_rejected",
+                                "level": "error",
                                 "job_id": job_id,
                                 "reason": str(error)[:512],
                             }
@@ -1483,6 +1530,7 @@ class Executor:
                     json.dumps(
                         {
                             "event": "request_rejected",
+                            "level": "error",
                             "filename": name,
                             "reason": str(error)[:512],
                         }
@@ -1553,6 +1601,7 @@ def main() -> None:
         poll_seconds=float(os.environ.get("EXECUTOR_POLL_SECONDS", "2")),
         workers=int(os.environ.get("EXECUTOR_WORKERS", "32")),
         tmp_size=os.environ.get("EXECUTOR_TMP_SIZE", "64m"),
+        judge_reserve_seconds=int(os.environ.get("EXECUTOR_JUDGE_RESERVE_SECONDS", "180")),
         factory_network=os.environ.get("EXECUTOR_FACTORY_NETWORK", ""),
         inference_url=os.environ.get("EXECUTOR_INFERENCE_URL", "http://inference-proxy:8080"),
     )
@@ -1565,8 +1614,9 @@ def main() -> None:
         or settings.poll_seconds <= 0
         or not math.isfinite(settings.poll_seconds)
         or not 5 <= settings.workers <= 256
+        or settings.judge_reserve_seconds < 0
     ):
-        parser.error("Require non-root UID/GID and positive CPU, PID and polling settings")
+        parser.error("Require non-root UID/GID, positive CPU, PID and polling settings and a nonnegative judge reserve")
     if (
         re.fullmatch(r"[1-9][0-9]{0,5}[kmg]", settings.tmp_size) is None
         or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.factory_network) is None

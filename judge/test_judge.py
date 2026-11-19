@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event
 
@@ -420,3 +421,60 @@ def test_controller_assigns_command_ids_independently_of_model_step(directories:
     assert evaluate(*directories, call=model) == 0
     capture = load(directories[2] / "step-1.observation.json")
     assert judge.as_object(capture["outcome"])["id"] == "step-1"
+
+
+def test_unrunnable_project_is_rejected_after_an_observed_attempt(directories: Directories) -> None:
+    model = FakeModel(
+        decision(argv=["go", "run", "."]),
+        decision("reject", purpose="Go toolchain is not available: go: not found"),
+    )
+    assert evaluate(*directories, call=model) == 1
+    report = load(directories[2] / "report.json")
+    assert report["failure"] == "Invalid submission: Project cannot run: Go toolchain is not available: go: not found"
+    assert load(directories[2] / "assessment.json")["assessment"]["kind"] == "reject"
+
+
+def test_rejection_without_any_observation_is_unavailable(directories: Directories) -> None:
+    assert evaluate(*directories, call=FakeModel(decision("reject", purpose="Looks like Go"))) == 75
+
+
+def test_exhausted_budget_leads_to_a_scored_assessment(directories: Directories, monkeypatch: pytest.MonkeyPatch) -> None:
+    sent: list[int] = []
+
+    def run(command: dict[str, object], index: int) -> dict[str, object]:
+        sent.append(index)
+        return {**capture(command["id"]), "timed_out": True, "budget_exhausted": True, "exit_code": -1}
+
+    monkeypatch.setattr(judge, "run_command", run)
+    policy(directories[0], ["Add", "Remove"])
+    model = FakeModel(
+        decision(argv=["python", "main.py", "serve"]),
+        decision(argv=["python", "main.py", "add", "x"]),
+        decision("finish", requirements=assessment("met", "unmet")),
+    )
+    assert evaluate(*directories, call=model) == 0
+    assert load(directories[2] / "report.json")["score"] == 0.5
+    assert sent == [1]
+    assert '"budget_exhausted": true' in model.calls[1][1] and '"not_sent": true' in model.calls[2][1]
+
+
+def test_commands_after_exhaustion_are_bounded(directories: Directories, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) - timedelta(seconds=1))
+    model = FakeModel(*[decision() for _ in range(judge.NOT_SENT_LIMIT + 1)])
+    assert evaluate(*directories, call=model) == 75
+    assert "after the sandbox budget ran out" in str(load(directories[2] / "report.json")["failure"])
+
+
+def test_remaining_budget_is_shown_to_the_model(directories: Directories, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(judge, "sandbox_deadline", lambda: datetime.now(UTC) + timedelta(seconds=600))
+    model = FakeModel(decision(), reply("met"))
+    assert evaluate(*directories, call=model) == 0
+    progress = model.calls[0][1].split("BEGIN progress.json\n")[1].split("\n")[0]
+    assert 590 <= json.loads(progress)["sandbox_seconds_remaining"] <= 600
+
+
+def test_lifecycle_stop_without_exhausted_budget_stays_unavailable(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(judge, "run_command", lambda command, _i: {**capture(command["id"]), "timed_out": True})
+    assert evaluate(*directories, call=FakeModel(decision())) == 75

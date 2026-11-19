@@ -315,7 +315,7 @@ def test_thread_safe_duplicate_save_and_epoch_index(pair: Pair) -> None:
     assert len(store.get_successful_tasks_for_epoch(EVALUATION_TASK, Epoch(BlockNumber(0), BlockNumber(500)))) == 1
 
 
-def test_completed_round_fallback_is_independent_of_epoch_and_unresolved_jobs(pair: Pair) -> None:
+def test_newest_completed_round_is_never_replaced_by_older_history(pair: Pair) -> None:
     result = pair.repo.finalize(pair.judge, BEAT)
     assert pair.repo.latest_usable_round() is None
     (record,) = pair.repo.rounds.rounds()
@@ -343,7 +343,8 @@ def test_completed_round_fallback_is_independent_of_epoch_and_unresolved_jobs(pa
     pair.repo.rounds.save_round(
         empty.model_copy(update={"stage": "complete", "completed_at": plan.deadlines.round_end})
     )
-    assert pair.repo.latest_usable_round() == (record.plan, (result.accepted,))
+    assert pair.repo.rounds.rounds()[0].plan == record.plan and result.accepted is not None
+    assert pair.repo.latest_usable_round() is None
 
 
 def test_returned_routing_target_cannot_mutate_cached_results(pair: Pair) -> None:

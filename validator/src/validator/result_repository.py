@@ -3,6 +3,7 @@
 import json
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from hashlib import sha256
 from typing import Literal
@@ -58,6 +59,14 @@ def result_operation(operation: Literal["finalize", "query", "project", "rebuild
             raise
         else:
             _events.labels(operation, "ok").inc()
+
+
+@dataclass(frozen=True)
+class RoundOutcome:
+    """Accepted scores of fully evaluated miners and the reason each other miner is excluded."""
+
+    scores: tuple[AcceptedResult, ...]
+    excluded: dict[str, str] = field(default_factory=dict)
 
 
 class ResultRepository:
@@ -212,6 +221,14 @@ class ResultRepository:
                 submission_rejected=submission_rejected,
             )
             self.files.publish(self.result_path(request), result)
+            if request.kind == "judge" and accepted is None and not submission_rejected:
+                _logger.error(
+                    "judge_evaluation_unavailable",
+                    job_id=str(request.job_id),
+                    round_id=str(request.round_id),
+                    miner_hotkey=request.miner_hotkey,
+                    reason=failure,
+                )
             _logger.info(
                 "job_result_finalized",
                 job_id=str(request.job_id),
@@ -237,28 +254,39 @@ class ResultRepository:
             "invalid_output",
         )
 
-    def latest_usable_round(self) -> tuple[RoundPlan, tuple[AcceptedResult, ...]] | None:
-        """In review mode, every participant needs an accepted score or an attributed submission failure."""
-        with self.files.lock, result_operation("query"):
-            for record in reversed(self.rounds.rounds()):
-                mode = record.plan.evaluation.mode if record.plan.evaluation is not None else "fixture"
-                if record.stage != "complete" or mode != self.judge_mode:
-                    continue
-                if mode == "review" and self.judge_image != record.plan.judge_image:
-                    continue
-                scores: list[AcceptedResult] = []
-                rejected: set[str] = set()
-                for member in record.plan.cohort:
-                    request = request_for(record.plan, member, "judge")
-                    result = self.read(request)
-                    if result is not None and result.accepted is not None:
-                        scores.append(result.accepted)
-                    elif mode == "review" and not self._submission_rejected(request, result):
-                        break
-                    else:
-                        rejected.add(member.miner_hotkey)
+    def round_outcome(self, plan: RoundPlan) -> RoundOutcome:
+        """Score each miner independently; any task without an accepted score excludes only that miner.
+
+        Exclusion reasons are `submission_rejected` (the miner's factory or project failed),
+        `evaluation_unavailable` (a validator-side judging failure) and `missing_result`.
+        """
+        scores: list[AcceptedResult] = []
+        excluded: dict[str, str] = {}
+        for member in plan.cohort:
+            request = request_for(plan, member, "judge")
+            result = self.read(request)
+            if result is not None and result.accepted is not None:
+                scores.append(result.accepted)
+            elif member.miner_hotkey not in excluded or excluded[member.miner_hotkey] == "submission_rejected":
+                if self._submission_rejected(request, result):
+                    excluded.setdefault(member.miner_hotkey, "submission_rejected")
                 else:
-                    scores = [score for score in scores if score.miner_hotkey not in rejected]
-                    if scores:
-                        return record.plan, tuple(scores)
-        return None
+                    excluded[member.miner_hotkey] = "evaluation_unavailable" if result else "missing_result"
+        return RoundOutcome(tuple(score for score in scores if score.miner_hotkey not in excluded), excluded)
+
+    def latest_usable_round(self) -> tuple[RoundPlan, tuple[AcceptedResult, ...]] | None:
+        """Only the newest completed round counts; older rounds never stand in for it.
+
+        A review round must use the configured judge image. Miners without accepted scores
+        for every task are excluded, so the round is usable when any miner was fully evaluated.
+        """
+        with self.files.lock, result_operation("query"):
+            completed = [record for record in self.rounds.rounds() if record.stage == "complete"]
+            if not completed:
+                return None
+            plan = completed[-1].plan
+            mode = plan.evaluation.mode if plan.evaluation is not None else "fixture"
+            if mode != self.judge_mode or (mode == "review" and self.judge_image != plan.judge_image):
+                return None
+            outcome = self.round_outcome(plan)
+            return (plan, outcome.scores) if outcome.scores else None

@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+import structlog.testing
 from nexus.v1 import BlockBeat, ContextId, ReceiveEvent, SubnetBuilder
 from pydantic import ValidationError
 
@@ -291,7 +292,7 @@ def test_configured_specification_is_frozen_with_the_admission(fixture: Fixture)
 
 @pytest.mark.parametrize("second_outcome", ["outage", "invalid submission", "legacy score", "wrong criteria"])
 @pytest.mark.parametrize("round_count", [1, 2])
-def test_review_weights_require_a_comparable_round(tmp_path: Path, second_outcome: str, round_count: int) -> None:
+def test_review_rounds_exclude_only_unevaluated_miners(tmp_path: Path, second_outcome: str, round_count: int) -> None:
     repo = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
     fixture = Fixture(repo)
     coordinator = RoundCoordinator(repo, TIMING, JUDGE, fixture.discovery, "Build a CLI.", ("Add",))
@@ -338,12 +339,12 @@ def test_review_weights_require_a_comparable_round(tmp_path: Path, second_outcom
         assert not coordinator.tick(plan.deadlines.round_end - timedelta(seconds=1), BEAT).errors
     recovered = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
     selected = recovered.latest_usable_round()
-    if second_outcome == "invalid submission":
-        assert selected is not None and selected[0].sequence == round_count and len(selected[1]) == 1
-    elif round_count == 1:
-        assert selected is None
-    else:
-        assert selected is not None and selected[0].sequence == 1 and len(selected[1]) == 2
+    # The newest round is always used; the miner without an accepted score is excluded, never a fallback.
+    assert selected is not None and selected[0].sequence == round_count and len(selected[1]) == 1
+    outcome = recovered.round_outcome(selected[0])
+    assert list(outcome.excluded.values()) == [
+        "submission_rejected" if second_outcome == "invalid submission" else "evaluation_unavailable"
+    ]
 
 
 @pytest.mark.parametrize("boundary", ["generation_end", "evaluation_start", "judge_end", "round_end"])
@@ -598,7 +599,17 @@ def test_judge_actual_finish_controls_recovered_score(fixture: Fixture, offset: 
 
 
 def test_review_history_requires_selected_judge_revision(tmp_path: Path) -> None:
-    test_review_weights_require_a_comparable_round(tmp_path, "invalid submission", 1)
+    test_review_rounds_exclude_only_unevaluated_miners(tmp_path, "invalid submission", 1)
     assert ResultRepository(RoundRepository(tmp_path), "review", JUDGE).latest_usable_round() is not None
     assert ResultRepository(RoundRepository(tmp_path), "review", IMAGE).latest_usable_round() is None
     assert ResultRepository(RoundRepository(tmp_path), "review").latest_usable_round() is None
+
+
+def test_round_completion_logs_validator_side_exclusions(tmp_path: Path) -> None:
+    with structlog.testing.capture_logs() as logs:
+        test_review_rounds_exclude_only_unevaluated_miners(tmp_path, "outage", 1)
+    events = {entry["event"]: entry for entry in logs}
+    assert events["judge_evaluation_unavailable"]["log_level"] == "error"
+    assert events["miner_excluded"]["log_level"] == "error"
+    assert events["miner_excluded"]["reason"] == "evaluation_unavailable"
+    assert "round_without_weights" not in events

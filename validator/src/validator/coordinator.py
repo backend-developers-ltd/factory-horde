@@ -376,6 +376,17 @@ class RoundCoordinator:
             raise ValueError("Task projection differs from the expected job")
         return True
 
+    def _log_outcome(self, plan: RoundPlan) -> None:
+        """Report once per round which miners count; validator-side gaps are errors to act on."""
+        outcome = self.repository.round_outcome(plan)
+        scored = sorted({score.miner_hotkey for score in outcome.scores})
+        _logger.info("round_outcome", round_id=str(plan.round_id), scored=scored, excluded=outcome.excluded)
+        for hotkey, reason in sorted(outcome.excluded.items()):
+            if reason != "submission_rejected":
+                _logger.error("miner_excluded", round_id=str(plan.round_id), miner_hotkey=hotkey, reason=reason)
+        if not outcome.scores:
+            _logger.error("round_without_weights", round_id=str(plan.round_id), cohort=len(plan.cohort))
+
     def _reconcile(
         self, record: RoundRecord, now: datetime, beat: BlockBeat | None, requests: dict[UUID, JobRequest]
     ) -> RoundTick:
@@ -438,6 +449,8 @@ class RoundCoordinator:
             self.rounds.save_round(updated)
             _events.labels("reconciled").inc()
             _logger.info("round_reconciled", round_id=str(plan.round_id), stage=stage, unresolved=len(unresolved))
+            if stage == "complete" and record.stage != "complete":
+                self._log_outcome(plan)
         return RoundTick(tuple(subscriptions), tuple(sorted(unresolved)), tuple(errors))
 
     def tick(self, now: datetime, beat: BlockBeat | None) -> RoundTick:

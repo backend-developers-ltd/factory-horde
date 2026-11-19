@@ -117,7 +117,7 @@ while True: time.sleep(1)
     # Exercise the real absolute deadline without a minute-long test.
     runner.request = replace(runner.request, deadline=datetime.now(UTC) + timedelta(seconds=7))
     outcome = runner.execute(command())
-    assert outcome["timed_out"] is True
+    assert outcome["timed_out"] is True and outcome["budget_exhausted"] is True
     assert outcome["stdout_truncated"] is True
     assert len(str(outcome["stdout"])) == 16384
     assert runner.ledger["app_stopped"] is True

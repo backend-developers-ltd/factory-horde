@@ -19,6 +19,7 @@ from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 
 from .executor import (
+    ApplicationRunner,
     Docker,
     DockerError,
     DockerRejected,
@@ -32,6 +33,7 @@ from .executor import (
     now,
     object_value,
     parse,
+    timestamp,
 )
 
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
@@ -769,7 +771,7 @@ def run_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, environment: dict[
     monkeypatch.setattr(Executor, "run", run)
     monkeypatch.setattr(signal, "signal", keep_handlers)
     monkeypatch.setattr(sys, "argv", ["executor.py", "--root", str(tmp_path)])
-    for key in WORKLOAD_KEYS:
+    for key in (*WORKLOAD_KEYS, "EXECUTOR_JUDGE_RESERVE_SECONDS"):
         monkeypatch.delenv(key, raising=False)
     for key, value in environment.items():
         monkeypatch.setenv(key, value)
@@ -787,6 +789,9 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
     configured = ("factory-horde-inference", "https://proxy.example/base", "1g")
     (settings,) = run_main(tmp_path, monkeypatch, dict(zip(WORKLOAD_KEYS, configured, strict=True)))
     assert (settings.factory_network, settings.inference_url, settings.tmp_size) == configured
+    assert default.judge_reserve_seconds == 180
+    (reserved,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_JUDGE_RESERVE_SECONDS": "300"})
+    assert reserved.judge_reserve_seconds == 300
 
 
 @pytest.mark.parametrize(
@@ -806,6 +811,7 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
         ("EXECUTOR_TMP_SIZE", "0m"),
         ("EXECUTOR_TMP_SIZE", "64"),
         ("EXECUTOR_TMP_SIZE", "64m,exec"),
+        ("EXECUTOR_JUDGE_RESERVE_SECONDS", "-1"),
     ],
 )
 def test_invalid_workload_settings_are_rejected_at_startup(
@@ -883,3 +889,39 @@ def test_network_preparation_failure_stays_retryable(
     executor.step(job_request)
     assert daemon.created == 1
     assert executor.files.read(f"control/executor/{job_request.job_id}.json")["phase"] == "created"
+
+
+def test_judge_budget_is_frozen_once_with_a_reserve(executor: Executor, judge_request: Request) -> None:
+    executor.settings = replace(executor.settings, judge_reserve_seconds=60)
+    docker = Docker(executor.settings, executor.files, executor.metrics, executor.shutdown)
+    docker.prepare(judge_request)
+    channel = f"control/runners/{judge_request.job_id}"
+    budget = executor.files.read(f"{channel}/budget.json")
+    assert timestamp(budget["sandbox_deadline"]) == judge_request.deadline - timedelta(seconds=60)
+    replace_docker = Docker(
+        replace(executor.settings, judge_reserve_seconds=1), executor.files, executor.metrics, executor.shutdown
+    )
+    replace_docker.prepare(judge_request)
+    assert executor.files.read(f"{channel}/budget.json") == budget
+    runner = ApplicationRunner(executor, judge_request, {})
+    assert runner.sandbox_deadline() == judge_request.deadline - timedelta(seconds=60)
+
+
+def test_reserve_never_exceeds_half_of_the_judge_duration(executor: Executor, judge_request: Request) -> None:
+    executor.settings = replace(executor.settings, judge_reserve_seconds=86400)
+    Docker(executor.settings, executor.files, executor.metrics, executor.shutdown).prepare(judge_request)
+    created = timestamp(judge_request.record["created_at"])
+    half = judge_request.deadline - (judge_request.deadline - created) / 2
+    assert ApplicationRunner(executor, judge_request, {}).sandbox_deadline() == half
+
+
+def test_spent_budget_returns_an_unexecuted_capture(executor: Executor, judge_request: Request) -> None:
+    channel = f"control/runners/{judge_request.job_id}"
+    executor.files.write(
+        f"{channel}/budget.json",
+        {"protocol_version": 1, "sandbox_deadline": (datetime.now(UTC) - timedelta(seconds=1)).isoformat()},
+    )
+    outcome = ApplicationRunner(executor, judge_request, {}).execute(
+        {"id": "step-3", "argv": ["ls"], "stdin": "", "observation": "x"}
+    )
+    assert outcome["id"] == "step-3" and outcome["budget_exhausted"] is True and outcome["exit_code"] == -1

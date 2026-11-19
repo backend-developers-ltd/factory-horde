@@ -107,7 +107,7 @@ def test_review_weights_exclude_retained_legacy_random_scores(pair: Pair) -> Non
     assert ResultRepository(pair.repo.rounds, "review").latest_usable_round() is None
 
 
-def test_new_empty_round_preserves_previous_valid_history(pair: Pair) -> None:
+def test_new_empty_round_never_reuses_previous_history(pair: Pair) -> None:
     weigher, _ = accepted(pair)
     old = pair.repo.rounds.rounds()[0].plan
     plan = RoundPlan.model_validate(
@@ -128,7 +128,8 @@ def test_new_empty_round_preserves_previous_valid_history(pair: Pair) -> None:
     specification = pair.repo.files.read_bytes(f"{old.directory}/specification.md").decode()
     pair.repo.rounds.prepare_round(plan, specification)
     pair.repo.rounds.save_round(RoundRecord(plan=plan, stage="complete", completed_at=plan.deadlines.round_end))
-    assert weigher.calculate(bundle(weigher)) == {pair.judge.miner_hotkey: 1.0}
+    with pytest.raises(NoUsableScores):
+        weigher.calculate(bundle(weigher))
 
 
 def test_failures_and_absent_history_have_no_weight_mapping(pair: Pair) -> None:

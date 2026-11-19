@@ -50,19 +50,19 @@ failures. Unsafe or unreadable artifacts are rejected; genuine host I/O failures
 remain unresolved. Accepted decisions survive loss of their raw report without redrawing a
 score. Nexus routing targets are observation metadata; miner attribution comes from
 the frozen business request. Weighing reads accepted hotkeys, not the router-based
-count helpers. Queries use the latest completed round with scores,
+count helpers. Queries use the newest completed round,
 independently of epoch ranges used for framework queries.
 
 Weight writes are separately enabled with `VALIDATOR_WEIGHTS_ENABLED=true` and
 Pylon identity credentials. Both Nexus weight opportunity and setter nodes use
 `MECHANISM_ID`; the setter shares the factory/evaluation store provider. The gate
-skips opportunities without usable registered scores. Empty rounds retain the
-latest nonempty completed round; chain epoch boundaries do not expire its scores.
-For review weights, each admitted job must have a verified review, a confirmed
-miner-specific rejection or a recorded miner-specific skip. A reviewer outage,
-incomplete evaluation or legacy random score cannot supply review weights. With
-no comparable completed round the gate skips the weight opportunity. Explicit
-fixture mode can still use historical localnet fixture results. Successful zeros remain eligible.
+skips opportunities without usable registered scores. Only the newest completed
+round counts; an older round never stands in for it. Each miner is evaluated
+independently: one without an accepted score for every task (failed factory,
+invalid submission, unavailable judge) is excluded from that round, and the round
+is usable when any miner was fully evaluated. Round completion logs validator-side
+exclusions and rounds without scored miners at error level. Review rounds must
+use the configured judge image. Successful zeros remain eligible.
 
 After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. Review fallback requires the configured judge image digest. No eligible recipients means a skipped write.
 
