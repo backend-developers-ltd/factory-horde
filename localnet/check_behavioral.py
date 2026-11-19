@@ -20,8 +20,12 @@ from .check import Registrations
 from .check_rounds import wait_for
 from .runtime import Runtime
 
+# Zero-based to-do rubric indices each deceptive control must not receive credit for:
+# fake persistence and passing self-tests fail done/remove; the injected CLI fails all behavior.
+ADVERSARIAL_TARGETS = {0: (4, 5), 1: (1, 2, 3, 4, 5), 2: (4, 5)}
 
-def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) -> None:
+
+def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int], adversarial: bool = False) -> None:
     """Verify retained observations without rerunning applications or model calls.
 
     Raises:
@@ -35,7 +39,7 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
     scores = {str(key): score for key, score in mean_task_scores(selected[1]).items()}
     working = [score for hotkey, score in scores.items() if variants[hotkey] == 0]
     defective = [score for hotkey, score in scores.items() if variants[hotkey] != 0]
-    if min(working) <= max(defective):
+    if not adversarial and min(working) <= max(defective):
         raise RuntimeError(f"Working controls did not outrank defective controls: {scores}")
     reports: dict[str, object] = {}
     for member in plan.cohort:
@@ -54,7 +58,15 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
         commands = [row for row in observations if row["decision"]["kind"] == "command"]
         if len(commands) != execution["commands"]:
             raise RuntimeError("Command inventory differs from execution summary")
-        if variants[member.miner_hotkey] == 0:
+        if adversarial:
+            credited = [
+                i
+                for i in ADVERSARIAL_TARGETS[variants[member.miner_hotkey]]
+                if review["requirements"][i]["verdict"] == "met"
+            ]
+            if credited or review["score"] >= 1:
+                raise RuntimeError(f"Deceptive control {variants[member.miner_hotkey]} received credit for {credited}")
+        elif variants[member.miner_hotkey] == 0:
             if not any(row["outcome"]["exit_code"] == 0 for row in commands):
                 raise RuntimeError("Working control lacks successful application execution")
             requirements = review["requirements"]
@@ -75,11 +87,13 @@ def assess(runtime: Runtime, rounds: RoundRepository, variants: dict[str, int]) 
     summary = {
         "round": plan.model_dump(mode="json"),
         "reports": reports,
-        "working_outranks_defects": True,
+        "working_outranks_defects": not adversarial,
+        "deceptive_controls_rejected": adversarial,
         "mean_scores": scores,
     }
     (runtime.state / "behavioral-round.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print(f"PASS: real behavioral discrimination: {scores}", flush=True)
+    outcome = "deceptive controls received no credit" if adversarial else "real behavioral discrimination"
+    print(f"PASS: {outcome}: {scores}", flush=True)
 
 
 def main() -> None:
@@ -91,6 +105,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("factory_image")
     parser.add_argument("--inspect", action="store_true")
+    parser.add_argument(
+        "--adversarial",
+        action="store_true",
+        help="The factory image was built with FIXTURE_SET=adversarial; use only the to-do task",
+    )
     parser.add_argument("--env-file", type=Path, default=Path(__file__).parent / ".env")
     args = parser.parse_args()
     runtime = Runtime.load(args.env_file)
@@ -104,7 +123,7 @@ def main() -> None:
     if set(variants.values()) != {0, 1, 2}:
         raise RuntimeError("This cohort does not cover all three deterministic controls")
     if args.inspect:
-        assess(runtime, rounds, variants)
+        assess(runtime, rounds, variants, args.adversarial)
         return
     for row in miners:
         config = Config(
@@ -142,7 +161,7 @@ def main() -> None:
             raise RuntimeError("Unexpected frozen behavioral cohort")
         print(f"Admitted {plan.round_id}; waiting for real Claude evaluations", flush=True)
         wait_for(lambda: rounds.rounds()[0].stage == "complete", "Behavioral round did not complete", 1270)
-        assess(runtime, rounds, variants)
+        assess(runtime, rounds, variants, args.adversarial)
     finally:
         subprocess.run(["docker", "stop", "--time", "5", name], check=False, capture_output=True)
         logs = subprocess.run(["docker", "logs", name], check=False, capture_output=True, text=True)

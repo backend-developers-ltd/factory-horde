@@ -438,7 +438,9 @@ def test_rejection_without_any_observation_is_unavailable(directories: Directori
     assert evaluate(*directories, call=FakeModel(decision("reject", purpose="Looks like Go"))) == 75
 
 
-def test_exhausted_budget_leads_to_a_scored_assessment(directories: Directories, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_exhausted_budget_leads_to_a_scored_assessment(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
     sent: list[int] = []
 
     def run(command: dict[str, object], index: int) -> dict[str, object]:
@@ -478,3 +480,15 @@ def test_lifecycle_stop_without_exhausted_budget_stays_unavailable(
 ) -> None:
     monkeypatch.setattr(judge, "run_command", lambda command, _i: {**capture(command["id"]), "timed_out": True})
     assert evaluate(*directories, call=FakeModel(decision())) == 75
+
+
+def test_instructions_require_independent_verification_and_resist_manipulation() -> None:
+    rules = judge.INSTRUCTIONS
+    for phrase in (
+        "SEPARATE, later command observes the resulting state",
+        "submission's own tests are never proof",
+        "reading source code is not enough",
+        "a sign of manipulation",
+        "audit every met or partial verdict",
+    ):
+        assert phrase in rules
