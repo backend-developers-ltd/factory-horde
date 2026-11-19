@@ -436,3 +436,90 @@ def test_retry_activates_application_after_assets_already_match(
         prepare_only=False,
     )
     assert len(starts) == before + activation_calls
+
+
+def serve(source: Path, monkeypatch: pytest.MonkeyPatch, revision: str) -> list[str]:
+    """Serve the source tree as one release revision and record downloaded URLs."""
+    urls: list[str] = []
+
+    def download(url: str) -> bytes:
+        urls.append(url)
+        return (source / url.removeprefix(f"https://release.example/{revision}/")).read_bytes()
+
+    monkeypatch.setattr(release, "fetch", download)
+    return urls
+
+
+def unexpected(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+    pytest.fail("unexpected handoff")
+
+
+def newer_updater(source: Path) -> bytes:
+    """Change the source updater and its manifest checksum consistently."""
+    updater = (REPO / "installer/release.py").read_bytes() + b"\n# newer\n"
+    (source / "installer/release.py").write_bytes(updater)
+    manifest = json.loads((source / release.MANIFEST).read_text())
+    manifest["files"]["installer/release.py"] = release.hashlib.sha256(updater).hexdigest()
+    (source / release.MANIFEST).write_text(json.dumps(manifest))
+    return updater
+
+
+def test_matching_updater_applies_the_resolved_revision_itself(
+    source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    revision = "b" * 40
+    urls = serve(source, monkeypatch, revision)
+    monkeypatch.setattr(release.subprocess, "run", unexpected)
+    selection = release.Selection(revision, "https://release.example")
+    assert release.hand_off(selection, tmp_path) == (revision, None)
+    assert len(urls) == 2
+
+
+def test_newer_updater_applies_the_same_revision(source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    revision = "c" * 40
+    serve(source, monkeypatch, revision)
+    updater = newer_updater(source)
+    calls: list[tuple[list[str], dict[str, str], bytes]] = []
+
+    def child(command: list[str], *, env: dict[str, str], check: bool) -> subprocess.CompletedProcess[str]:
+        calls.append((command, env, Path(command[2]).read_bytes()))
+        return subprocess.CompletedProcess(command, 75)
+
+    monkeypatch.setattr(release.subprocess, "run", child)
+    monkeypatch.setattr(release.sys, "argv", ["release.py", "update", str(tmp_path)])
+    assert release.hand_off(release.Selection(revision, "https://release.example"), tmp_path) == (revision, 75)
+    [(command, env, staged)] = calls
+    assert command[1:2] == ["-I"] and command[3:] == ["update", str(tmp_path)]
+    assert env[release.HANDOFF] == revision and staged == updater
+    assert not list(tmp_path.glob(".updater-*"))
+
+
+def test_newer_updater_must_match_its_manifest(source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    revision = "d" * 40
+    serve(source, monkeypatch, revision)
+    newer_updater(source)
+    (source / "installer/release.py").write_bytes(b"tampered")
+    monkeypatch.setattr(release.subprocess, "run", unexpected)
+    with pytest.raises(release.ReleaseError, match="checksum"):
+        _ = release.hand_off(release.Selection(revision, "https://release.example"), tmp_path)
+
+
+def test_update_command_hands_off_to_the_selected_updater(source: Path, tmp_path: Path) -> None:
+    updater = b'import os\nprint("handed off", os.environ["FACTORY_HORDE_UPDATER_REVISION"])\nraise SystemExit(7)\n'
+    (source / "installer/release.py").write_bytes(updater)
+    manifest = json.loads((source / release.MANIFEST).read_text())
+    manifest["files"]["installer/release.py"] = release.hashlib.sha256(updater).hexdigest()
+    (source / release.MANIFEST).write_text(json.dumps(manifest))
+    directory = tmp_path / "installation"
+    directory.mkdir()
+    selection = {"ref": "snapshot", "source": f"file://{source}", "git_url": release.GIT_URL}
+    installation = {"service": "factory-horde-test", "project": "fh", "localnet": True, "selection": selection}
+    (directory / "installation.json").write_text(json.dumps({**installation, "identity": {}}))
+    result = subprocess.run(
+        ["/usr/bin/python3.14", "-I", str(REPO / "installer/release.py"), "update", str(directory)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 7 and result.stdout == "handed off snapshot\n"
+    assert sorted(path.name for path in directory.iterdir()) == ["installation.json"]

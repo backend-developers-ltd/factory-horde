@@ -67,11 +67,11 @@ installer with administrator privileges. Runtime resource changes in `.env` upda
 `installer/release.py` is the standard-library helper behind the existing shell
 entrypoints. A remote selection is either a full Git commit SHA or an explicit
 `deploy-config-*` branch. A branch resolves once with `git ls-remote`; all downloads
-then use that same SHA. `installer/release-manifest.json` lists the complete fixed
+then use that same SHA. When that release ships a different `installer/release.py`, the installed updater checks it against the release manifest and lets it apply the same SHA, so a release's own update logic, such as new executor settings, takes effect in one run. `installer/release-manifest.json` lists the complete fixed
 asset set and its SHA-256 hashes, protocol 1, Linux amd64 and Python 3.14 minimum.
 `executor/executor.sha256` publishes the standalone checksum too.
 
-The updater locks the installation before downloads. A concurrent invocation exits
+The updater locks the installation before downloading release assets; only the updater comparison happens earlier. A concurrent invocation exits
 75 without changing installed assets. All downloads, checksums, executor protocol,
 existing request/stop/status headers and Compose syntax are checked first. The
 verified executor is copied to a temporary file on its destination filesystem,
