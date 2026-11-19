@@ -1,0 +1,869 @@
+{
+  "round": {
+    "protocol_version": 1,
+    "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+    "sequence": 1,
+    "deadlines": {
+      "protocol_version": 1,
+      "start": "2026-11-19T17:48:36.964793Z",
+      "generation_end": "2026-11-19T17:49:36.964793Z",
+      "evaluation_start": "2026-11-19T17:49:51.964793Z",
+      "judge_end": "2026-11-19T18:09:21.964793Z",
+      "round_end": "2026-11-19T18:09:51.964793Z"
+    },
+    "discovery_block": 27924,
+    "discovery_block_hash": "0x480200d91c9eabd811152e41b1ff90e6525dee60bb96ad8abd10107cdd9e2c37",
+    "membership_snapshot": "commitment_block",
+    "cohort": [
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "uid": 2,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:891d7cc8f3df45064b97de7fec3fdaa5a75387efeb1c13afeafd43d4ed5f3f1b",
+        "factory_job_id": "2c700ad6-edad-4bd9-8644-b18705ab61c5",
+        "judge_job_id": "eb31b6c6-fe23-40c3-817c-9a60c3a4cfef",
+        "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "uid": 3,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:891d7cc8f3df45064b97de7fec3fdaa5a75387efeb1c13afeafd43d4ed5f3f1b",
+        "factory_job_id": "2f41abdc-aaf8-474f-9448-0a4ad539dbe4",
+        "judge_job_id": "1cc20baa-1188-41da-936b-ca74deac3968",
+        "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "uid": 4,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:891d7cc8f3df45064b97de7fec3fdaa5a75387efeb1c13afeafd43d4ed5f3f1b",
+        "factory_job_id": "1456b168-be99-43bf-81f5-6d90b0109033",
+        "judge_job_id": "2f1c405c-d4a9-4b75-8ba5-7566ecad69e0",
+        "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "uid": 5,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:891d7cc8f3df45064b97de7fec3fdaa5a75387efeb1c13afeafd43d4ed5f3f1b",
+        "factory_job_id": "72c6901d-f0f1-4d27-b846-1eb21a314ebb",
+        "judge_job_id": "40110d65-f23a-4516-b061-53f1fdecd286",
+        "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "uid": 6,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:891d7cc8f3df45064b97de7fec3fdaa5a75387efeb1c13afeafd43d4ed5f3f1b",
+        "factory_job_id": "8684ec55-205a-4381-bb7c-011916b6bccb",
+        "judge_job_id": "871898c6-85f3-49ef-965b-0f90c0e95d31",
+        "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5"
+      }
+    ],
+    "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+    "platform": "linux/amd64",
+    "stop_grace_seconds": 5,
+    "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+    "evaluation": {
+      "protocol_version": 1,
+      "mode": "review",
+      "requirements": [
+        "The complete CLI is in main.py and uses only the Python standard library.",
+        "Tasks persist in a JSON file across invocations.",
+        "add creates a task.",
+        "list displays the stored tasks.",
+        "done marks the selected task complete.",
+        "remove deletes the selected task.",
+        "README.md describes installation and usage."
+      ]
+    },
+    "tasks": [
+      {
+        "protocol_version": 1,
+        "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5",
+        "filename": "todo.json",
+        "specification": "Write a command-line to-do list manager in Python. Put the complete program in a single file named main.py that uses only the standard library, stores tasks in a JSON file, and supports the subcommands add, list, done and remove. Also write README.md describing installation and usage.",
+        "evaluation": {
+          "protocol_version": 1,
+          "mode": "review",
+          "requirements": [
+            "The complete CLI is in main.py and uses only the Python standard library.",
+            "Tasks persist in a JSON file across invocations.",
+            "add creates a task.",
+            "list displays the stored tasks.",
+            "done marks the selected task complete.",
+            "remove deletes the selected task.",
+            "README.md describes installation and usage."
+          ]
+        }
+      }
+    ]
+  },
+  "reports": {
+    "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i/cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5": {
+      "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5",
+      "variant": 0,
+      "score": 1.0,
+      "review": {
+        "factory_job_id": "2c700ad6-edad-4bd9-8644-b18705ab61c5",
+        "job_id": "eb31b6c6-fe23-40c3-817c-9a60c3a4cfef",
+        "kind": "judge",
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is the single file and imports only argparse, json and pathlib.",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Separate invocations saw earlier tasks, and tasks.json held valid JSON after the commands ran.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "met"
+          },
+          {
+            "id": 3,
+            "reason": "add printed 'Added 1' and 'Added 2', and a later list showed both tasks.",
+            "requirement": "add creates a task.",
+            "verdict": "met"
+          },
+          {
+            "id": 4,
+            "reason": "list printed '1 [ ] buy milk' and '2 [ ] eggs'.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "met"
+          },
+          {
+            "id": 5,
+            "reason": "After done 1, a fresh list showed '1 [x] buy milk'. Running done 9 on a missing id exited 2 with 'No such task'.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "met"
+          },
+          {
+            "id": 6,
+            "reason": "After remove 2, a fresh list and the contents of tasks.json showed only task 1.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "met"
+          },
+          {
+            "id": 7,
+            "reason": "README.md says Python 3 is required with no dependencies, shows the four commands, and says tasks are stored in tasks.json. It is brief, and I judged that sufficient. This is a source-only check.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "met"
+          }
+        ],
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "score": 1.0
+      },
+      "execution": {
+        "commands": 2,
+        "factory_job_id": "2c700ad6-edad-4bd9-8644-b18705ab61c5",
+        "format": "agent-v1",
+        "job_id": "eb31b6c6-fe23-40c3-817c-9a60c3a4cfef",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+        "kind": "judge",
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+        "steps": 2
+      },
+      "observations": [
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; cat main.py; cat README.md; grep -n '^import\\|^from' main.py"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "inspect",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "2c700ad6-edad-4bd9-8644-b18705ab61c5",
+          "job_id": "eb31b6c6-fe23-40c3-817c-9a60c3a4cfef",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-1",
+            "seconds": 0.200463203000254,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "\"\"\"Small deterministic acceptance control; not a production miner.\"\"\"\n\nimport argparse\nimport json\nfrom pathlib import Path\n\nparser = argparse.ArgumentParser(description=\"Persistent to-do manager\")\ncommands = parser.add_subparsers(dest=\"command\", required=True)\ncommands.add_parser(\"add\").add_argument(\"text\", nargs=\"+\")\ncommands.add_parser(\"list\")\nfor command in (\"done\", \"remove\"):\n    commands.add_parser(command).add_argument(\"id\", type=int)\nargs = parser.parse_args()\npath = Path(\"tasks.json\")\ntasks = json.loads(path.read_text()) if path.exists() else []\nif args.command == \"add\":\n    identity = max((task[\"id\"] for task in tasks), default=0) + 1\n    tasks.append({\"id\": identity, \"text\": \" \".join(args.text), \"done\": False})\n    print(f\"Added {identity}\")\nelif args.command == \"list\":\n    for task in tasks:\n        print(f\"{task['id']} [{'x' if task['done'] else ' '}] {task['text']}\")\nelse:\n    found = next((task for task in tasks if task[\"id\"] == args.id), None)\n    if found is None:\n        parser.error(\"No such task\")\n    if args.command == \"done\":\n        found[\"done\"] = True\n    else:\n        tasks.remove(found)\n    print(\"Updated\")\npath.write_text(json.dumps(tasks))\n# To-do CLI\n\nRequires Python 3 and no dependencies. Run `python main.py add buy milk`, `python main.py list`, `python main.py done 1`, or `python main.py remove 1`. Tasks are stored in tasks.json in the current directory.\n3:import argparse\n4:import json\n5:from pathlib import Path\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        },
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "mkdir -p /tmp/t && cd /tmp/t && rm -f tasks.json; P=/app/main.py; python $P add buy milk; python $P add eggs; python $P list; python $P done 1; python $P list; python $P remove 2; python $P list; cat tasks.json; python $P done 9; echo rc=$?"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "exercise all commands",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "2c700ad6-edad-4bd9-8644-b18705ab61c5",
+          "job_id": "eb31b6c6-fe23-40c3-817c-9a60c3a4cfef",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-2",
+            "seconds": 5.798280479997629,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "Added 1\nAdded 2\n1 [ ] buy milk\n2 [ ] eggs\nUpdated\n1 [x] buy milk\n2 [ ] eggs\nUpdated\n1 [x] buy milk\n[{\"id\": 1, \"text\": \"buy milk\", \"done\": true}]rc=2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        }
+      ]
+    },
+    "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw/cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5": {
+      "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5",
+      "variant": 0,
+      "score": 1.0,
+      "review": {
+        "factory_job_id": "2f41abdc-aaf8-474f-9448-0a4ad539dbe4",
+        "job_id": "1cc20baa-1188-41da-936b-ca74deac3968",
+        "kind": "judge",
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (stdlib), as read in step-1.",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Each invocation was a separate process. Later runs listed tasks added earlier, and tasks.json held the expected JSON.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "met"
+          },
+          {
+            "id": 3,
+            "reason": "add printed 'Added 1' and 'Added 2'. A later list showed both tasks.",
+            "requirement": "add creates a task.",
+            "verdict": "met"
+          },
+          {
+            "id": 4,
+            "reason": "list printed the id, a done marker and the text for each stored task.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "met"
+          },
+          {
+            "id": 5,
+            "reason": "After done 1, a fresh list showed '1 [x] buy milk'.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "met"
+          },
+          {
+            "id": 6,
+            "reason": "After remove 2, a fresh list and tasks.json no longer contained task 2. An unknown id gave an error with exit code 2.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "met"
+          },
+          {
+            "id": 7,
+            "reason": "README.md says it needs Python 3 and no dependencies. It gives the add, list, done and remove commands and says tasks are stored in tasks.json. It is brief, but it covers installation and usage.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "met"
+          }
+        ],
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "score": 1.0
+      },
+      "execution": {
+        "commands": 2,
+        "factory_job_id": "2f41abdc-aaf8-474f-9448-0a4ad539dbe4",
+        "format": "agent-v1",
+        "job_id": "1cc20baa-1188-41da-936b-ca74deac3968",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+        "kind": "judge",
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+        "steps": 2
+      },
+      "observations": [
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; cat main.py; echo ----; cat README.md"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "Inspect source",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "2f41abdc-aaf8-474f-9448-0a4ad539dbe4",
+          "job_id": "1cc20baa-1188-41da-936b-ca74deac3968",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-1",
+            "seconds": 0.258129251000355,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "\"\"\"Small deterministic acceptance control; not a production miner.\"\"\"\n\nimport argparse\nimport json\nfrom pathlib import Path\n\nparser = argparse.ArgumentParser(description=\"Persistent to-do manager\")\ncommands = parser.add_subparsers(dest=\"command\", required=True)\ncommands.add_parser(\"add\").add_argument(\"text\", nargs=\"+\")\ncommands.add_parser(\"list\")\nfor command in (\"done\", \"remove\"):\n    commands.add_parser(command).add_argument(\"id\", type=int)\nargs = parser.parse_args()\npath = Path(\"tasks.json\")\ntasks = json.loads(path.read_text()) if path.exists() else []\nif args.command == \"add\":\n    identity = max((task[\"id\"] for task in tasks), default=0) + 1\n    tasks.append({\"id\": identity, \"text\": \" \".join(args.text), \"done\": False})\n    print(f\"Added {identity}\")\nelif args.command == \"list\":\n    for task in tasks:\n        print(f\"{task['id']} [{'x' if task['done'] else ' '}] {task['text']}\")\nelse:\n    found = next((task for task in tasks if task[\"id\"] == args.id), None)\n    if found is None:\n        parser.error(\"No such task\")\n    if args.command == \"done\":\n        found[\"done\"] = True\n    else:\n        tasks.remove(found)\n    print(\"Updated\")\npath.write_text(json.dumps(tasks))\n----\n# To-do CLI\n\nRequires Python 3 and no dependencies. Run `python main.py add buy milk`, `python main.py list`, `python main.py done 1`, or `python main.py remove 1`. Tasks are stored in tasks.json in the current directory.\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        },
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "mkdir -p /tmp/t && cd /tmp/t && rm -f tasks.json; P='timeout 10 python /app/main.py'; $P add buy milk; $P add second; $P list; $P done 1; $P list; $P remove 2; $P list; cat tasks.json; echo; $P done 9; echo rc=$?"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "exercise all",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "2f41abdc-aaf8-474f-9448-0a4ad539dbe4",
+          "job_id": "1cc20baa-1188-41da-936b-ca74deac3968",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-2",
+            "seconds": 5.624720235995483,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "Added 1\nAdded 2\n1 [ ] buy milk\n2 [ ] second\nUpdated\n1 [x] buy milk\n2 [ ] second\nUpdated\n1 [x] buy milk\n[{\"id\": 1, \"text\": \"buy milk\", \"done\": true}]\nrc=2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        }
+      ]
+    },
+    "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa/cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5": {
+      "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5",
+      "variant": 1,
+      "score": 0.2857142857142857,
+      "review": {
+        "factory_job_id": "1456b168-be99-43bf-81f5-6d90b0109033",
+        "job_id": "2f1c405c-d4a9-4b75-8ba5-7566ecad69e0",
+        "kind": "judge",
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (standard library only).",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "main.py never writes the JSON file (its last line says 'Persistence intentionally absent'). After add, no tasks.json existed in the directory listing.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add printed 'Added 1', but the task was not stored. The next invocation's list was empty.",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "list printed nothing after an add, so it displays no stored tasks. Nothing is ever stored.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 1 after add failed with 'No such task' and exit code 2, because the task was not saved.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove only changes the in-memory list and is never saved. It also cannot find a task added in an earlier run. No remove run was observed directly.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md says it needs Python 3 and no dependencies. It gives the add, list, done and remove commands and says where tasks.json is stored. It is brief but covers installation and usage. It describes behavior the code does not deliver.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "met"
+          }
+        ],
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "score": 0.2857142857142857
+      },
+      "execution": {
+        "commands": 2,
+        "factory_job_id": "1456b168-be99-43bf-81f5-6d90b0109033",
+        "format": "agent-v1",
+        "job_id": "2f1c405c-d4a9-4b75-8ba5-7566ecad69e0",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+        "kind": "judge",
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+        "steps": 2
+      },
+      "observations": [
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; cat main.py; echo ======; cat README.md"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "read",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "1456b168-be99-43bf-81f5-6d90b0109033",
+          "job_id": "2f1c405c-d4a9-4b75-8ba5-7566ecad69e0",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-1",
+            "seconds": 0.1903697009984171,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "\"\"\"Small deterministic acceptance control; not a production miner.\"\"\"\n\nimport argparse\nimport json\nfrom pathlib import Path\n\nparser = argparse.ArgumentParser(description=\"Persistent to-do manager\")\ncommands = parser.add_subparsers(dest=\"command\", required=True)\ncommands.add_parser(\"add\").add_argument(\"text\", nargs=\"+\")\ncommands.add_parser(\"list\")\nfor command in (\"done\", \"remove\"):\n    commands.add_parser(command).add_argument(\"id\", type=int)\nargs = parser.parse_args()\npath = Path(\"tasks.json\")\ntasks = json.loads(path.read_text()) if path.exists() else []\nif args.command == \"add\":\n    identity = max((task[\"id\"] for task in tasks), default=0) + 1\n    tasks.append({\"id\": identity, \"text\": \" \".join(args.text), \"done\": False})\n    print(f\"Added {identity}\")\nelif args.command == \"list\":\n    for task in tasks:\n        print(f\"{task['id']} [{'x' if task['done'] else ' '}] {task['text']}\")\nelse:\n    found = next((task for task in tasks if task[\"id\"] == args.id), None)\n    if found is None:\n        parser.error(\"No such task\")\n    if args.command == \"done\":\n        found[\"done\"] = True\n    else:\n        tasks.remove(found)\n    print(\"Updated\")\n# Persistence intentionally absent.\n======\n# To-do CLI\n\nRequires Python 3 and no dependencies. Run `python main.py add buy milk`, `python main.py list`, `python main.py done 1`, or `python main.py remove 1`. Tasks are stored in tasks.json in the current directory.\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        },
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; rm -f tasks.json; timeout 10 python main.py add buy milk; timeout 10 python main.py list; echo rc=$?; ls; timeout 10 python main.py done 1; echo rc=$?"
+            ],
+            "kind": "command",
+            "notes": "source shows no write",
+            "purpose": "Verify persistence absence across invocations",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "1456b168-be99-43bf-81f5-6d90b0109033",
+          "job_id": "2f1c405c-d4a9-4b75-8ba5-7566ecad69e0",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-2",
+            "seconds": 1.8346581969963154,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "Added 1\nrc=0\nREADME.md\nmain.py\nrc=2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        }
+      ]
+    },
+    "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8/cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5": {
+      "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5",
+      "variant": 2,
+      "score": 0.07142857142857142,
+      "review": {
+        "factory_job_id": "72c6901d-f0f1-4d27-b846-1eb21a314ebb",
+        "job_id": "40110d65-f23a-4516-b061-53f1fdecd286",
+        "kind": "judge",
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'); no CLI exists.",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 2,
+            "reason": "No tasks are ever stored; no JSON file was created after add.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add exits 1 with 'Not implemented'.",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "list exits 1 with 'Not implemented'.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done is not implemented (the stub exits on any invocation).",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove is not implemented (the stub exits on any invocation).",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md exists and briefly gives usage commands and requirements, but it documents a program that doesn't work. It has no real installation section.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "score": 0.07142857142857142
+      },
+      "execution": {
+        "commands": 2,
+        "factory_job_id": "72c6901d-f0f1-4d27-b846-1eb21a314ebb",
+        "format": "agent-v1",
+        "job_id": "40110d65-f23a-4516-b061-53f1fdecd286",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+        "kind": "judge",
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+        "steps": 2
+      },
+      "observations": [
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; cat main.py; cat README.md; grep -n '^import\\|^from' main.py"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "inspect",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "72c6901d-f0f1-4d27-b846-1eb21a314ebb",
+          "job_id": "40110d65-f23a-4516-b061-53f1fdecd286",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 1,
+            "id": "step-1",
+            "seconds": 0.22540507299709134,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "raise SystemExit(\"Not implemented\")\n# To-do CLI\n\nRequires Python 3 and no dependencies. Run `python main.py add buy milk`, `python main.py list`, `python main.py done 1`, or `python main.py remove 1`. Tasks are stored in tasks.json in the current directory.\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        },
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; timeout 10 python main.py add x; echo rc=$?; timeout 10 python main.py list; echo rc=$?; ls"
+            ],
+            "kind": "command",
+            "notes": "main.py is stub",
+            "purpose": "Confirm stub behavior",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "72c6901d-f0f1-4d27-b846-1eb21a314ebb",
+          "job_id": "40110d65-f23a-4516-b061-53f1fdecd286",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-2",
+            "seconds": 0.29060387299978174,
+            "stderr": "Not implemented\nNot implemented\n",
+            "stderr_truncated": false,
+            "stdout": "rc=1\nrc=1\nREADME.md\nmain.py\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        }
+      ]
+    },
+    "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq/cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5": {
+      "task_id": "cb02e55a15186beb0a872f2e425ae1c83ae6e7fd6ec5dbeb2bfb80588dc47af5",
+      "variant": 2,
+      "score": 0.07142857142857142,
+      "review": {
+        "factory_job_id": "8684ec55-205a-4381-bb7c-011916b6bccb",
+        "job_id": "871898c6-85f3-49ef-965b-0f90c0e95d31",
+        "kind": "judge",
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is only a one-line stub that raises 'Not implemented'. It contains no CLI. It does use no third-party libraries, but there is no CLI to count.",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 2,
+            "reason": "After `add x` (step-2), no tasks.json was created. The directory held only README.md and main.py.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "`add x` printed 'Not implemented' to stderr and exited 1. The `echo $?` output of 1 comes from main.py. The ls output showed no data file.",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "There is no list command. Every invocation, including `-h`, exits with 'Not implemented'.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "There is no done command. main.py is a stub.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "There is no remove command. main.py is a stub.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md is short. It says Python 3 is required with no dependencies. It gives the add, list, done and remove usage and says tasks are stored in tasks.json. It documents behavior that the code does not implement.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "score": 0.07142857142857142
+      },
+      "execution": {
+        "commands": 2,
+        "factory_job_id": "8684ec55-205a-4381-bb7c-011916b6bccb",
+        "format": "agent-v1",
+        "job_id": "871898c6-85f3-49ef-965b-0f90c0e95d31",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+        "kind": "judge",
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "resolved_models": [
+          "claude-sonnet-5-5"
+        ],
+        "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+        "steps": 2
+      },
+      "observations": [
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; cat main.py; cat README.md; python main.py -h"
+            ],
+            "kind": "command",
+            "notes": "",
+            "purpose": "inspect",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "8684ec55-205a-4381-bb7c-011916b6bccb",
+          "job_id": "871898c6-85f3-49ef-965b-0f90c0e95d31",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 1,
+            "id": "step-1",
+            "seconds": 0.2532038299978012,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "raise SystemExit(\"Not implemented\")\n# To-do CLI\n\nRequires Python 3 and no dependencies. Run `python main.py add buy milk`, `python main.py list`, `python main.py done 1`, or `python main.py remove 1`. Tasks are stored in tasks.json in the current directory.\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        },
+        {
+          "decision": {
+            "argv": [
+              "/bin/sh",
+              "-c",
+              "cd /app; timeout 10 python main.py add x; echo $?; ls"
+            ],
+            "kind": "command",
+            "notes": "main.py is a stub",
+            "purpose": "confirm add fails",
+            "requirements": [],
+            "stdin": "",
+            "step": 0
+          },
+          "factory_job_id": "8684ec55-205a-4381-bb7c-011916b6bccb",
+          "job_id": "871898c6-85f3-49ef-965b-0f90c0e95d31",
+          "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:f86f5ade6d328827bfa7fbde3e0130b313bc5b6806241d36b459ccff2451570d",
+          "kind": "judge",
+          "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+          "model": "sonnet",
+          "outcome": {
+            "budget_exhausted": false,
+            "exit_code": 0,
+            "id": "step-2",
+            "seconds": 0.21684949898917694,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "1\nREADME.md\nmain.py\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          "protocol_version": 1,
+          "round_id": "5ac6d77b-73de-469a-bfa7-81dc9c33bd0d",
+          "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+        }
+      ]
+    }
+  },
+  "working_outranks_defects": true,
+  "deceptive_controls_rejected": false,
+  "mean_scores": {
+    "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 1.0,
+    "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 1.0,
+    "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 0.2857142857142857,
+    "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 0.07142857142857142,
+    "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 0.07142857142857142
+  }
+}
