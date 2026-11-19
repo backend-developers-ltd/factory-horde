@@ -776,7 +776,12 @@ def run_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, environment: dict[
     monkeypatch.setattr(Executor, "run", run)
     monkeypatch.setattr(signal, "signal", keep_handlers)
     monkeypatch.setattr(sys, "argv", ["executor.py", "--root", str(tmp_path)])
-    for key in (*WORKLOAD_KEYS, "EXECUTOR_JUDGE_RESERVE_SECONDS", "EXECUTOR_MAX_RUNNING_JOBS"):
+    for key in (
+        *WORKLOAD_KEYS,
+        "EXECUTOR_JUDGE_RESERVE_SECONDS",
+        "EXECUTOR_MAX_RUNNING_JOBS",
+        "EXECUTOR_REGISTRY_NETWORK",
+    ):
         monkeypatch.delenv(key, raising=False)
     for key, value in environment.items():
         monkeypatch.setenv(key, value)
@@ -820,6 +825,8 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
         ("EXECUTOR_TMP_SIZE", "64m,exec"),
         ("EXECUTOR_JUDGE_RESERVE_SECONDS", "-1"),
         ("EXECUTOR_MAX_RUNNING_JOBS", "0"),
+        ("EXECUTOR_REGISTRY_NETWORK", "host"),
+        ("EXECUTOR_REGISTRY_NETWORK", "two words"),
     ],
 )
 def test_invalid_workload_settings_are_rejected_at_startup(
@@ -977,3 +984,26 @@ def test_a_job_never_created_before_its_deadline_is_logged_as_error(
     assert logged == [
         {"event": "job_never_created", "level": "error", "job_id": job_request.job_id, "waited_for_slot": True}
     ]
+
+
+def test_install_without_a_registry_network_is_reported_not_attempted(
+    executor: Executor, judge_request: Request
+) -> None:
+    outcome = ApplicationRunner(executor, judge_request, {}).execute(
+        {"id": "step-1", "install": {"ecosystem": "pypi", "manifest": "requirements.txt"}, "observation": "x"}
+    )
+    assert outcome["install_unavailable"] is True and outcome["exit_code"] == 1 and outcome["id"] == "step-1"
+
+
+@pytest.mark.parametrize(
+    "install",
+    [
+        {"ecosystem": "cargo", "manifest": "Cargo.toml"},
+        {"ecosystem": "npm", "manifest": "requirements.txt"},
+        {"ecosystem": "pypi", "manifest": "../requirements.txt"},
+        {"ecosystem": "pypi"},
+    ],
+)
+def test_invalid_install_requests_are_rejected(executor: Executor, judge_request: Request, install: object) -> None:
+    with pytest.raises(ProtocolError):
+        ApplicationRunner(executor, judge_request, {}).execute({"id": "step-1", "install": install, "observation": "x"})

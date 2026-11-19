@@ -374,9 +374,39 @@ def test_workspace_runs_project_executables_and_native_extensions(runner: Applic
             "/bin/sh",
             "-c",
             "mkdir vendor && cp \"$(python -c 'import _json; print(_json.__file__)')\" vendor/ && "
-            "python -c 'import importlib.util, pathlib; path = next(pathlib.Path(\"vendor\").iterdir()); "
-            "spec = importlib.util.spec_from_file_location(\"_json\", path); "
-            "spec.loader.exec_module(importlib.util.module_from_spec(spec)); print(\"loaded\")'",
+            'python -c \'import importlib.util, pathlib; path = next(pathlib.Path("vendor").iterdir()); '
+            'spec = importlib.util.spec_from_file_location("_json", path); '
+            'spec.loader.exec_module(importlib.util.module_from_spec(spec)); print("loaded")\'',
         )
     )
     assert native["exit_code"] == 0 and native["stdout"] == "loaded\n", native["stderr"]
+
+
+def test_registry_install_runs_without_project_code_and_restores_isolation(runner: ApplicationRunner) -> None:
+    network = os.environ.get("FH_TEST_REGISTRY_NETWORK")
+    if not network:
+        pytest.skip("Requires a registry proxy on its configured template network")
+    settings = replace(runner.executor.settings, registry_network=network)
+    runner.executor.settings = settings
+    runner.docker.settings = settings
+    root = runner.files.root / runner.request.output_dir
+    (root / "requirements.txt").write_text("requests==2.32.3\n")
+    (root / "direct.txt").write_text("requests @ https://github.com/psf/requests/archive/refs/tags/v2.32.3.zip\n")
+    try:
+        runner.start()
+        installed = runner.execute(
+            {"id": "i1", "install": {"ecosystem": "pypi", "manifest": "requirements.txt"}, "observation": "x"}
+        )
+        assert installed["exit_code"] == 0, installed["stderr"]
+        inspected = runner.inspect()
+        assert inspected is not None
+        assert set(object_value(object_value(inspected["NetworkSettings"])["Networks"])) == {"none"}
+        assert runner.ledger["app_network"] == "detached"
+        offline = runner.execute(generic("python", "-c", "import requests; print(requests.__version__)"))
+        assert offline["stdout"] == "2.32.3\n"
+        direct = runner.execute(
+            {"id": "i2", "install": {"ecosystem": "pypi", "manifest": "direct.txt"}, "observation": "x"}
+        )
+        assert direct["exit_code"] != 0
+    finally:
+        runner.docker.release_network(runner.request)

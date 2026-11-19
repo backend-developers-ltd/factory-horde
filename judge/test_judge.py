@@ -518,3 +518,37 @@ def test_invalid_frozen_model_is_unavailable(directories: Directories, value: ob
         json.dumps({"protocol_version": 1, "mode": "review", "requirements": ["Add"], "model": value})
     )
     assert evaluate(*directories, call=FakeModel()) == 75
+
+
+def test_install_decision_is_sent_to_the_runner_as_a_fixed_install_request(
+    directories: Directories, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    requests: list[tuple[dict[str, object], int]] = []
+
+    def run(command: dict[str, object], index: int) -> dict[str, object]:
+        requests.append((command, index))
+        return capture(command["id"])
+
+    monkeypatch.setattr(judge, "run_command", run)
+    model = FakeModel(
+        decision("install", argv=["pypi", "requirements.txt"], purpose="Install declared dependencies"),
+        decision(),
+        reply("met"),
+    )
+    assert evaluate(*directories, call=model) == 0
+    assert requests[0] == (
+        {
+            "id": "step-1",
+            "install": {"ecosystem": "pypi", "manifest": "requirements.txt"},
+            "observation": "Install declared dependencies",
+        },
+        1,
+    )
+    assert requests[1][1] == 2
+
+
+@pytest.mark.parametrize(
+    "argv", [["pip", "requirements.txt"], ["pypi"], ["npm", "../package.json"], ["pypi", "a.txt", "b.txt"]]
+)
+def test_invalid_install_decisions_are_unavailable(directories: Directories, argv: list[str]) -> None:
+    assert evaluate(*directories, call=FakeModel(decision("install", argv=argv))) == 75

@@ -214,7 +214,50 @@ services:
       retries: 12
       start_period: 10s
 
+  registry-proxy:
+    # Forward proxy for judge dependency installation; tunnels only to approved package registries.
+    # ubuntu/squid:6.10-24.10_beta
+    image: docker.io/ubuntu/squid@sha256:c9f5212b147a766529c7b026e2bebed37b998d33d0066b658596af5eba7cc65c
+    platform: linux/amd64
+    profiles: [inference]
+    restart: unless-stopped
+    networks: [default, registry]
+    read_only: true
+    user: proxy
+    tmpfs:
+      - /tmp
+      - /var/spool/squid
+      - /var/log/squid
+      - /run
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        cat > /tmp/squid.conf <<'EOF'
+        http_port 3128
+        max_filedescriptors 4096
+        pinger_enable off
+        acl registries dstdomain pypi.org files.pythonhosted.org registry.npmjs.org
+        acl SSL_ports port 443
+        acl CONNECT method CONNECT
+        http_access deny !SSL_ports
+        http_access allow CONNECT registries
+        http_access deny all
+        cache deny all
+        access_log stdio:/proc/self/fd/1
+        cache_log stdio:/proc/self/fd/2
+        pid_filename none
+        EOF
+        exec squid -N -f /tmp/squid.conf
+
 networks:
+  registry:
+    name: "${EXECUTOR_REGISTRY_NETWORK:-factory-horde-registry}"
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
   inference:
     name: "${EXECUTOR_FACTORY_NETWORK:-factory-horde-inference}"
     internal: true

@@ -383,6 +383,7 @@ class Settings:
     factory_network: str = ""
     inference_url: str = "http://inference-proxy:8080"
     judge_reserve_seconds: int = 180
+    registry_network: str = ""
     max_running_jobs: int = 4
 
 
@@ -545,33 +546,41 @@ class Docker:
         return value
 
     def inference_network(self, request: Request) -> str:
-        """Connect only this workload and the configured proxy to an isolated bridge.
+        """Connect only this workload and the configured inference proxy to an isolated bridge.
 
         Raises:
             DockerError: The proxy or network identity cannot be verified.
         """
-        name = request.name + "-inference"
-        template = parse(
-            self.require(
-                "network",
-                "inspect",
-                self.settings.factory_network,
-                "--format",
-                "{{json .}}",
-            )
-        )
+        return self.proxy_network(request, self.settings.factory_network, "inference-proxy", "-inference")
+
+    def registry_network(self, request: Request) -> str:
+        """Connect only this judge's application and the registry proxy to an isolated bridge.
+
+        Raises:
+            DockerError: The proxy or network identity cannot be verified.
+        """
+        return self.proxy_network(request, self.settings.registry_network, "registry-proxy", "-registry")
+
+    def proxy_network(self, request: Request, configured: str, service: str, suffix: str) -> str:
+        """Create or verify a job-owned internal network whose only peer is one Compose proxy service.
+
+        Raises:
+            DockerError: The proxy or network identity cannot be verified.
+        """
+        name = request.name + suffix
+        template = parse(self.require("network", "inspect", configured, "--format", "{{json .}}"))
         proxies: list[str] = []
         for identifier in object_value(template.get("Containers", {})):
             container = parse(self.require("container", "inspect", identifier, "--format", "{{json .}}"))
             labels = object_value(object_value(container["Config"])["Labels"])
-            if labels.get("com.docker.compose.service") == "inference-proxy":
+            if labels.get("com.docker.compose.service") == service:
                 proxies.append(identifier)
         if len(proxies) != 1:
-            raise DockerError("Expected one inference proxy on the configured network")
+            raise DockerError(f"Expected one {service} on the configured network")
         result = self.call("network", "inspect", name, "--format", "{{json .}}")
         if result.returncode:
             if "not found" not in result.stderr and "No such network" not in result.stderr:
-                raise DockerError("Inference network inspection failed")
+                raise DockerError("Proxy network inspection failed")
             self.require(
                 "network",
                 "create",
@@ -589,9 +598,9 @@ class Docker:
             or network.get("Internal") is not True
             or object_value(network.get("Options", {})).get("com.docker.network.bridge.gateway_mode_ipv4") != "isolated"
         ):
-            raise DockerError("Inference network identity or isolation mismatch")
+            raise DockerError("Proxy network identity or isolation mismatch")
         if proxies[0] not in object_value(network.get("Containers", {})):
-            self.require("network", "connect", "--alias", "inference-proxy", name, proxies[0])
+            self.require("network", "connect", "--alias", service, name, proxies[0])
         return name
 
     def release_network(self, request: Request) -> None:
@@ -600,20 +609,24 @@ class Docker:
         Raises:
             DockerError: Ownership or network cleanup is uncertain.
         """
-        if not self.settings.factory_network:
-            return
-        name = request.name + "-inference"
-        result = self.call("network", "inspect", name, "--format", "{{json .}}")
-        if result.returncode:
-            if "not found" in result.stderr or "No such network" in result.stderr:
-                return
-            raise DockerError("Inference network cleanup inspection failed")
-        network = parse(result.stdout)
-        if object_value(network.get("Labels", {})).get("factory_horde.request_sha256") != request.digest:
-            raise DockerError("Refusing to remove an unrelated inference network")
-        for identifier in object_value(network.get("Containers", {})):
-            self.require("network", "disconnect", name, identifier)
-        self.require("network", "rm", name)
+        for configured, suffix in (
+            (self.settings.factory_network, "-inference"),
+            (self.settings.registry_network, "-registry"),
+        ):
+            if not configured:
+                continue
+            name = request.name + suffix
+            result = self.call("network", "inspect", name, "--format", "{{json .}}")
+            if result.returncode:
+                if "not found" in result.stderr or "No such network" in result.stderr:
+                    continue
+                raise DockerError("Proxy network cleanup inspection failed")
+            network = parse(result.stdout)
+            if object_value(network.get("Labels", {})).get("factory_horde.request_sha256") != request.digest:
+                raise DockerError("Refusing to remove an unrelated proxy network")
+            for identifier in object_value(network.get("Containers", {})):
+                self.require("network", "disconnect", name, identifier)
+            self.require("network", "rm", name)
 
     def prepare(self, request: Request) -> tuple[str, ...]:
         """Resolve mounts and the proxy-only network before any create intent is persisted.
@@ -740,6 +753,7 @@ def docker_api(method: str, path: str, body: dict[str, object] | None = None) ->
             connection.close()
 
 
+REGISTRY_PROXY = "http://registry-proxy:3128"
 # A command that cannot start because the evaluation's sandbox time is spent; nothing was executed.
 EXHAUSTED: dict[str, object] = {
     "exit_code": -1,
@@ -845,6 +859,7 @@ class ApplicationRunner:
             container = self.inspect()
         if container is None:
             raise DockerError("Application creation not observable")
+        self.detach()
         self.run(container)
 
     def create(self, settings: Settings, submission: str) -> str:
@@ -878,6 +893,8 @@ class ApplicationRunner:
             "/app",
             "--env",
             "HOME=/app",
+            "--env",
+            "PYTHONPATH=/app/.deps",
             "--label",
             f"factory_horde.runner={self.request.digest}",
             "--log-driver",
@@ -929,6 +946,8 @@ class ApplicationRunner:
             ProtocolError: The command violates the sandbox request contract.
             DockerError: Capture or executor lifetime is interrupted.
         """
+        if "install" in command:
+            return self.install(command)
         # Retain args for already-frozen jobs from the earlier CLI-only judge image.
         key = "argv" if "argv" in command else "args"
         args = command.get(key)
@@ -949,10 +968,117 @@ class ApplicationRunner:
             arguments = ["/usr/local/bin/python3", "-I", "/app/main.py", *arguments]
         elif not arguments or not arguments[0]:
             raise ProtocolError("Empty application argv")
+        return self.run_command(string(command["id"]), arguments, stdin)
+
+    def install(self, command: dict[str, object]) -> dict[str, object]:
+        """Install declared dependencies through the registry proxy with a fixed, script-free command.
+
+        Project code never runs while the network is attached: pip installs wheels only and npm skips
+        lifecycle scripts. The sandbox returns to `--network none`, verified, before anything else runs.
+
+        Raises:
+            ProtocolError: The install request violates the contract.
+            DockerError: Network attachment or detachment cannot be confirmed.
+        """
+        spec = command.get("install")
+        if (
+            set(command) != {"id", "install", "observation"}
+            or not isinstance(command["id"], str)
+            or not command["id"]
+            or set(fields := object_value(spec)) != {"ecosystem", "manifest"}
+        ):
+            raise ProtocolError("Invalid dependency installation request")
+        ecosystem, manifest = string(fields["ecosystem"]), string(fields["manifest"])
+        parts = relative_parts(manifest)
+        environment = [f"{name}={REGISTRY_PROXY}" for name in ("HTTPS_PROXY", "https_proxy", "npm_config_https_proxy")]
+        if ecosystem == "pypi":
+            workdir = "/app"
+            arguments = [
+                "/usr/local/bin/python3",
+                "-m",
+                "pip",
+                "install",
+                "--only-binary",
+                ":all:",
+                "--no-input",
+                "--disable-pip-version-check",
+                "--no-cache-dir",
+                "--target",
+                "/app/.deps",
+                "--report",
+                "/app/.deps-report.json",
+                "--requirement",
+                "/app/" + manifest,
+            ]
+        elif ecosystem == "npm" and parts[-1] == "package.json":
+            workdir = "/".join(("/app", *parts[:-1]))
+            arguments = ["/usr/local/bin/npm", "install", "--ignore-scripts", "--no-audit", "--no-fund"]
+            environment += ["npm_config_cache=/tmp/npm-cache", "npm_config_update_notifier=false"]
+        else:
+            raise ProtocolError("Unsupported dependency ecosystem or manifest")
+        if not self.executor.settings.registry_network:
+            return {
+                **EXHAUSTED,
+                "id": command["id"],
+                "exit_code": 1,
+                "timed_out": False,
+                "budget_exhausted": False,
+                "install_unavailable": True,
+                "stderr": "Dependency installation is not configured on this validator",
+            }
+        network = self.docker.registry_network(self.request)
+        self.ledger["app_network"] = "attaching"
+        self.save()
+        self.docker.require("network", "disconnect", "none", self.name)
+        self.docker.require("network", "connect", network, self.name)
+        self.ledger["app_network"] = "attached"
+        self.save()
+        try:
+            outcome = self.run_command(string(command["id"]), arguments, "", environment, workdir)
+        finally:
+            self.detach()
+        return {**outcome, "install": {"ecosystem": ecosystem, "manifest": manifest}}
+
+    def detach(self) -> None:
+        """Return the sandbox to `--network none` and confirm it before any further command.
+
+        Raises:
+            DockerError: Docker cannot confirm that the sandbox has no network.
+        """
+        if self.ledger.get("app_network") not in ("attaching", "attached"):
+            return
+        container = self.inspect()
+        if container is None:
+            raise DockerError("Application missing while detaching its network")
+        networks = object_value(object_value(container["NetworkSettings"])["Networks"])
+        for name in networks:
+            if name != "none":
+                self.docker.require("network", "disconnect", name, self.name)
+        if "none" not in networks:
+            self.docker.require("network", "connect", "none", self.name)
+        container = self.inspect()
+        if container is None or set(object_value(object_value(container["NetworkSettings"])["Networks"])) != {"none"}:
+            raise DockerError("Application network isolation could not be restored")
+        self.ledger["app_network"] = "detached"
+        self.save()
+
+    def run_command(
+        self,
+        identity: str,
+        arguments: list[str],
+        stdin: str,
+        environment: list[str] | None = None,
+        workdir: str | None = None,
+    ) -> dict[str, object]:
+        """Run one exec within the shared sandbox budget and capture bounded streams outside it.
+
+        Raises:
+            DockerError: Capture or executor lifetime is interrupted.
+        """
         started = time.monotonic()
         limit = (self.sandbox_deadline() - datetime.now(UTC)).total_seconds()
         if limit <= 0:
-            return {**EXHAUSTED, "id": command["id"]}
+            return {**EXHAUSTED, "id": identity}
         created = docker_api(
             "POST",
             f"/containers/{self.name}/exec",
@@ -962,6 +1088,8 @@ class ApplicationRunner:
                 "AttachStderr": True,
                 "Tty": False,
                 "Cmd": arguments,
+                **({"Env": environment} if environment else {}),
+                **({"WorkingDir": workdir} if workdir else {}),
             },
         )
         exec_id = string(created["Id"])
@@ -1062,7 +1190,7 @@ class ApplicationRunner:
         duration = time.monotonic() - started
         self.executor.metrics.observe("application", "timeout" if timed_out else "ok", duration)
         return {
-            "id": command["id"],
+            "id": identity,
             "exit_code": exit_code,
             "timed_out": timed_out,
             "budget_exhausted": budget_exhausted,
@@ -1650,6 +1778,7 @@ def main() -> None:
         tmp_size=os.environ.get("EXECUTOR_TMP_SIZE", "64m"),
         judge_reserve_seconds=int(os.environ.get("EXECUTOR_JUDGE_RESERVE_SECONDS", "180")),
         max_running_jobs=int(os.environ.get("EXECUTOR_MAX_RUNNING_JOBS", "4")),
+        registry_network=os.environ.get("EXECUTOR_REGISTRY_NETWORK", ""),
         factory_network=os.environ.get("EXECUTOR_FACTORY_NETWORK", ""),
         inference_url=os.environ.get("EXECUTOR_INFERENCE_URL", "http://inference-proxy:8080"),
     )
@@ -1672,6 +1801,8 @@ def main() -> None:
         re.fullmatch(r"[1-9][0-9]{0,5}[kmg]", settings.tmp_size) is None
         or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.factory_network) is None
         or settings.factory_network in RESERVED_NETWORKS
+        or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.registry_network) is None
+        or settings.registry_network in RESERVED_NETWORKS
         or re.fullmatch(r"https?://[A-Za-z0-9._:/-]+", settings.inference_url) is None
     ):
         parser.error("Require a simple /tmp size, a user-defined Docker network name and an HTTP(S) inference URL")
