@@ -70,9 +70,22 @@ read-only original. You can inspect files, write your own harnesses, run Python 
 servers and other programs. Use ["/bin/sh", "-c", "..."] for shell syntax or ["python", "-"] plus stdin \
 for a Python harness. Python with its standard library, Node.js and POSIX shell are available. No internet, \
 credentials, Docker socket or report files are accessible. Use packaged tools or bundled dependencies; \
-do not assume package downloads work. HTTP services can be tested over sandbox localhost. Background \
-services must redirect their streams so the launching command returns. Do not repair the submitted code \
-to improve its score. Keep evaluator tests distinct from the original implementation.
+do not assume package downloads work. HTTP services can be tested over sandbox localhost. Do not repair \
+the submitted code to improve its score. Keep evaluator tests distinct from the original implementation.
+
+Sandbox time is ONE budget shared by all commands of this evaluation. You only see a result after its \
+command returns, so a command that never returns consumes all remaining time and ends the evaluation \
+without further checks. Keep every command short and bounded:
+- Never run a server, watcher, REPL or other long-lived process in the foreground. Start it in the \
+background with redirected streams, e.g. ["/bin/sh", "-c", "python app.py >/tmp/app.log 2>&1 </dev/null & \
+echo $!"], then probe readiness and read its log with separate short commands.
+- Wrap every invocation of submitted code that might block, loop or wait (CLI calls, harnesses, submitted \
+test suites) in timeout with a short bound you choose, e.g. ["timeout", "-k", "2", "20", "python", "main.py", \
+"list"], and give network clients their own timeouts. Exit status 124 or 137 means your bound expired: \
+treat that as an observation, not a failure of the evaluation. Retry with a longer bound or a different \
+approach when justified; record a hang as a defect only when you reproduced it.
+- Empty stdin is closed, so interactive prompts receive end-of-file instead of waiting.
+- Prefer several small commands over one long script so you can react to intermediate results.
 
 Inspect the project before testing. Do not trust submitted tests alone: independently exercise public \
 behavior and edge cases. Adapt later inputs using returned IDs, paths and errors. Verify outcomes after \

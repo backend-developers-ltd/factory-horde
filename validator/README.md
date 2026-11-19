@@ -191,4 +191,4 @@ env -u UV_EXCLUDE_NEWER uv run basedpyright
 env -u UV_EXCLUDE_NEWER uv run pytest -q --tb=line -r f
 ```
 
-Server task discovery uses `VALIDATOR_TASK_DIRECTORY` (the operator-owned host `TASK_DIRECTORY` in Compose). Admission freezes every non-hidden JSON task before discovery. Each miner receives a separate factory/judge execution for every task, and its round score averages all task scores. See the [operator task-file instructions](../installer/README.md#server-task-files). Behavioral evaluations retain check plans, captured execution and final reasons; see the [judge guide](../judge/README.md).
+Server task discovery uses `VALIDATOR_TASK_DIRECTORY` (the operator-owned host `TASK_DIRECTORY` in Compose). Admission freezes every non-hidden JSON task before discovery. Each miner receives a separate factory/judge execution for every task, and its round score averages all task scores. See the [operator task-file instructions](../installer/README.md#server-task-files). Behavioral evaluations retain per-step decisions, captured observations, assessments and final reasons; see the [judge guide](../judge/README.md).
