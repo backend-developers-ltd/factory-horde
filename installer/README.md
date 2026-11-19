@@ -210,13 +210,17 @@ Real factories usually also need more than the default resources: `EXECUTOR_MEMO
 
 `EXECUTOR_MAX_RUNNING_JOBS` (default 4) caps how many factory or judge containers exist at once; a judge's application sandbox shares its slot. Round deadlines never stretch, so set it high enough for every job of a stage (miners × tasks) to run together, within the host's memory and CPU. A job waiting for a slot reports `Waiting for a workload slot` and logs `workload_slot_wait` at error level; one whose window ends before it starts logs `job_never_created` and its miner is excluded from the round.
 
-Each networked workload gets its own small internal network. Docker's default address pools allow only about 31 networks per host, so give it small subnets before raising the limit, for example in `/etc/docker/daemon.json`:
+Each networked workload gets its own small internal network. Docker's default address pools allow only about 31 networks per host, so give it a dedicated pool before raising the limit, for example in `/etc/docker/daemon.json`:
 
 ```json
-{"default-address-pools": [{"base": "10.200.0.0/16", "size": 28}]}
+{
+  "bip": "172.17.0.1/16",
+  "default-address-pools": [{"base": "10.200.0.0/16", "size": 24}],
+  "live-restore": true
+}
 ```
 
-That allows 4096 networks. Restart dockerd afterwards (`live-restore` keeps running containers alive) and check that the range does not overlap existing networks or routes. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory and judge containers and those jobs fail without a score.
+That allows 256 new networks of 254 hosts each; existing networks keep their subnets and `bip` pins the default bridge. Choose a base that overlaps no existing network or host route (`ip -4 route`). `live-restore` keeps containers running across later daemon restarts, but the restart that applies this file still stops all containers unless it was already enabled, so apply it when no factory or judge is running (`docker ps --filter label=factory_horde.job_id` is empty). Validate first with `sudo dockerd --validate --config-file /etc/docker/daemon.json`, then `sudo systemctl restart docker`. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory and judge containers and those jobs fail without a score.
 
 ## Monitoring and recovery
 
