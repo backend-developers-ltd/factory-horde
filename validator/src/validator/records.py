@@ -251,10 +251,15 @@ class JobIdentity(Record):
         return uuid5(NAMESPACE_URL, f"factory-horde:v1:{self.kind}:{self.job_id}")
 
 
+type SkipReason = Literal[
+    "factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired", "factory_not_started"
+]
+
+
 class SkippedEvaluation(JobIdentity):
     """A judge was never authorized; the reason determines eligibility for review weights."""
 
-    reason: Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"]
+    reason: SkipReason
     observed_at: UtcTime
 
 

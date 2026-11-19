@@ -28,6 +28,7 @@ from validator.records import (
     RoundPlan,
     RoundRecord,
     SkippedEvaluation,
+    SkipReason,
     StopRequest,
     UtcTime,
     request_for,
@@ -330,19 +331,21 @@ class RoundCoordinator:
                 raise ValueError("Skipped evaluation attribution differs")
             return False
         result = self.repository.read(factory)
-        reason: (
-            Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"] | None
-        ) = None
+        reason: SkipReason | None = None
         if now >= judge.deadline:
             reason = "evaluation_expired"
         elif eligibility is not None and eligibility.decision == "late":
             reason = "factory_late"
-        elif eligibility is not None and eligibility.decision == "failed":
-            reason = "factory_failed"
+        elif (eligibility is not None and eligibility.decision == "failed") or (
+            result is not None and result.failure is not None
+        ):
+            status = result.status if result is not None else self.rounds.status(factory)
+            # The window closed before the executor could run the factory (capacity, preparation or
+            # executor downtime); the miner is not at fault.
+            cancelled = status is not None and status.execution == "never_started" and status.state == "cancelled"
+            reason = "factory_not_started" if cancelled else "factory_failed"
         elif result is None:
             return False
-        elif result.failure is not None:
-            reason = "factory_failed"
         elif eligibility is None or eligibility.decision != "timely":
             return False
         else:

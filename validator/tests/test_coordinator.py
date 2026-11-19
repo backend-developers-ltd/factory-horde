@@ -416,6 +416,27 @@ def test_ineligible_factory_never_authorizes_judge(fixture: Fixture, failure: st
     )
 
 
+def test_factory_cancelled_before_it_ran_is_not_blamed_on_the_miner(fixture: Fixture) -> None:
+    fixture.count = 1
+    plan = fixture.start()
+    factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
+    status = JobStatus(
+        **factory.model_dump(include={"round_id", "job_id", "miner_hotkey", "kind", "factory_job_id"}),
+        state="cancelled",
+        observed_at=plan.deadlines.generation_end,
+        execution="never_started",
+        startup_forbidden=True,
+        reason="Cancelled before creation",
+    )
+    fixture.repository.files.replace(f"control/statuses/{factory.job_id}.json", status)
+    with structlog.testing.capture_logs() as logs:
+        assert not fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT).errors
+    skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
+    assert skipped.reason == "factory_not_started"
+    assert fixture.repository.round_outcome(plan).excluded == {factory.miner_hotkey: "missing_result"}
+    assert any(log["event"] == "miner_excluded" and log["log_level"] == "error" for log in logs)
+
+
 @pytest.mark.parametrize("offset", [-1, 0, 1, 300])
 @pytest.mark.parametrize("observe_cutoff", [False, True])
 def test_finish_cutoff_survives_late_observation_and_restart(
