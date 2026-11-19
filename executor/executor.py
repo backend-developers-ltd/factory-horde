@@ -754,6 +754,36 @@ def docker_api(method: str, path: str, body: dict[str, object] | None = None) ->
 
 
 REGISTRY_PROXY = "http://registry-proxy:3128"
+# A plain index requirement: name, extras, version specifiers and markers. Options, paths and URLs never match.
+REQUIREMENT = re.compile(
+    r"[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
+    r"(?:\s*\[\s*[A-Za-z0-9._-]+(?:\s*,\s*[A-Za-z0-9._-]+)*\s*\])?"
+    r"(?:\s*(?:===|~=|==|!=|<=|>=|<|>)\s*[A-Za-z0-9.*+!_-]+(?:\s*,\s*(?:===|~=|==|!=|<=|>=|<|>)\s*[A-Za-z0-9.*+!_-]+)*)?"
+    r"(?:\s*;\s*[A-Za-z0-9_.'\"<>=!~ ()-]+)?"
+)
+# Fixed image-owned helpers; `-I` keeps project modules and environment out of the interpreter.
+READ_MANIFEST = (
+    "import sys\n"
+    "data = open(sys.argv[1], 'rb').read(65537)\n"
+    "sys.exit(3) if len(data) > 65536 else sys.stdout.write(data.decode())"
+)
+# SIGKILL to -1 reaches every sandbox process except PID 1 (the image-owned workspace holder) and the caller.
+STOP_PROCESSES = (
+    "import os, signal, sys, time\n"
+    "def alive():\n"
+    " for pid in os.listdir('/proc'):\n"
+    "  if pid.isdigit() and int(pid) not in (1, os.getpid()):\n"
+    "   try:\n"
+    "    if open(f'/proc/{pid}/stat').read().rsplit(')', 1)[1].split()[0] not in 'ZX': return True\n"
+    "   except OSError: pass\n"
+    " return False\n"
+    "for _ in range(50):\n"
+    " try: os.kill(-1, signal.SIGKILL)\n"
+    " except ProcessLookupError: pass\n"
+    " if not alive(): sys.exit(0)\n"
+    " time.sleep(0.1)\n"
+    "sys.exit(1)"
+)
 # A command that cannot start because the evaluation's sandbox time is spent; nothing was executed.
 EXHAUSTED: dict[str, object] = {
     "exit_code": -1,
@@ -765,6 +795,18 @@ EXHAUSTED: dict[str, object] = {
     "stderr_truncated": False,
     "seconds": 0,
 }
+
+
+def refused(identity: str, reason: str) -> dict[str, object]:
+    """An install outcome for a request the executor declined without running anything."""
+    return {
+        **EXHAUSTED,
+        "id": identity,
+        "exit_code": 1,
+        "timed_out": False,
+        "budget_exhausted": False,
+        "stderr": reason,
+    }
 
 
 class ApplicationRunner:
@@ -973,8 +1015,9 @@ class ApplicationRunner:
     def install(self, command: dict[str, object]) -> dict[str, object]:
         """Install declared dependencies through the registry proxy with a fixed, script-free command.
 
-        Project code never runs while the network is attached: pip installs wheels only and npm skips
-        lifecycle scripts. The sandbox returns to `--network none`, verified, before anything else runs.
+        Project code never runs while the network is attached: every other sandbox process is killed
+        first, pip runs isolated from `/app` and receives only validated index requirements, and npm
+        skips lifecycle scripts. The sandbox returns to `--network none`, verified, before anything else runs.
 
         Raises:
             ProtocolError: The install request violates the contract.
@@ -988,44 +1031,56 @@ class ApplicationRunner:
             or set(fields := object_value(spec)) != {"ecosystem", "manifest"}
         ):
             raise ProtocolError("Invalid dependency installation request")
-        ecosystem, manifest = string(fields["ecosystem"]), string(fields["manifest"])
+        identity, ecosystem, manifest = string(command["id"]), string(fields["ecosystem"]), string(fields["manifest"])
         parts = relative_parts(manifest)
+        if ecosystem not in ("pypi", "npm") or (ecosystem == "npm" and parts[-1] != "package.json"):
+            raise ProtocolError("Unsupported dependency ecosystem or manifest")
+        declared = {"install": {"ecosystem": ecosystem, "manifest": manifest}}
+        if not self.executor.settings.registry_network:
+            return {
+                **refused(identity, "Dependency installation is not configured on this validator"),
+                "install_unavailable": True,
+            }
         environment = [f"{name}={REGISTRY_PROXY}" for name in ("HTTPS_PROXY", "https_proxy", "npm_config_https_proxy")]
         if ecosystem == "pypi":
-            workdir = "/app"
+            requirements = self.requirements(manifest)
+            if isinstance(requirements, str):
+                return {**refused(identity, requirements), **declared}
+            workdir = "/"
             arguments = [
                 "/usr/local/bin/python3",
+                "-I",
                 "-m",
                 "pip",
+                "--isolated",
                 "install",
                 "--only-binary",
                 ":all:",
                 "--no-input",
                 "--disable-pip-version-check",
                 "--no-cache-dir",
+                "--proxy",
+                REGISTRY_PROXY,
                 "--target",
                 "/app/.deps",
                 "--report",
                 "/app/.deps-report.json",
-                "--requirement",
-                "/app/" + manifest,
+                *requirements,
             ]
-        elif ecosystem == "npm" and parts[-1] == "package.json":
-            workdir = "/".join(("/app", *parts[:-1]))
-            arguments = ["/usr/local/bin/npm", "install", "--ignore-scripts", "--no-audit", "--no-fund"]
-            environment += ["npm_config_cache=/tmp/npm-cache", "npm_config_update_notifier=false"]
         else:
-            raise ProtocolError("Unsupported dependency ecosystem or manifest")
-        if not self.executor.settings.registry_network:
-            return {
-                **EXHAUSTED,
-                "id": command["id"],
-                "exit_code": 1,
-                "timed_out": False,
-                "budget_exhausted": False,
-                "install_unavailable": True,
-                "stderr": "Dependency installation is not configured on this validator",
-            }
+            workdir = "/".join(("/app", *parts[:-1]))
+            # Project .npmrc files are still read; pin the one setting that names an executable npm runs.
+            arguments = [
+                "/usr/local/bin/npm",
+                "install",
+                "--ignore-scripts",
+                "--no-audit",
+                "--no-fund",
+                "--git=/bin/false",
+            ]
+            environment += ["npm_config_cache=/tmp/npm-cache", "npm_config_update_notifier=false"]
+        if self.docker.call("exec", self.name, "/usr/local/bin/python3", "-I", "-c", STOP_PROCESSES).returncode:
+            return {**refused(identity, "Sandbox processes could not be stopped before installation"), **declared}
         network = self.docker.registry_network(self.request)
         self.ledger["app_network"] = "attaching"
         self.save()
@@ -1034,10 +1089,30 @@ class ApplicationRunner:
         self.ledger["app_network"] = "attached"
         self.save()
         try:
-            outcome = self.run_command(string(command["id"]), arguments, "", environment, workdir)
+            outcome = self.run_command(identity, arguments, "", environment, workdir)
         finally:
             self.detach()
-        return {**outcome, "install": {"ecosystem": ecosystem, "manifest": manifest}}
+        return {**outcome, **declared}
+
+    def requirements(self, manifest: str) -> list[str] | str:
+        """Read a requirements file through a fixed exec and return its requirements, or why it is refused."""
+        result = self.docker.call(
+            "exec", self.name, "/usr/local/bin/python3", "-I", "-c", READ_MANIFEST, "/app/" + manifest
+        )
+        if result.returncode:
+            return "Requirements file is missing, unreadable, not UTF-8 or larger than 64 KiB"
+        accepted: list[str] = []
+        for number, line in enumerate(result.stdout.splitlines(), 1):
+            requirement = re.sub(r"(?:^|\s)#.*", "", line).strip()
+            if not requirement:
+                continue
+            if REQUIREMENT.fullmatch(requirement) is None:
+                return (
+                    f"Line {number} of the requirements file is not a plain package requirement; "
+                    "options, paths, URLs and includes are not installed"
+                )
+            accepted.append(requirement)
+        return accepted or "Requirements file declares no packages"
 
     def detach(self) -> None:
         """Return the sandbox to `--network none` and confirm it before any further command.

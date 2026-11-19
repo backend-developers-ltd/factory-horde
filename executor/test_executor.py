@@ -15,10 +15,12 @@ from typing import override
 from uuid import uuid4
 
 import pytest
+
 from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 
 from .executor import (
+    REQUIREMENT,
     ApplicationRunner,
     Docker,
     DockerError,
@@ -1016,6 +1018,33 @@ def test_install_without_a_registry_network_is_reported_not_attempted(
         {"id": "step-1", "install": {"ecosystem": "pypi", "manifest": "requirements.txt"}, "observation": "x"}
     )
     assert outcome["install_unavailable"] is True and outcome["exit_code"] == 1 and outcome["id"] == "step-1"
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["requests", "requests==2.32.3", "Flask[async] >=3, <4", "numpy~=2.1; python_version >= '3.12'", "a.b_c-d"],
+)
+def test_plain_index_requirements_are_accepted(line: str) -> None:
+    assert REQUIREMENT.fullmatch(line)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "./pkg",
+        "-e ./pkg",
+        "--no-binary :all:",
+        "-r other.txt",
+        "-c constraints.txt",
+        "--index-url https://example.com",
+        "requests @ https://example.com/requests.zip",
+        "git+https://example.com/repo.git",
+        "/abs/pkg",
+        "pkg.whl \\",
+    ],
+)
+def test_options_paths_and_urls_are_not_requirements(line: str) -> None:
+    assert REQUIREMENT.fullmatch(line) is None
 
 
 @pytest.mark.parametrize(

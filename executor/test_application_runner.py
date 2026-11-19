@@ -13,6 +13,7 @@ from uuid import uuid4
 import pytest
 
 from executor.executor import (
+    STOP_PROCESSES,
     ApplicationRunner,
     DockerError,
     Executor,
@@ -382,6 +383,33 @@ def test_workspace_runs_project_executables_and_native_extensions(runner: Applic
     assert native["exit_code"] == 0 and native["stdout"] == "loaded\n", native["stderr"]
 
 
+def test_install_refuses_a_requirements_file_that_could_run_project_code(runner: ApplicationRunner) -> None:
+    settings = replace(runner.executor.settings, registry_network="unused-registry-network")
+    runner.executor.settings = settings
+    runner.docker.settings = settings
+    root = runner.files.root / runner.request.output_dir
+    (root / "requirements.txt").write_text("requests  # comment\n./pkg\n")
+    runner.start()
+    refused = runner.execute(
+        {"id": "i1", "install": {"ecosystem": "pypi", "manifest": "requirements.txt"}, "observation": "x"}
+    )
+    assert refused["exit_code"] == 1 and "Line 2" in str(refused["stderr"])
+    assert "app_network" not in runner.ledger
+
+
+def test_installation_first_stops_every_other_sandbox_process(runner: ApplicationRunner) -> None:
+    runner.start()
+    started = runner.execute(
+        generic("/bin/sh", "-c", "setsid sleep 300 >/dev/null 2>&1 </dev/null & echo $! > /tmp/bg")
+    )
+    assert started["exit_code"] == 0
+    state = "cut -d' ' -f3 /proc/$(cat /tmp/bg)/stat 2>/dev/null || echo gone"
+    assert runner.execute(generic("/bin/sh", "-c", state))["stdout"] == "S\n"
+    assert runner.docker.call("exec", runner.name, "/usr/local/bin/python3", "-I", "-c", STOP_PROCESSES).returncode == 0
+    assert runner.execute(generic("/bin/sh", "-c", state))["stdout"] in ("Z\n", "gone\n")
+    assert runner.execute(generic("true"))["exit_code"] == 0
+
+
 def test_registry_install_runs_without_project_code_and_restores_isolation(runner: ApplicationRunner) -> None:
     network = os.environ.get("FH_TEST_REGISTRY_NETWORK")
     if not network:
@@ -392,6 +420,8 @@ def test_registry_install_runs_without_project_code_and_restores_isolation(runne
     root = runner.files.root / runner.request.output_dir
     (root / "requirements.txt").write_text("requests==2.32.3\n")
     (root / "direct.txt").write_text("requests @ https://github.com/psf/requests/archive/refs/tags/v2.32.3.zip\n")
+    # Installation must use the image's pip, never a project module of the same name.
+    (root / "pip.py").write_text("raise SystemExit('project pip ran')\n")
     try:
         runner.start()
         installed = runner.execute(
