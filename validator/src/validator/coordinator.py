@@ -14,7 +14,6 @@ from prometheus_client import Counter, Histogram
 from pydantic import UUID4, Field, model_validator
 
 from validator.discovery import DiscoverySnapshot
-from validator.record_files import RecordFormatError
 from validator.records import (
     CohortMember,
     Criterion,
@@ -152,6 +151,7 @@ class RoundCoordinator:
         self.judge_image = judge_image
         self.discover = discover
         self.task_directory = task_directory
+        self._task_error: str | None = None
         self.specification = specification
         self.judge_model = judge_model
         self.evaluation = EvaluationPolicy(
@@ -179,7 +179,7 @@ class RoundCoordinator:
                     sources = sorted(
                         path
                         for path in self.task_directory.iterdir()
-                        if path.suffix == ".json" and not path.name.startswith(".")
+                        if path.suffix == ".json" and not path.name.startswith(".") and path.is_file()
                     )
                     if not sources:
                         raise ValueError("Task directory contains no JSON tasks")
@@ -202,10 +202,14 @@ class RoundCoordinator:
                             )
                         )
                     specification, evaluation = tasks[0].specification, tasks[0].evaluation
-                except OSError, ValueError:
+                except (OSError, ValueError) as error:
                     _events.labels("invalid_task_file").inc()
-                    _logger.exception("task_directory_admission_blocked", path=str(self.task_directory))
+                    # Admission retries every poll; repeat the traceback only when the problem changes.
+                    if str(error) != self._task_error:
+                        self._task_error = str(error)
+                        _logger.exception("task_directory_admission_blocked", path=str(self.task_directory))
                     raise
+                self._task_error = None
             seed = RoundSeed(
                 sequence=schedule.next_sequence,
                 deadlines=self.timing.deadlines(schedule.next_start),
@@ -354,8 +358,6 @@ class RoundCoordinator:
                     reason = "missing_output"
             except FileNotFoundError:
                 reason = "missing_output"
-            except RecordFormatError:
-                reason = "invalid_output"
         if reason is None:
             return True
         self.repository.files.publish(

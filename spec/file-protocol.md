@@ -177,9 +177,10 @@ failure into a new run or score. Once accepted, a decision is reused even if raw
 reports/statuses are later lost. Publication conflicts fail and preserve the original.
 
 Unsafe or unreadable workload artifacts (including symlinks, nonregular/oversized
-files and denied file permissions) are rejected. Ineligible factory output records
-an `invalid_output` skipped evaluation; a bad final report records a failed judge
-decision. Ordinary host I/O failures remain unresolved and cannot invent a terminal
+files and denied file permissions) are rejected. An empty or missing factory output
+records a `missing_output` skipped evaluation; the judge rejects an unsafe project tree
+as an invalid submission before any model call (`invalid_output` remains readable in
+older records); a bad final report records a failed judge decision. Ordinary host I/O failures remain unresolved and cannot invent a terminal
 execution or a score.
 
 `FileTaskResultStore` implements the public Nexus store/provider contracts with fixed

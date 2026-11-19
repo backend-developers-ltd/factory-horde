@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+import structlog.testing
 from nexus.v1 import Hotkey
 
 from validator.coordinator import RoundCoordinator, Schedule
@@ -178,3 +179,22 @@ def test_empty_directory_never_falls_back_to_environment_text(tmp_path: Path) ->
     with pytest.raises(ValueError, match="no JSON tasks"):
         coordinator.tick(START, BEAT)
     assert fixture.discoveries == 0
+
+
+def test_non_file_entries_are_ignored_and_a_broken_task_is_logged_once(tmp_path: Path) -> None:
+    tasks = tmp_path / "tasks"
+    tasks.mkdir()
+    (tasks / "alpha.json").write_text(json.dumps({"specification": "alpha"}))
+    (tasks / "nested.json").mkdir()
+    (tasks / "beta.json").write_text("{half written")
+    (tmp_path / "data").mkdir()
+    fixture = Fixture(ResultRepository(RoundRepository(tmp_path / "data")))
+    coordinator = RoundCoordinator(fixture.repository, TIMING, JUDGE, fixture.discovery, task_directory=tasks)
+    with structlog.testing.capture_logs() as logs:
+        for _ in range(3):
+            with pytest.raises(ValueError):
+                coordinator.tick(START, BEAT)
+    assert sum(log["event"] == "task_directory_admission_blocked" for log in logs) == 1
+    (tasks / "beta.json").write_text(json.dumps({"specification": "beta"}))
+    coordinator.tick(START, BEAT)
+    assert [task.filename for task in fixture.repository.rounds.rounds()[0].plan.tasks] == ["alpha.json", "beta.json"]
