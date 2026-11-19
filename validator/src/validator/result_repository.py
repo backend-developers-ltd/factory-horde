@@ -67,6 +67,8 @@ class RoundOutcome:
 
     scores: tuple[AcceptedResult, ...]
     excluded: dict[str, str] = field(default_factory=dict)
+    # Published judges without a retained result; their scores may still be accepted.
+    pending: bool = False
 
 
 class ResultRepository:
@@ -262,9 +264,11 @@ class ResultRepository:
         """
         scores: list[AcceptedResult] = []
         excluded: dict[str, str] = {}
+        pending = False
         for member in plan.cohort:
             request = request_for(plan, member, "judge")
             result = self.read(request)
+            pending |= result is None and self._published(request)
             if result is not None and result.accepted is not None:
                 scores.append(result.accepted)
             elif member.miner_hotkey not in excluded or excluded[member.miner_hotkey] == "submission_rejected":
@@ -272,13 +276,22 @@ class ResultRepository:
                     excluded.setdefault(member.miner_hotkey, "submission_rejected")
                 else:
                     excluded[member.miner_hotkey] = "evaluation_unavailable" if result else "missing_result"
-        return RoundOutcome(tuple(score for score in scores if score.miner_hotkey not in excluded), excluded)
+        return RoundOutcome(tuple(score for score in scores if score.miner_hotkey not in excluded), excluded, pending)
+
+    def _published(self, request: JobRequest) -> bool:
+        try:
+            self.files.read(f"control/requests/{request.job_id}.json", JobRequest)
+        except FileNotFoundError:
+            return False
+        return True
 
     def latest_usable_round(self) -> tuple[RoundPlan, tuple[AcceptedResult, ...]] | None:
         """Only the newest completed round counts; older rounds never stand in for it.
 
         A review round must use the configured judge image. Miners without accepted scores
         for every task are excluded, so the round is usable when any miner was fully evaluated.
+        A round completed by its deadline is not usable while a published judge still lacks a
+        retained result, because a timely judge observed late can still change the winner.
         """
         with self.files.lock, result_operation("query"):
             completed = [record for record in self.rounds.rounds() if record.stage == "complete"]
@@ -289,4 +302,4 @@ class ResultRepository:
             if mode != self.judge_mode or (mode == "review" and self.judge_image != plan.judge_image):
                 return None
             outcome = self.round_outcome(plan)
-            return (plan, outcome.scores) if outcome.scores else None
+            return (plan, outcome.scores) if outcome.scores and not outcome.pending else None

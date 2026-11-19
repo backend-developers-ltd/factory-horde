@@ -214,6 +214,24 @@ def test_unresolved_factory_allows_other_scores_but_skips_next_slot(fixture: Fix
     assert fixture.repository.files.read(f"control/stops/{hanging.job_id}.json", StopRequest) == stop
 
 
+def test_a_published_judge_without_a_result_holds_weights_after_round_end(fixture: Fixture) -> None:
+    plan = fixture.start()
+    for member in plan.cohort:
+        fixture.status(request_for(plan, member, "factory"))
+    coordinator = fixture.coordinator()
+    coordinator.tick(plan.deadlines.evaluation_start, BEAT)
+    first, late = (request_for(plan, member, "judge") for member in plan.cohort)
+    fixture.status(first)
+    coordinator.tick(plan.deadlines.round_end, BEAT)
+    assert fixture.repository.rounds.rounds()[0].stage == "complete"
+    assert fixture.repository.latest_usable_round() is None
+    # A timely exit observed after the round ended still counts once it is finalized.
+    fixture.status(late, observed_at=plan.deadlines.round_end + timedelta(minutes=3))
+    coordinator.tick(plan.deadlines.round_end + timedelta(minutes=3), BEAT)
+    usable = fixture.repository.latest_usable_round()
+    assert usable is not None and {s.miner_hotkey for s in usable[1]} == {first.miner_hotkey, late.miner_hotkey}
+
+
 def test_live_judge_is_stopped_and_holds_admission_without_a_chain_beat(fixture: Fixture) -> None:
     plan = fixture.start()
     for member in plan.cohort:
