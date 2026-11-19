@@ -129,11 +129,15 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
         )
 
 
+# Unfinished jobs are resent on fresh contexts every minute, so only finished or abandoned contexts idle this long.
+CONTEXT_TTL = timedelta(minutes=15)
+
+
 class Validator(NexusValidator):
     """Containerized Nexus runtime; all scheduling runs on its coordinator actor."""
 
     def __init__(self, settings: Settings) -> None:
-        super().__init__(settings)
+        super().__init__(settings, context_ttl=CONTEXT_TTL)
         observer = ChainObserverNode(settings.data_root, settings.mechanism_id, settings.dispatch_enabled)
         errors = ErrorLoggerNode("factory-horde-errors")
         observed = MessageLoggerNode[ChainObservation]("factory-horde-observed")

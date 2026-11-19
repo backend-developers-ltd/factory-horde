@@ -55,7 +55,7 @@ and standalone checksum with `uv run --project validator python installer/releas
 after editing listed assets, and verify with `--check` before committing. `result_repository.py` owns immutable execution decisions
 and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
 `tasks.py` wires distinct factory/evaluation Nexus tasks with the shared provider;
-`file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
+`file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks, keeping only the newest context per job; Nexus expires contexts idle for 15 minutes (`CONTEXT_TTL` in `main.py`).
 `coordinator.py` and `round_actor.py` persist admission (verifying settled rounds once per process so poll cost does not grow with history), enforce stage/stop gates and recover the same
 jobs/deadlines without relying on task callbacks. Unresolved old workloads hold new round slots.
 Factory eligibility retains the minute-65 finish cutoff: late observation of a timely Docker exit
