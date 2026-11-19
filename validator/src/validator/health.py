@@ -8,7 +8,7 @@ from pydantic import Field, model_validator
 from validator.records import NonnegativeInt, Record, UtcTime
 
 type DockerOperation = Literal[
-    "container", "pull", "create", "start", "stop", "kill", "info", "exec", "application", "network"
+    "container", "pull", "create", "start", "stop", "kill", "info", "exec", "application", "network", "ps"
 ]
 type Check = Literal[
     "chain", "records", "writable_paths", "executor", "docker", "reconciled", "job_observations", "coordinator"
@@ -33,7 +33,7 @@ class OperationCount(Record):
     """Executor counters reset when its process is replaced."""
 
     operation: DockerOperation
-    outcome: Literal["ok", "error"]
+    outcome: Literal["ok", "error", "timeout"]
     value: NonnegativeInt
 
 

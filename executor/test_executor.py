@@ -138,6 +138,16 @@ def test_executor_metrics_match_validator_bridge(executor: Executor) -> None:
     assert histogram.count == 1 and histogram.sum == 0.75 and histogram.buckets[-1] == 1
 
 
+@pytest.mark.parametrize(("operation", "outcome"), [("ps", "ok"), ("application", "timeout")])
+def test_capacity_and_sandbox_timeout_metrics_keep_the_bridge_valid(
+    executor: Executor, operation: str, outcome: str
+) -> None:
+    executor.metrics.observe(operation, outcome, 1)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        executor.poll(pool)
+    ExecutorMetrics.model_validate_json(executor.files.read_bytes("control/executor-metrics.json"))
+
+
 def test_durable_exit_survives_new_executor_without_docker(executor: Executor, job_request: Request) -> None:
     daemon = FakeDocker(executor)
     executor.docker = daemon
