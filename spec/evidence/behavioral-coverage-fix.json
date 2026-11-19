@@ -1,0 +1,1373 @@
+{
+  "source_commit": "cc8502bbfcd5ac6dd42dd2d22a994f14f79c67dd",
+  "build_url": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/44262080190",
+  "round": {
+    "protocol_version": 1,
+    "round_id": "ce89ad9a-24fa-4c96-8c52-f8bf3a2a31fc",
+    "sequence": 1,
+    "deadlines": {
+      "protocol_version": 1,
+      "start": "2026-11-18T07:52:31.582728Z",
+      "generation_end": "2026-11-18T07:53:31.582728Z",
+      "evaluation_start": "2026-11-18T07:53:46.582728Z",
+      "judge_end": "2026-11-18T08:13:16.582728Z",
+      "round_end": "2026-11-18T08:13:46.582728Z"
+    },
+    "discovery_block": 14758,
+    "discovery_block_hash": "0x162f4b11ca45fac923d416686f31edce44bd013c723f1c3a02da70b4a146ec6e",
+    "membership_snapshot": "commitment_block",
+    "cohort": [
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "uid": 2,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "a367340d-14b1-402a-b0c7-f3742fca3636",
+        "judge_job_id": "7d269b57-a408-4e6a-b2f1-966d89781541"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "uid": 3,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "de1b83ac-ba58-4833-926e-5d9923b26dff",
+        "judge_job_id": "f39cfe7c-603e-466e-bf7e-c6d7e0864565"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "uid": 4,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "efb3e353-2b40-48ab-8cdb-7bb3d1decd2d",
+        "judge_job_id": "ab227a4d-adea-4d92-bcbe-a3f038c19065"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "uid": 5,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "961058c4-261c-4935-b90d-42e0421614ef",
+        "judge_job_id": "308ba8d6-1feb-4180-965f-d8c80451ae93"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "uid": 6,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "28039f63-968a-4c32-bb60-f734b29b76be",
+        "judge_job_id": "3a64a1e3-6c90-4281-8ebc-c482150a65b3"
+      }
+    ],
+    "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:5beffdad605b3059658b70d812433a5815c7a45997e36c2187cc75f114064c98",
+    "platform": "linux/amd64",
+    "stop_grace_seconds": 5,
+    "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+    "evaluation": {
+      "protocol_version": 1,
+      "mode": "review",
+      "requirements": [
+        "The complete CLI is in main.py and uses only the Python standard library.",
+        "Tasks persist in a JSON file across invocations.",
+        "add creates a task.",
+        "list displays the stored tasks.",
+        "done marks the selected task complete.",
+        "remove deletes the selected task.",
+        "README.md describes installation and usage."
+      ]
+    }
+  },
+  "working_outranks_defects": true,
+  "working_deletion_verified_and_met": true,
+  "reports": {
+    "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": {
+      "variant": 0,
+      "score": 0.9285714285714286,
+      "requirements": [
+        {
+          "id": 1,
+          "reason": "main.py is a single file importing only argparse, json and pathlib (standard library), and it ran successfully in checks a1-v3.",
+          "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+          "verdict": "met"
+        },
+        {
+          "id": 2,
+          "reason": "After add (a1), a separate list invocation (v1) showed '1 [ ] buy milk', so the tasks persisted across invocations in tasks.json.",
+          "requirement": "Tasks persist in a JSON file across invocations.",
+          "verdict": "met"
+        },
+        {
+          "id": 3,
+          "reason": "add printed 'Added 1' (a1), and list then showed the new task (v1).",
+          "requirement": "add creates a task.",
+          "verdict": "met"
+        },
+        {
+          "id": 4,
+          "reason": "list printed the stored task as '1 [ ] buy milk' (v1) and the updated '1 [x] buy milk' (v2).",
+          "requirement": "list displays the stored tasks.",
+          "verdict": "met"
+        },
+        {
+          "id": 5,
+          "reason": "done 1 printed 'Updated' (a2), and list then showed '1 [x] buy milk' (v2).",
+          "requirement": "done marks the selected task complete.",
+          "verdict": "met"
+        },
+        {
+          "id": 6,
+          "reason": "remove 1 printed 'Updated' (a3), and the following list output was empty (v3).",
+          "requirement": "remove deletes the selected task.",
+          "verdict": "met"
+        },
+        {
+          "id": 7,
+          "reason": "README.md describes usage for all four subcommands and says it needs no dependencies, but it has no installation section.",
+          "requirement": "README.md describes installation and usage.",
+          "verdict": "partial"
+        }
+      ],
+      "checks": [
+        {
+          "args": [
+            "add",
+            "buy milk"
+          ],
+          "id": "a1",
+          "observation": "Prints 'Added 1' and creates tasks.json.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "v1",
+          "observation": "Output shows '1 [ ] buy milk', proving persistence across invocations.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "a1"
+          ]
+        },
+        {
+          "args": [
+            "done",
+            "1"
+          ],
+          "id": "a2",
+          "observation": "Prints 'Updated'.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "v2",
+          "observation": "Output shows '1 [x] buy milk'.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "a2"
+          ]
+        },
+        {
+          "args": [
+            "remove",
+            "1"
+          ],
+          "id": "a3",
+          "observation": "Prints 'Updated'.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "v3",
+          "observation": "Output is empty; task 1 is gone, proving deletion persisted.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "a3"
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "exit_code": 0,
+          "id": "a1",
+          "seconds": 0.9732470230010222,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Added 1\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "v1",
+          "seconds": 1.0518510000001697,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "1 [ ] buy milk\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "a2",
+          "seconds": 0.7664527659981104,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Updated\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "v2",
+          "seconds": 0.9088466440007323,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "1 [x] buy milk\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "a3",
+          "seconds": 0.9012011469967547,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Updated\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "v3",
+          "seconds": 0.7752484289994754,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        }
+      ],
+      "assessment": {
+        "requirements": [
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (standard library), and it ran successfully in checks a1-v3.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "a1",
+              "v1"
+            ],
+            "evidence": "observed",
+            "id": 2,
+            "reason": "After add (a1), a separate list invocation (v1) showed '1 [ ] buy milk', so the tasks persisted across invocations in tasks.json.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "a1",
+              "v1"
+            ],
+            "evidence": "observed",
+            "id": 3,
+            "reason": "add printed 'Added 1' (a1), and list then showed the new task (v1).",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "v1",
+              "v2"
+            ],
+            "evidence": "observed",
+            "id": 4,
+            "reason": "list printed the stored task as '1 [ ] buy milk' (v1) and the updated '1 [x] buy milk' (v2).",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "a2",
+              "v2"
+            ],
+            "evidence": "observed",
+            "id": 5,
+            "reason": "done 1 printed 'Updated' (a2), and list then showed '1 [x] buy milk' (v2).",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "a3",
+              "v3"
+            ],
+            "evidence": "observed",
+            "id": 6,
+            "reason": "remove 1 printed 'Updated' (a3), and the following list output was empty (v3).",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 7,
+            "reason": "README.md describes usage for all four subcommands and says it needs no dependencies, but it has no installation section.",
+            "verdict": "partial"
+          }
+        ]
+      }
+    },
+    "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": {
+      "variant": 0,
+      "score": 0.9285714285714286,
+      "requirements": [
+        {
+          "id": 1,
+          "reason": "main.py is a single file importing only argparse, json and pathlib (standard library), and the checks ran it successfully (add-1, list-1).",
+          "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+          "verdict": "met"
+        },
+        {
+          "id": 2,
+          "reason": "The task added in add-1 appeared in list-1 in a separate invocation, and later state changes persisted through list-2 and list-3.",
+          "requirement": "Tasks persist in a JSON file across invocations.",
+          "verdict": "met"
+        },
+        {
+          "id": 3,
+          "reason": "add-1 printed 'Added 1' and list-1 showed '1 [ ] buy milk'.",
+          "requirement": "add creates a task.",
+          "verdict": "met"
+        },
+        {
+          "id": 4,
+          "reason": "list-1 and list-2 output the stored task with its id, status and text.",
+          "requirement": "list displays the stored tasks.",
+          "verdict": "met"
+        },
+        {
+          "id": 5,
+          "reason": "done-1 printed 'Updated' and list-2 showed '1 [x] buy milk'.",
+          "requirement": "done marks the selected task complete.",
+          "verdict": "met"
+        },
+        {
+          "id": 6,
+          "reason": "remove-1 printed 'Updated' and list-3 returned empty output, so the task was deleted.",
+          "requirement": "remove deletes the selected task.",
+          "verdict": "met"
+        },
+        {
+          "id": 7,
+          "reason": "README.md gives usage commands and notes that Python 3 is required with no dependencies, but it has no real installation section.",
+          "requirement": "README.md describes installation and usage.",
+          "verdict": "partial"
+        }
+      ],
+      "checks": [
+        {
+          "args": [
+            "add",
+            "buy",
+            "milk"
+          ],
+          "id": "add-1",
+          "observation": "Prints 'Added 1' and creates tasks.json.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list-1",
+          "observation": "Output contains '1 [ ] buy milk', showing the task persisted.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "add-1"
+          ]
+        },
+        {
+          "args": [
+            "done",
+            "1"
+          ],
+          "id": "done-1",
+          "observation": "Prints 'Updated'.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list-2",
+          "observation": "Output shows '1 [x] buy milk', showing done persisted.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "done-1"
+          ]
+        },
+        {
+          "args": [
+            "remove",
+            "1"
+          ],
+          "id": "remove-1",
+          "observation": "Prints 'Updated'.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list-3",
+          "observation": "Output is empty; task 1 no longer listed, showing deletion persisted.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "remove-1"
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "exit_code": 0,
+          "id": "add-1",
+          "seconds": 0.785824398000841,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Added 1\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "list-1",
+          "seconds": 0.854355346000375,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "1 [ ] buy milk\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "done-1",
+          "seconds": 0.9062803950000671,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Updated\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "list-2",
+          "seconds": 0.9150214069995855,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "1 [x] buy milk\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "remove-1",
+          "seconds": 0.9378343810021761,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Updated\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "list-3",
+          "seconds": 0.8081900449979003,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        }
+      ],
+      "assessment": {
+        "requirements": [
+          {
+            "check_ids": [
+              "add-1"
+            ],
+            "evidence": "source",
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (standard library), and the checks ran it successfully (add-1, list-1).",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "add-1",
+              "list-1",
+              "list-2",
+              "list-3"
+            ],
+            "evidence": "observed",
+            "id": 2,
+            "reason": "The task added in add-1 appeared in list-1 in a separate invocation, and later state changes persisted through list-2 and list-3.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "add-1",
+              "list-1"
+            ],
+            "evidence": "observed",
+            "id": 3,
+            "reason": "add-1 printed 'Added 1' and list-1 showed '1 [ ] buy milk'.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "list-1",
+              "list-2"
+            ],
+            "evidence": "observed",
+            "id": 4,
+            "reason": "list-1 and list-2 output the stored task with its id, status and text.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "done-1",
+              "list-2"
+            ],
+            "evidence": "observed",
+            "id": 5,
+            "reason": "done-1 printed 'Updated' and list-2 showed '1 [x] buy milk'.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "remove-1",
+              "list-3"
+            ],
+            "evidence": "observed",
+            "id": 6,
+            "reason": "remove-1 printed 'Updated' and list-3 returned empty output, so the task was deleted.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 7,
+            "reason": "README.md gives usage commands and notes that Python 3 is required with no dependencies, but it has no real installation section.",
+            "verdict": "partial"
+          }
+        ]
+      }
+    },
+    "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": {
+      "variant": 1,
+      "score": 0.21428571428571427,
+      "requirements": [
+        {
+          "id": 1,
+          "reason": "main.py is a single file importing only argparse, json and pathlib, all standard library.",
+          "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+          "verdict": "met"
+        },
+        {
+          "id": 2,
+          "reason": "add printed 'Added 1' but list-after-add returned empty output, and the code never writes tasks.json, so nothing persists.",
+          "requirement": "Tasks persist in a JSON file across invocations.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 3,
+          "reason": "add printed 'Added 1' but the task was never saved; list-after-add showed nothing.",
+          "requirement": "add creates a task.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 4,
+          "reason": "list-after-add returned empty output after a successful add, so stored tasks are not displayed.",
+          "requirement": "list displays the stored tasks.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 5,
+          "reason": "done 1 failed with exit code 2 and 'No such task' because the task was not persisted.",
+          "requirement": "done marks the selected task complete.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 6,
+          "reason": "remove 1 failed with exit code 2 and 'No such task' because the task was not persisted.",
+          "requirement": "remove deletes the selected task.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 7,
+          "reason": "README.md gives usage commands and says no dependencies are needed, but it has no real installation section.",
+          "requirement": "README.md describes installation and usage.",
+          "verdict": "partial"
+        }
+      ],
+      "checks": [
+        {
+          "args": [
+            "add",
+            "buy milk"
+          ],
+          "id": "add-task",
+          "observation": "Prints 'Added 1' and should write tasks.json.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list-after-add",
+          "observation": "A separate invocation lists '1 [ ] buy milk' if persistence works; the control lacks persistence so the list will be empty.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "add-task"
+          ]
+        },
+        {
+          "args": [
+            "done",
+            "1"
+          ],
+          "id": "done-task",
+          "observation": "Prints 'Updated' (or errors if task 1 was not persisted).",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list-after-done",
+          "observation": "Should show '1 [x] buy milk' if done persisted.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "done-task"
+          ]
+        },
+        {
+          "args": [
+            "remove",
+            "1"
+          ],
+          "id": "remove-task",
+          "observation": "Prints 'Updated' and removes task 1 (or errors if not persisted).",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list-after-remove",
+          "observation": "Should output nothing, proving deletion persisted.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "remove-task"
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "exit_code": 0,
+          "id": "add-task",
+          "seconds": 0.9651415670014103,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "Added 1\n",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "list-after-add",
+          "seconds": 0.7940761079989898,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 2,
+          "id": "done-task",
+          "seconds": 0.8346082340030989,
+          "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "list-after-done",
+          "seconds": 0.8018867440005124,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 2,
+          "id": "remove-task",
+          "seconds": 0.9651444520022778,
+          "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 0,
+          "id": "list-after-remove",
+          "seconds": 0.7534128990009776,
+          "stderr": "",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        }
+      ],
+      "assessment": {
+        "requirements": [
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib, all standard library.",
+            "verdict": "met"
+          },
+          {
+            "check_ids": [
+              "add-task",
+              "list-after-add"
+            ],
+            "evidence": "observed",
+            "id": 2,
+            "reason": "add printed 'Added 1' but list-after-add returned empty output, and the code never writes tasks.json, so nothing persists.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "add-task",
+              "list-after-add"
+            ],
+            "evidence": "observed",
+            "id": 3,
+            "reason": "add printed 'Added 1' but the task was never saved; list-after-add showed nothing.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "list-after-add"
+            ],
+            "evidence": "observed",
+            "id": 4,
+            "reason": "list-after-add returned empty output after a successful add, so stored tasks are not displayed.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "done-task",
+              "list-after-done"
+            ],
+            "evidence": "observed",
+            "id": 5,
+            "reason": "done 1 failed with exit code 2 and 'No such task' because the task was not persisted.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "remove-task",
+              "list-after-remove"
+            ],
+            "evidence": "observed",
+            "id": 6,
+            "reason": "remove 1 failed with exit code 2 and 'No such task' because the task was not persisted.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 7,
+            "reason": "README.md gives usage commands and says no dependencies are needed, but it has no real installation section.",
+            "verdict": "partial"
+          }
+        ]
+      }
+    },
+    "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": {
+      "variant": 2,
+      "score": 0.07142857142857142,
+      "requirements": [
+        {
+          "id": 1,
+          "reason": "main.py is only a stub that raises SystemExit('Not implemented'); there is no CLI, and every check (add1..list3) exited 1 with 'Not implemented'.",
+          "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 2,
+          "reason": "No persistence exists: add1 and list1 both exited 1 with 'Not implemented' and wrote no JSON-backed output.",
+          "requirement": "Tasks persist in a JSON file across invocations.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 3,
+          "reason": "add1 exited 1 with stderr 'Not implemented', so no task was created.",
+          "requirement": "add creates a task.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 4,
+          "reason": "list1, list2 and list3 all exited 1 with 'Not implemented' and printed no stdout.",
+          "requirement": "list displays the stored tasks.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 5,
+          "reason": "done1 exited 1 with 'Not implemented', and list2 shows no completed task.",
+          "requirement": "done marks the selected task complete.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 6,
+          "reason": "remove1 exited 1 with 'Not implemented', so nothing was removed (list3 also failed).",
+          "requirement": "remove deletes the selected task.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 7,
+          "reason": "README.md gives a brief usage line covering all four commands and notes there are no dependencies. It has no real installation section, and it describes functionality that the stub does not provide.",
+          "requirement": "README.md describes installation and usage.",
+          "verdict": "partial"
+        }
+      ],
+      "checks": [
+        {
+          "args": [
+            "add",
+            "buy milk"
+          ],
+          "id": "add1",
+          "observation": "Task added, likely with ID 1; exits 0.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list1",
+          "observation": "Output shows task 1 'buy milk' as not done, proving persistence across invocations.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "add1"
+          ]
+        },
+        {
+          "args": [
+            "done",
+            "1"
+          ],
+          "id": "done1",
+          "observation": "Task 1 reported marked complete; exits 0.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list2",
+          "observation": "Task 1 'buy milk' shown as completed (e.g. [x]).",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "done1"
+          ]
+        },
+        {
+          "args": [
+            "remove",
+            "1"
+          ],
+          "id": "remove1",
+          "observation": "Task 1 reported removed; exits 0.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "list3",
+          "observation": "List no longer contains 'buy milk'; empty or 'no tasks' message.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "remove1"
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "exit_code": 1,
+          "id": "add1",
+          "seconds": 0.22688572500192095,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "list1",
+          "seconds": 0.2731809990000329,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "done1",
+          "seconds": 0.272508273999847,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "list2",
+          "seconds": 0.26790860899927793,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "remove1",
+          "seconds": 0.30357302100310335,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "list3",
+          "seconds": 0.22619899599885684,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        }
+      ],
+      "assessment": {
+        "requirements": [
+          {
+            "check_ids": [
+              "add1"
+            ],
+            "evidence": "source",
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'); there is no CLI, and every check (add1..list3) exited 1 with 'Not implemented'.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "add1",
+              "list1"
+            ],
+            "evidence": "observed",
+            "id": 2,
+            "reason": "No persistence exists: add1 and list1 both exited 1 with 'Not implemented' and wrote no JSON-backed output.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "add1",
+              "list1"
+            ],
+            "evidence": "observed",
+            "id": 3,
+            "reason": "add1 exited 1 with stderr 'Not implemented', so no task was created.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "list1",
+              "list2",
+              "list3"
+            ],
+            "evidence": "observed",
+            "id": 4,
+            "reason": "list1, list2 and list3 all exited 1 with 'Not implemented' and printed no stdout.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "done1",
+              "list2"
+            ],
+            "evidence": "observed",
+            "id": 5,
+            "reason": "done1 exited 1 with 'Not implemented', and list2 shows no completed task.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "remove1",
+              "list3"
+            ],
+            "evidence": "observed",
+            "id": 6,
+            "reason": "remove1 exited 1 with 'Not implemented', so nothing was removed (list3 also failed).",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 7,
+            "reason": "README.md gives a brief usage line covering all four commands and notes there are no dependencies. It has no real installation section, and it describes functionality that the stub does not provide.",
+            "verdict": "partial"
+          }
+        ]
+      }
+    },
+    "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": {
+      "variant": 2,
+      "score": 0.07142857142857142,
+      "requirements": [
+        {
+          "id": 1,
+          "reason": "main.py is only a stub that raises SystemExit('Not implemented'), so there is no CLI; it does use no non-stdlib imports, but the complete CLI is not present.",
+          "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 2,
+          "reason": "All invocations (a1, v1) exited 1 with 'Not implemented' and nothing was stored or persisted.",
+          "requirement": "Tasks persist in a JSON file across invocations.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 3,
+          "reason": "add 'buy milk' (a1) exited 1 with 'Not implemented' and created no task.",
+          "requirement": "add creates a task.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 4,
+          "reason": "list (v1, v2, v3) exited 1 with 'Not implemented' and displayed nothing.",
+          "requirement": "list displays the stored tasks.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 5,
+          "reason": "done 1 (a2) exited 1 with 'Not implemented'; no task was marked complete.",
+          "requirement": "done marks the selected task complete.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 6,
+          "reason": "remove 1 (a3) exited 1 with 'Not implemented'; nothing was removed.",
+          "requirement": "remove deletes the selected task.",
+          "verdict": "unmet"
+        },
+        {
+          "id": 7,
+          "reason": "README.md gives usage commands and a no-dependencies note, but it describes functionality that does not exist and has no real installation section.",
+          "requirement": "README.md describes installation and usage.",
+          "verdict": "partial"
+        }
+      ],
+      "checks": [
+        {
+          "args": [
+            "add",
+            "buy milk"
+          ],
+          "id": "a1",
+          "observation": "Reports task added with ID 1.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "v1",
+          "observation": "Lists task 1 'buy milk' as not done, showing persistence across invocations.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "a1"
+          ]
+        },
+        {
+          "args": [
+            "done",
+            "1"
+          ],
+          "id": "a2",
+          "observation": "Reports task 1 marked complete.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "v2",
+          "observation": "Task 1 'buy milk' shown as completed (e.g. [x]).",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "a2"
+          ]
+        },
+        {
+          "args": [
+            "remove",
+            "1"
+          ],
+          "id": "a3",
+          "observation": "Reports task 1 removed.",
+          "requires_verification": true,
+          "stdin": "",
+          "verifies": []
+        },
+        {
+          "args": [
+            "list"
+          ],
+          "id": "v3",
+          "observation": "Task list is empty; buy milk no longer appears.",
+          "requires_verification": false,
+          "stdin": "",
+          "verifies": [
+            "a3"
+          ]
+        }
+      ],
+      "observations": [
+        {
+          "exit_code": 1,
+          "id": "a1",
+          "seconds": 0.2785659809997014,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "v1",
+          "seconds": 0.2839325810018636,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "a2",
+          "seconds": 0.257952864998515,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "v2",
+          "seconds": 0.24987359999795444,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "a3",
+          "seconds": 0.2936191900007543,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        },
+        {
+          "exit_code": 1,
+          "id": "v3",
+          "seconds": 0.25414942800125573,
+          "stderr": "Not implemented\n",
+          "stderr_truncated": false,
+          "stdout": "",
+          "stdout_truncated": false,
+          "timed_out": false
+        }
+      ],
+      "assessment": {
+        "requirements": [
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'), so there is no CLI; it does use no non-stdlib imports, but the complete CLI is not present.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "a1",
+              "v1"
+            ],
+            "evidence": "observed",
+            "id": 2,
+            "reason": "All invocations (a1, v1) exited 1 with 'Not implemented' and nothing was stored or persisted.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "a1",
+              "v1"
+            ],
+            "evidence": "observed",
+            "id": 3,
+            "reason": "add 'buy milk' (a1) exited 1 with 'Not implemented' and created no task.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "v1",
+              "v2",
+              "v3"
+            ],
+            "evidence": "observed",
+            "id": 4,
+            "reason": "list (v1, v2, v3) exited 1 with 'Not implemented' and displayed nothing.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "a2",
+              "v2"
+            ],
+            "evidence": "observed",
+            "id": 5,
+            "reason": "done 1 (a2) exited 1 with 'Not implemented'; no task was marked complete.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [
+              "a3",
+              "v3"
+            ],
+            "evidence": "observed",
+            "id": 6,
+            "reason": "remove 1 (a3) exited 1 with 'Not implemented'; nothing was removed.",
+            "verdict": "unmet"
+          },
+          {
+            "check_ids": [],
+            "evidence": "source",
+            "id": 7,
+            "reason": "README.md gives usage commands and a no-dependencies note, but it describes functionality that does not exist and has no real installation section.",
+            "verdict": "partial"
+          }
+        ]
+      }
+    }
+  },
+  "verification": {
+    "judge_and_executor_tests_passed": 99,
+    "validator_tests_passed": 201,
+    "optional_image_tests_skipped": 9,
+    "ruff": "passed",
+    "basedpyright": "passed",
+    "release_manifest": "unchanged and verified"
+  },
+  "earlier_attempt": {
+    "round_id": "7de240f9-afe9-42a7-953b-74d75bcb5de1",
+    "result": "Flat model plans omitted final verification; guards rejected those evaluations without assigning miner scores. Replaced flat model plan with mandatory action/verification pairs.",
+    "retained_at": "localnet/state/behavioral-rejected-flat-plan-data"
+  },
+  "refinery": {
+    "status": "validator and pylon healthy; executor active",
+    "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:5beffdad605b3059658b70d812433a5815c7a45997e36c2187cc75f114064c98",
+    "only_judge_image_changed": true,
+    "task_configuration": "TASK_FILE=/tasks/current.json; JSON support and all task selectors unchanged",
+    "task_sha256": "ca19596c4763d1cea86e3edc2b59aac206c86400513a04006b322fd26510c8c8",
+    "task_unchanged": true,
+    "timings_seconds": {
+      "generation": 1800,
+      "confirmation": 300,
+      "evaluation": 1500,
+      "judge_stop_reserve": 300,
+      "stop_grace": 60
+    },
+    "configuration_revision": "500e176a37cc00ba24ca0ee69c1e0ba3c04a61a4",
+    "executor_changed": false,
+    "frozen_round": {
+      "round_id": "e2721fd3-a895-45a2-a8c4-cd1a987d1cf2",
+      "sequence": 199,
+      "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:411c410fe12398028806adcb28a317d52b972bb883030b7d859b64820afc9522",
+      "round_end": "2026-11-18T08:30:47.402468Z"
+    },
+    "limitation": "New image applies to future admissions. No completed Refinery round with the new judge was observed during this verification."
+  }
+}

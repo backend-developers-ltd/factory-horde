@@ -1,29 +1,31 @@
-# FactoryHorde prototype judge
+# FactoryHorde adaptive judge
 
-The judge checks only presence and readability of `main.py` and `README.md`.
-It never executes or imports the submitted project. These checks do not measure
-software quality. A successful check draws a uniform random score in `[0,1]` and
-writes one linked [protocol-v1 report](../spec/file-protocol.md).
+The judge evaluates the full submitted project against frozen task requirements. Its Claude controller chooses one action at a time: run a sandbox command, retrieve earlier evidence, or finish with an assessment. It receives each command's captured result before choosing the next action. Trusted packaged guides in `skills/` cover Python libraries, CLIs and HTTP services; they guide the model without hard-coding a program interface. The judge can inspect files, create independent harnesses and adapt inputs to observed outputs. Its instructions require it to verify changes, including the final mutation, through a later observation of the resulting state before grading; this is prompt guidance, not a controller-enforced check. Success messages, exit codes and submitted tests never count as proof, behavioral criteria need observed behavior, submission text that addresses the evaluator is treated as manipulation, and the model audits every met or partial verdict for a verifying command before finishing. The `adversarial` behavioral controls in `localnet/fixtures/behavioral` test these rules with live model runs.
 
-Run `/usr/local/bin/factory-horde-judge` in the pinned Python image with:
+There is no action-count cap. Recent evidence is included in model context; older command evidence remains available by step number. Every criterion needs a verdict and actual evidence references. Behavioral criteria require observed behavior; source/documentation criteria cite commands that read the relevant files. The controller averages `met=1`, `partial=0.5`, and `unmet=0`. An accepted zero remains eligible. Behavior that fails or hangs is unmet, a project that cannot run at all is rejected as an invalid submission, and evidence missing for judge-side reasons makes that evaluation unavailable rather than inventing a score.
 
-- `/input:ro`: immutable `task.json` and `specification.md`.
-- `/submission:ro`: the stopped factory's output.
-- `/report:rw`: the judge's own report directory.
+## Application isolation
 
-The executable uses only Python's standard library. It verifies input version,
-UUIDs, miner attribution and specification hash, rejects duplicate/non-finite JSON,
-and reads only bounded regular files (one MiB each). Missing, unreadable, oversized,
-symlinked or non-regular submission files produce a failure report and exit 1.
-Malformed attribution fails without fabricating a linked report. Success exits 0.
+Claude runs tool-less in the judge controller. The controller publishes argument vectors and stdin through the executor-owned runner exchange; it never executes these commands locally. The host executor sends them through Docker's exec API to a separate application container. Shell syntax is supported by explicitly invoking `/bin/sh` inside that sandbox. Neither submitted code nor judge-generated harnesses run on the validator host.
 
-Reports are written with file/directory fsync and atomic create-if-absent publication.
-Rerunning the same judge preserves its first valid report, including a failed one,
-and never replaces mismatched or malformed existing evidence. Validator acceptance
-still requires independent matching request/status and successful Docker exit.
+The sandbox contains a writable full-project copy in a 256 MiB `/app` workspace and the read-only original at `/submission`. It has no network except localhost, inference environment, task input, reports, runner channel, controller processes or Docker socket. Its root filesystem is read-only, all capabilities are dropped, privilege escalation is disabled, and CPU, memory and PID bounds apply. `/tmp` has its own 256 MiB bound. Both mounts allow execution, so project scripts, built binaries and bundled native extensions run. These are Docker isolation boundaries on the host kernel, not a separate virtual machine.
 
-Use `localnet/build-baselines.sh` from the repository root for source-build Docker
-checks. These verify read-only input/submission mounts, writable report storage,
-no execution of submitted code, stable reruns, failure cases and exact protocol
-parsing. GHCR publication uses the baseline GitHub Actions workflow; see the
-[factory guide](../miner/factory/README.md) for publication and anonymous verification.
+Python and its standard library, Node.js with npm, and POSIX shell are packaged. Local HTTP servers and clients run together inside the sandbox. Declared PyPI and npm dependencies can be installed with the `install` action: the executor briefly connects the sandbox to a proxy that reaches only those registries, first stops every other sandbox process, installs prebuilt wheels for plain index requirements (no options, paths, URLs or includes) into `/app/.deps` (on `PYTHONPATH`, with a report in `/app/.deps-report.json`) or runs `npm install --ignore-scripts`, then restores `--network none`. The judge must check that the scored behavior is implemented in the submitted source rather than in an obscure dependency. Other downloads, graphical browsers and other language toolchains are not provided. Extending the image and trusted guides can add further runtimes without changing the agent loop.
+
+Sandbox time is shared by all commands of an evaluation, and the judge sees a result only after its command returns. Its instructions and guides therefore tell it to start servers and other long-lived processes in the background with redirected streams, to wrap invocations of submitted code in `timeout` with a bound it chooses, and to treat an expired bound (exit 124 or 137) as an observation. Empty stdin is closed, so interactive prompts receive end-of-file.
+
+The project need not contain `main.py` or `README.md`. The judge rejects symlinks, special or unreadable files and inventories up to 4096 regular files totaling 64 MiB. Captured output is bounded to 16 KiB per stream. There is no fixed per-command or model-call timeout; the shared sandbox budget above bounds command time. The existing frozen round lifecycle stops the judge and application; the parent result cannot become terminal until Docker confirms application termination. Interrupted commands are never silently replayed.
+
+## Evidence and recovery
+
+Each `step-N.decision.json` is persisted before execution, only after the reply is a valid decision; a failed model call or malformed decision is asked again up to three times, since model calls have no side effects, followed by `step-N.observation.json` containing the executor capture or retrieved evidence. On completion, `assessment.json` retains verdicts and check references, `execution.json` summarizes the `agent-v1` session, and protocol-v1 `review.json` and `report.json` retain the accepted score. Attribution includes round, job, miner, specification hash, model and judge image. The requested model comes from the round's frozen policy (validator `JUDGE_MODEL`), otherwise the image's `JUDGE_MODEL` environment or `sonnet`; the model IDs Claude Code actually reported are recorded as `resolved_models` in each decision, `execution.json` and `review.json`. No credentials or process environment are recorded. A directory lock serializes each session; recovery reuses durable decisions and observations.
+
+Unsafe or empty projects, and projects the model shows cannot run at all in the sandbox (a `reject` decision after at least one observed command), produce `Invalid submission:` and exclude that miner. Behaviour that fails, crashes or hangs during testing is scored `unmet`. Model/proxy failures, unavailable isolation or unusable replies produce `Review unavailable:` (exit 75); the validator excludes only that miner and logs the failure at error level. Weights use only the newest completed round, which must match the configured judge image.
+
+All sandbox commands of one evaluation share a budget that ends `EXECUTOR_JUDGE_RESERVE_SECONDS` (default 180) before the judge deadline, published by the executor as `/runner/budget.json`. `progress.json` shows the model the remaining seconds. When the budget runs out, the running command is stopped, later commands are not executed, and the model finishes with the evidence it has, marking undemonstrated requirements unmet; only then may an unmet verdict omit check references. Explicit `JUDGE_MODE=fixture` retains random scores for offline orchestration tests. The executor still accepts the earlier CLI `args` exchange for already-frozen jobs during an upgrade.
+
+Factories and judge controllers each receive their own internal proxy-only network. The real subscription credential stays at the proxy. Application execution always uses `--network none`.
+
+## Verification
+
+Run `uv run --frozen --project validator pytest judge/test_judge.py executor/test_executor.py`. Real container tests use `FH_RUNNER_IMAGE_TEST=1` with `executor/test_application_runner.py`; set `FH_TEST_PROXY_NETWORK` to a configured test proxy network for workload peer/internet checks. The development controls in `localnet/fixtures/behavioral` test both a CLI and Python library through a complete validator round. Keep the per-step evidence with the final grading records.

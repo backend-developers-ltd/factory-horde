@@ -31,19 +31,19 @@ def subscribe(node: FileCommunicator, actor: FileCommunicatorActor, builder: Sub
         return ctx.id
 
 
-def test_input_returns_without_waiting_and_poll_correlates_fresh_contexts(pair: Pair) -> None:
+def test_input_returns_without_waiting_and_poll_uses_the_newest_context(pair: Pair) -> None:
     node, actor, builder = build(pair)
     (pair.repo.files.root / f"control/requests/{pair.factory.job_id}.json").unlink()
     first = subscribe(node, actor, builder, pair)
     second = subscribe(node, actor, builder, pair)
-    assert first != second and set(actor.pending) == {first, second}
+    assert first != second and set(actor.pending) == {second}
     assert pair.repo.rounds.requests()[0].job_id == pair.factory.job_id
     with builder.context_store.create_context() as tick:
         pulse = ReceiveEvent(ctx_id=tick.id, target=node.poll, payload=datetime.now(UTC))
         assert actor.handle_poll(tick, pulse) == ()
         actor.handle_block(tick, ReceiveEvent(ctx_id=tick.id, target=node.block_beat, payload=BEAT))
         events = actor.handle_poll(tick, pulse)
-        assert isinstance(events, tuple) and {event.ctx_id for event in events} == {first, second}
+        assert isinstance(events, tuple) and [event.ctx_id for event in events] == [second]
         assert all(event.ctx_id != tick.id for event in events)
         for event in events:
             assert event.source == node.processed

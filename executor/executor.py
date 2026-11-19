@@ -6,11 +6,14 @@ from __future__ import annotations
 import argparse
 import fcntl
 import hashlib
+import http.client
 import json
 import math
 import os
 import re
+import selectors
 import signal
+import socket
 import stat
 import subprocess
 import threading
@@ -20,6 +23,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from itertools import count
 from pathlib import Path
 from types import FrameType
 from typing import cast
@@ -317,7 +321,14 @@ class Request:
             raise ProtocolError("Expected immutable GHCR reference")
         input_dir, output_dir = string(value["input_dir"]), string(value["output_dir"])
         parts = relative_parts(input_dir)
-        if len(parts) != 5 or parts[0] != "rounds" or parts[-2:] != (hotkey, "input"):
+        legacy = len(parts) == 5 and parts[-2:] == (hotkey, "input")
+        task_scoped = (
+            len(parts) == 7
+            and parts[3:5] == (hotkey, "tasks")
+            and re.fullmatch(r"[0-9a-f]{64}", parts[5]) is not None
+            and parts[6] == "input"
+        )
+        if parts[0] != "rounds" or not (legacy or task_scoped):
             raise ProtocolError("Input must belong to this job's canonical round/miner directory")
         if not parts[2].endswith("-" + string(value["round_id"])):
             raise ProtocolError("Round directory identity mismatch")
@@ -371,6 +382,9 @@ class Settings:
     tmp_size: str = "64m"
     factory_network: str = ""
     inference_url: str = "http://inference-proxy:8080"
+    judge_reserve_seconds: int = 180
+    registry_network: str = ""
+    max_running_jobs: int = 4
 
 
 class Metrics:
@@ -421,7 +435,13 @@ class Metrics:
 class Docker:
     """Docker is operated only here, using argument arrays and fixed commands."""
 
-    def __init__(self, settings: Settings, files: Files, metrics: Metrics, shutdown: threading.Event):
+    def __init__(
+        self,
+        settings: Settings,
+        files: Files,
+        metrics: Metrics,
+        shutdown: threading.Event,
+    ):
         self.settings, self.files = settings, files
         self.metrics = metrics
         self.shutdown = shutdown
@@ -525,10 +545,95 @@ class Docker:
             raise ProtocolError("Existing Docker container conflicts with immutable request")
         return value
 
-    def create(self, request: Request) -> str:
-        """Create a detached, non-restarting workload with only its fixed job mounts.
+    def inference_network(self, request: Request) -> str:
+        """Connect only this workload and the configured inference proxy to an isolated bridge.
 
-        Only factories join the configured inference network; judges never get a network.
+        Raises:
+            DockerError: The proxy or network identity cannot be verified.
+        """
+        return self.proxy_network(request, self.settings.factory_network, "inference-proxy", "-inference")
+
+    def registry_network(self, request: Request) -> str:
+        """Connect only this judge's application and the registry proxy to an isolated bridge.
+
+        Raises:
+            DockerError: The proxy or network identity cannot be verified.
+        """
+        return self.proxy_network(request, self.settings.registry_network, "registry-proxy", "-registry")
+
+    def proxy_network(self, request: Request, configured: str, service: str, suffix: str) -> str:
+        """Create or verify a job-owned internal network whose only peer is one Compose proxy service.
+
+        Raises:
+            DockerError: The proxy or network identity cannot be verified.
+        """
+        name = request.name + suffix
+        template = parse(self.require("network", "inspect", configured, "--format", "{{json .}}"))
+        proxies: list[str] = []
+        for identifier in object_value(template.get("Containers", {})):
+            container = parse(self.require("container", "inspect", identifier, "--format", "{{json .}}"))
+            labels = object_value(object_value(container["Config"])["Labels"])
+            if labels.get("com.docker.compose.service") == service:
+                proxies.append(identifier)
+        if len(proxies) != 1:
+            raise DockerError(f"Expected one {service} on the configured network")
+        result = self.call("network", "inspect", name, "--format", "{{json .}}")
+        if result.returncode:
+            if "not found" not in result.stderr and "No such network" not in result.stderr:
+                raise DockerError("Proxy network inspection failed")
+            self.require(
+                "network",
+                "create",
+                "--internal",
+                "--opt",
+                "com.docker.network.bridge.gateway_mode_ipv4=isolated",
+                "--label",
+                f"factory_horde.request_sha256={request.digest}",
+                name,
+            )
+            result = self.call("network", "inspect", name, "--format", "{{json .}}")
+        network = parse(result.stdout)
+        if (
+            object_value(network.get("Labels", {})).get("factory_horde.request_sha256") != request.digest
+            or network.get("Internal") is not True
+            or object_value(network.get("Options", {})).get("com.docker.network.bridge.gateway_mode_ipv4") != "isolated"
+        ):
+            raise DockerError("Proxy network identity or isolation mismatch")
+        if proxies[0] not in object_value(network.get("Containers", {})):
+            self.require("network", "connect", "--alias", service, name, proxies[0])
+        return name
+
+    def release_network(self, request: Request) -> None:
+        """Remove only this job's retained network after workload termination.
+
+        Raises:
+            DockerError: Ownership or network cleanup is uncertain.
+        """
+        for configured, suffix in (
+            (self.settings.factory_network, "-inference"),
+            (self.settings.registry_network, "-registry"),
+        ):
+            if not configured:
+                continue
+            name = request.name + suffix
+            result = self.call("network", "inspect", name, "--format", "{{json .}}")
+            if result.returncode:
+                if "not found" in result.stderr or "No such network" in result.stderr:
+                    continue
+                raise DockerError("Proxy network cleanup inspection failed")
+            network = parse(result.stdout)
+            if object_value(network.get("Labels", {})).get("factory_horde.request_sha256") != request.digest:
+                raise DockerError("Refusing to remove an unrelated proxy network")
+            for identifier in object_value(network.get("Containers", {})):
+                self.require("network", "disconnect", name, identifier)
+            self.require("network", "rm", name)
+
+    def prepare(self, request: Request) -> tuple[str, ...]:
+        """Resolve mounts and the proxy-only network before any create intent is persisted.
+
+        Raises:
+            DockerError: The inference network or proxy cannot be verified yet.
+            OSError: A job directory cannot be resolved.
         """
         destination = "/output" if request.kind == "factory" else "/submission,readonly"
         mounts = [
@@ -537,7 +642,7 @@ class Docker:
         ]
         if request.report_dir is not None:
             mounts.append(f"type=bind,src={self.files.mount(request.report_dir)},dst=/report")
-        network = self.settings.factory_network if request.kind == "factory" else ""
+        network = self.inference_network(request) if self.settings.factory_network else ""
         args = [
             "create",
             "--name",
@@ -580,13 +685,656 @@ class Docker:
         ]
         for mount in mounts:
             args.extend(("--mount", mount))
+        if request.kind == "judge":
+            channel = f"control/runners/{request.job_id}"
+            with self.files.directory(relative_parts(channel), create=True):
+                pass
+            self.publish_budget(request, channel)
+            args.extend(("--mount", f"type=bind,src={self.files.mount(channel)},dst=/runner"))
+            args.extend(("--env", f"FACTORY_HORDE_JUDGE_IMAGE={request.image}"))
         if network:
             for variable in (
                 f"ANTHROPIC_BASE_URL={self.settings.inference_url}",
                 f"CLAUDE_CODE_OAUTH_TOKEN={INFERENCE_TOKEN_PLACEHOLDER}",
             ):
                 args.extend(("--env", variable))
-        return self.require(*args, request.image)
+        return (*args, request.image)
+
+    def publish_budget(self, request: Request, channel: str) -> None:
+        """Freeze the judge's shared sandbox deadline once, leaving time for its final assessment."""
+        try:
+            self.files.read(f"{channel}/budget.json")
+        except FileNotFoundError:
+            created = timestamp(request.record["created_at"])
+            reserve = min(timedelta(seconds=self.settings.judge_reserve_seconds), (request.deadline - created) / 2)
+            deadline = (request.deadline - reserve).isoformat()
+            budget: dict[str, object] = {"protocol_version": PROTOCOL_VERSION, "sandbox_deadline": deadline}
+            self.files.write(f"{channel}/budget.json", budget, immutable=True)
+
+    def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
+        """Create a detached, non-restarting workload from prepared arguments.
+
+        Each workload gets a separate proxy-only network when inference is enabled.
+        """
+        return self.require(*(arguments or self.prepare(request)))
+
+
+@contextmanager
+def docker_socket() -> Generator[socket.socket]:
+    """Connect only to the local daemon already trusted by the host executor."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as stream:
+        stream.settimeout(5)
+        stream.connect("/var/run/docker.sock")
+        yield stream
+
+
+def docker_api(method: str, path: str, body: dict[str, object] | None = None) -> dict[str, object]:
+    """Use daemon exec records to distinguish application exits from transport failures.
+
+    Raises:
+        DockerError: Docker did not return bounded successful JSON.
+    """
+    with docker_socket() as stream:
+        connection = http.client.HTTPConnection("localhost", timeout=5)
+        connection.sock = stream
+        try:
+            connection.request(
+                method,
+                "/v1.45" + path,
+                None if body is None else encode(body),
+                {"Content-Type": "application/json"},
+            )
+            response = connection.getresponse()
+            data = response.read(LIMIT + 1)
+            if response.status >= 300 or len(data) > LIMIT:
+                raise DockerError(f"Docker exec API failed: HTTP {response.status}")
+            return parse(data)
+        finally:
+            connection.close()
+
+
+REGISTRY_PROXY = "http://registry-proxy:3128"
+# A plain index requirement: name, extras, version specifiers and markers. Options, paths and URLs never match.
+REQUIREMENT = re.compile(
+    r"[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
+    r"(?:\s*\[\s*[A-Za-z0-9._-]+(?:\s*,\s*[A-Za-z0-9._-]+)*\s*\])?"
+    r"(?:\s*(?:===|~=|==|!=|<=|>=|<|>)\s*[A-Za-z0-9.*+!_-]+(?:\s*,\s*(?:===|~=|==|!=|<=|>=|<|>)\s*[A-Za-z0-9.*+!_-]+)*)?"
+    r"(?:\s*;\s*[A-Za-z0-9_.'\"<>=!~ ()-]+)?"
+)
+# Fixed image-owned helpers; `-I` keeps project modules and environment out of the interpreter.
+READ_MANIFEST = (
+    "import sys\n"
+    "data = open(sys.argv[1], 'rb').read(65537)\n"
+    "sys.exit(3) if len(data) > 65536 else sys.stdout.write(data.decode())"
+)
+# SIGKILL to -1 reaches every sandbox process except PID 1 (the image-owned workspace holder) and the caller.
+STOP_PROCESSES = (
+    "import os, signal, sys, time\n"
+    "def alive():\n"
+    " for pid in os.listdir('/proc'):\n"
+    "  if pid.isdigit() and int(pid) not in (1, os.getpid()):\n"
+    "   try:\n"
+    "    if open(f'/proc/{pid}/stat').read().rsplit(')', 1)[1].split()[0] not in 'ZX': return True\n"
+    "   except OSError: pass\n"
+    " return False\n"
+    "for _ in range(50):\n"
+    " try: os.kill(-1, signal.SIGKILL)\n"
+    " except ProcessLookupError: pass\n"
+    " if not alive(): sys.exit(0)\n"
+    " time.sleep(0.1)\n"
+    "sys.exit(1)"
+)
+# A command that cannot start because the evaluation's sandbox time is spent; nothing was executed.
+EXHAUSTED: dict[str, object] = {
+    "exit_code": -1,
+    "timed_out": True,
+    "budget_exhausted": True,
+    "stdout": "",
+    "stderr": "Not executed: the sandbox time budget is exhausted",
+    "stdout_truncated": False,
+    "stderr_truncated": False,
+    "seconds": 0,
+}
+
+
+def refused(identity: str, reason: str) -> dict[str, object]:
+    """An install outcome for a request the executor declined without running anything."""
+    return {
+        **EXHAUSTED,
+        "id": identity,
+        "exit_code": 1,
+        "timed_out": False,
+        "budget_exhausted": False,
+        "stderr": reason,
+    }
+
+
+class ApplicationRunner:
+    """Executor-owned, networkless application container and bounded command channel."""
+
+    def __init__(self, executor: Executor, request: Request, ledger: dict[str, object]):
+        self.executor, self.request, self.ledger = executor, request, ledger
+        self.docker, self.files = executor.docker, executor.files
+        self.name = request.name + "-app"
+        self.channel = f"control/runners/{request.job_id}"
+
+    def save(self) -> None:
+        """Persist runner intent in the parent job ledger."""
+        self.executor.save_ledger(self.request, self.ledger)
+
+    def inspect(self) -> dict[str, object] | None:
+        """Verify the retained application identity before using Docker evidence.
+
+        Raises:
+            DockerError: Identity or observation is uncertain.
+        """
+        result = self.docker.call("container", "inspect", self.name, "--format", "{{json .}}")
+        if result.returncode:
+            if "No such container:" in result.stderr or "No such object:" in result.stderr:
+                return None
+            raise DockerError("Application inspection failed")
+        value = parse(result.stdout)
+        config = object_value(value["Config"])
+        if object_value(config["Labels"]).get("factory_horde.runner") != self.request.digest:
+            raise DockerError("Application identity conflict")
+        if self.ledger.get("app_id") not in (None, value["Id"]):
+            raise DockerError("Application container was replaced")
+        return value
+
+    def stop(self) -> None:
+        """Close startup permanently and require confirmed termination of all application processes.
+
+        Raises:
+            DockerError: Docker cannot prove termination.
+        """
+        if "app_phase" not in self.ledger:
+            return
+        self.ledger["app_closed"] = True
+        self.save()
+        container = self.inspect()
+        if container is None:
+            if self.ledger.get("app_phase") != "create_rejected":
+                raise DockerError("Application container missing after persisted intent")
+            self.ledger["app_stopped"] = True
+            self.save()
+            return
+        state = object_value(container["State"])
+        if state["Running"] is True:
+            self.docker.require("kill", "--signal", "KILL", self.name)
+            container = self.inspect()
+            if container is None:
+                raise DockerError("Application disappeared during stop")
+            state = object_value(container["State"])
+        if state["Running"] is not False or state["Status"] not in (
+            "exited",
+            "dead",
+            "created",
+        ):
+            raise DockerError("Application stop remains unresolved")
+        self.ledger["app_stopped"] = True
+        self.save()
+
+    def start(self) -> None:
+        """Create the one disposable workspace without exposing controller mounts.
+
+        Raises:
+            DockerError: An ambiguous prior start may not be replayed.
+            DockerRejected: Docker definitively rejected creation; startup stays closed.
+        """
+        if self.ledger.get("app_closed"):
+            raise DockerError("Application startup permanently closed")
+        container = self.inspect()
+        if container is None:
+            if "app_phase" in self.ledger:
+                raise DockerError("Application missing after create intent")
+            submission = self.files.mount(self.request.output_dir)
+            self.ledger["app_phase"] = "creating"
+            self.save()
+            try:
+                identifier = self.create(self.executor.settings, submission)
+            except DockerRejected:
+                self.ledger.update(app_phase="create_rejected", app_closed=True)
+                self.save()
+                raise
+            self.ledger.update(app_id=identifier, app_phase="created")
+            self.save()
+            container = self.inspect()
+        if container is None:
+            raise DockerError("Application creation not observable")
+        self.detach()
+        self.run(container)
+
+    def create(self, settings: Settings, submission: str) -> str:
+        """Request the application container; a CLI failure is a definitive rejection."""
+        return self.docker.require(
+            "create",
+            "--name",
+            self.name,
+            "--network",
+            "none",
+            "--read-only",
+            "--cap-drop",
+            "ALL",
+            "--security-opt",
+            "no-new-privileges",
+            "--user",
+            f"{settings.uid}:{settings.gid}",
+            "--memory",
+            settings.memory,
+            "--cpus",
+            str(settings.cpus),
+            "--pids-limit",
+            str(settings.pids),
+            "--tmpfs",
+            "/tmp:rw,exec,nosuid,nodev,size=256m",
+            "--tmpfs",
+            f"/app:rw,exec,nosuid,nodev,size=256m,uid={settings.uid},gid={settings.gid}",
+            "--mount",
+            f"type=bind,src={submission},dst=/submission,readonly",
+            "--workdir",
+            "/app",
+            "--env",
+            "HOME=/app",
+            "--env",
+            "PYTHONPATH=/app/.deps",
+            "--label",
+            f"factory_horde.runner={self.request.digest}",
+            "--log-driver",
+            "none",
+            "--entrypoint",
+            "/usr/local/bin/python3",
+            self.request.image,
+            "-I",
+            "-c",
+            "import shutil,time,pathlib; shutil.copytree('/submission','/app',dirs_exist_ok=True,symlinks=True); "
+            "pathlib.Path('/tmp/factory-horde-ready').touch(); time.sleep(86400)",
+        )
+
+    def run(self, container: dict[str, object]) -> None:
+        """Start the created workspace once and confirm its image-owned readiness marker.
+
+        Raises:
+            DockerError: Startup is ambiguous or the workspace did not become ready.
+        """
+        state = object_value(container["State"])
+        if state["Status"] == "created" and self.ledger.get("app_phase") == "created":
+            self.ledger["app_phase"] = "starting"
+            self.save()
+            self.docker.require("start", self.name)
+        elif state["Running"] is not True:
+            raise DockerError("Application stopped or startup ambiguous")
+        if self.ledger.get("app_phase") == "running":
+            return
+        # Initialization is a fixed image-owned command; this is readiness, never application execution.
+        self.docker.require(
+            "exec",
+            self.name,
+            "/usr/local/bin/python3",
+            "-I",
+            "-c",
+            "import pathlib,time,sys\n"
+            "for _ in range(100):\n"
+            " if pathlib.Path('/tmp/factory-horde-ready').is_file(): sys.exit(0)\n"
+            " time.sleep(0.05)\n"
+            "sys.exit(1)",
+        )
+        self.ledger["app_phase"] = "running"
+        self.save()
+
+    def execute(self, command: dict[str, object]) -> dict[str, object]:
+        """Execute argv inside the sandbox and capture bounded streams outside it.
+
+        Raises:
+            ProtocolError: The command violates the sandbox request contract.
+            DockerError: Capture or executor lifetime is interrupted.
+        """
+        if "install" in command:
+            return self.install(command)
+        # Retain args for already-frozen jobs from the earlier CLI-only judge image.
+        key = "argv" if "argv" in command else "args"
+        args = command.get(key)
+        stdin = command.get("stdin", "")
+        if (
+            set(command) != {"id", key, "stdin", "observation"}
+            or not isinstance(args, list)
+            or any(not isinstance(a, str) or "\0" in a for a in cast(list[object], args))
+            or not isinstance(stdin, str)
+            or not isinstance(command["id"], str)
+            or not command["id"]
+            or not isinstance(command["observation"], str)
+            or len(json.dumps(command).encode()) > 262144
+        ):
+            raise ProtocolError("Invalid application command")
+        arguments = cast(list[str], args)
+        if key == "args":
+            arguments = ["/usr/local/bin/python3", "-I", "/app/main.py", *arguments]
+        elif not arguments or not arguments[0]:
+            raise ProtocolError("Empty application argv")
+        return self.run_command(string(command["id"]), arguments, stdin)
+
+    def install(self, command: dict[str, object]) -> dict[str, object]:
+        """Install declared dependencies through the registry proxy with a fixed, script-free command.
+
+        Project code never runs while the network is attached: every other sandbox process is killed
+        first, pip runs isolated from `/app` and receives only validated index requirements, and npm
+        skips lifecycle scripts. The sandbox returns to `--network none`, verified, before anything else runs.
+
+        Raises:
+            ProtocolError: The install request violates the contract.
+            DockerError: Network attachment or detachment cannot be confirmed.
+        """
+        spec = command.get("install")
+        if (
+            set(command) != {"id", "install", "observation"}
+            or not isinstance(command["id"], str)
+            or not command["id"]
+            or set(fields := object_value(spec)) != {"ecosystem", "manifest"}
+        ):
+            raise ProtocolError("Invalid dependency installation request")
+        identity, ecosystem, manifest = string(command["id"]), string(fields["ecosystem"]), string(fields["manifest"])
+        parts = relative_parts(manifest)
+        if ecosystem not in ("pypi", "npm") or (ecosystem == "npm" and parts[-1] != "package.json"):
+            raise ProtocolError("Unsupported dependency ecosystem or manifest")
+        declared = {"install": {"ecosystem": ecosystem, "manifest": manifest}}
+        if not self.executor.settings.registry_network:
+            return {
+                **refused(identity, "Dependency installation is not configured on this validator"),
+                "install_unavailable": True,
+            }
+        environment = [f"{name}={REGISTRY_PROXY}" for name in ("HTTPS_PROXY", "https_proxy", "npm_config_https_proxy")]
+        if ecosystem == "pypi":
+            requirements = self.requirements(manifest)
+            if isinstance(requirements, str):
+                return {**refused(identity, requirements), **declared}
+            workdir = "/"
+            arguments = [
+                "/usr/local/bin/python3",
+                "-I",
+                "-m",
+                "pip",
+                "--isolated",
+                "install",
+                "--only-binary",
+                ":all:",
+                "--no-input",
+                "--disable-pip-version-check",
+                "--no-cache-dir",
+                "--proxy",
+                REGISTRY_PROXY,
+                "--target",
+                "/app/.deps",
+                "--report",
+                "/app/.deps-report.json",
+                *requirements,
+            ]
+        else:
+            workdir = "/".join(("/app", *parts[:-1]))
+            # Project .npmrc files are still read; pin the one setting that names an executable npm runs.
+            arguments = [
+                "/usr/local/bin/npm",
+                "install",
+                "--ignore-scripts",
+                "--no-audit",
+                "--no-fund",
+                "--git=/bin/false",
+            ]
+            environment += ["npm_config_cache=/tmp/npm-cache", "npm_config_update_notifier=false"]
+        if self.docker.call("exec", self.name, "/usr/local/bin/python3", "-I", "-c", STOP_PROCESSES).returncode:
+            return {**refused(identity, "Sandbox processes could not be stopped before installation"), **declared}
+        network = self.docker.registry_network(self.request)
+        self.ledger["app_network"] = "attaching"
+        self.save()
+        self.docker.require("network", "disconnect", "none", self.name)
+        self.docker.require("network", "connect", network, self.name)
+        self.ledger["app_network"] = "attached"
+        self.save()
+        try:
+            outcome = self.run_command(identity, arguments, "", environment, workdir)
+        finally:
+            self.detach()
+        return {**outcome, **declared}
+
+    def requirements(self, manifest: str) -> list[str] | str:
+        """Read a requirements file through a fixed exec and return its requirements, or why it is refused."""
+        result = self.docker.call(
+            "exec", self.name, "/usr/local/bin/python3", "-I", "-c", READ_MANIFEST, "/app/" + manifest
+        )
+        if result.returncode:
+            return "Requirements file is missing, unreadable, not UTF-8 or larger than 64 KiB"
+        accepted: list[str] = []
+        for number, line in enumerate(result.stdout.splitlines(), 1):
+            requirement = re.sub(r"(?:^|\s)#.*", "", line).strip()
+            if not requirement:
+                continue
+            if REQUIREMENT.fullmatch(requirement) is None:
+                return (
+                    f"Line {number} of the requirements file is not a plain package requirement; "
+                    "options, paths, URLs and includes are not installed"
+                )
+            accepted.append(requirement)
+        return accepted or "Requirements file declares no packages"
+
+    def detach(self) -> None:
+        """Return the sandbox to `--network none` and confirm it before any further command.
+
+        Raises:
+            DockerError: Docker cannot confirm that the sandbox has no network.
+        """
+        if self.ledger.get("app_network") not in ("attaching", "attached"):
+            return
+        container = self.inspect()
+        if container is None:
+            raise DockerError("Application missing while detaching its network")
+        networks = object_value(object_value(container["NetworkSettings"])["Networks"])
+        for name in networks:
+            if name != "none":
+                self.docker.require("network", "disconnect", name, self.name)
+        if "none" not in networks:
+            self.docker.require("network", "connect", "none", self.name)
+        container = self.inspect()
+        if container is None or set(object_value(object_value(container["NetworkSettings"])["Networks"])) != {"none"}:
+            raise DockerError("Application network isolation could not be restored")
+        self.ledger["app_network"] = "detached"
+        self.save()
+
+    def run_command(
+        self,
+        identity: str,
+        arguments: list[str],
+        stdin: str,
+        environment: list[str] | None = None,
+        workdir: str | None = None,
+    ) -> dict[str, object]:
+        """Run one exec within the shared sandbox budget and capture bounded streams outside it.
+
+        Raises:
+            DockerError: Capture or executor lifetime is interrupted.
+        """
+        started = time.monotonic()
+        limit = (self.sandbox_deadline() - datetime.now(UTC)).total_seconds()
+        if limit <= 0:
+            return {**EXHAUSTED, "id": identity}
+        created = docker_api(
+            "POST",
+            f"/containers/{self.name}/exec",
+            {
+                "AttachStdin": True,
+                "AttachStdout": True,
+                "AttachStderr": True,
+                "Tty": False,
+                "Cmd": arguments,
+                **({"Env": environment} if environment else {}),
+                **({"WorkingDir": workdir} if workdir else {}),
+            },
+        )
+        exec_id = string(created["Id"])
+        if re.fullmatch(r"[a-f0-9]{64}", exec_id) is None:
+            raise DockerError("Invalid Docker exec identity")
+        self.ledger["app_exec_id"] = exec_id
+        self.save()
+        streams = {1: bytearray(), 2: bytearray()}
+        truncated = {1: False, 2: False}
+        timed_out = budget_exhausted = False
+        parent_checked = time.monotonic()
+        with docker_socket() as stream:
+            body = b'{"Detach":false,"Tty":false}'
+            headers = (
+                f"POST /v1.45/exec/{exec_id}/start HTTP/1.1\r\nHost: localhost\r\n"
+                f"Connection: Upgrade\r\nUpgrade: tcp\r\nContent-Type: application/json\r\n"
+                f"Content-Length: {len(body)}\r\n\r\n"
+            ).encode()
+            stream.sendall(headers + body)
+            response = bytearray()
+            while not response.endswith(b"\r\n\r\n"):
+                byte = stream.recv(1)
+                if not byte or len(response) >= 16384:
+                    raise DockerError("Docker exec upgrade response unavailable")
+                response.extend(byte)
+            if not response.startswith(b"HTTP/1.1 101 "):
+                raise DockerError("Docker rejected application exec stream")
+            stream.setblocking(False)
+            pending = memoryview(stdin.encode())
+            frame_header = bytearray()
+            remaining, channel = 0, 0
+            with selectors.DefaultSelector() as selector:
+                selector.register(
+                    stream,
+                    selectors.EVENT_READ | (selectors.EVENT_WRITE if pending else 0),
+                )
+                if not pending:
+                    stream.shutdown(socket.SHUT_WR)
+                finished = False
+                while not finished:
+                    if self.executor.shutdown.is_set():
+                        raise DockerError("Executor interrupted application capture")
+                    if time.monotonic() - parent_checked >= 2:
+                        parent = self.docker.inspect(self.request)
+                        if parent is None or object_value(parent["State"])["Running"] is not True:
+                            self.stop()
+                            raise DockerError("Judge stopped during application check")
+                        # Keep readiness informed while an unrestricted command runs.
+                        self.executor.observe(self.request, self.ledger, parent)
+                        parent_checked = time.monotonic()
+                    budget_exhausted = time.monotonic() - started >= limit
+                    if budget_exhausted or self.executor.cancelled(self.request):
+                        timed_out = True
+                        self.stop()
+                        break
+                    for _, events in selector.select(0.1):
+                        if events & selectors.EVENT_WRITE:
+                            try:
+                                pending = pending[stream.send(pending) :]
+                            except BrokenPipeError:
+                                pending = pending[len(pending) :]
+                            if not pending:
+                                selector.modify(stream, selectors.EVENT_READ)
+                                try:
+                                    stream.shutdown(socket.SHUT_WR)
+                                except OSError:
+                                    pass
+                        if not events & selectors.EVENT_READ:
+                            continue
+                        chunk = stream.recv(8192)
+                        if not chunk:
+                            finished = True
+                            break
+                        while chunk:
+                            if remaining == 0:
+                                size = min(8 - len(frame_header), len(chunk))
+                                frame_header.extend(chunk[:size])
+                                chunk = chunk[size:]
+                                if len(frame_header) != 8:
+                                    continue
+                                channel = frame_header[0]
+                                remaining = int.from_bytes(frame_header[4:8], "big")
+                                if channel not in streams or bytes(frame_header[1:4]) != b"\0\0\0":
+                                    raise DockerError("Invalid Docker output frame")
+                                frame_header.clear()
+                            size = min(remaining, len(chunk))
+                            capacity = 16384 - len(streams[channel])
+                            streams[channel].extend(chunk[: min(size, capacity)])
+                            truncated[channel] |= size > capacity
+                            remaining -= size
+                            chunk = chunk[size:]
+                if not timed_out and (remaining or frame_header):
+                    raise DockerError("Docker capture ended within an output frame")
+        inspected = docker_api("GET", f"/exec/{exec_id}/json")
+        if inspected.get("Running") is not False or inspected.get("ContainerID") != self.ledger.get("app_id"):
+            raise DockerError("Application execution completion is unconfirmed")
+        exit_code = integer(inspected["ExitCode"])
+        duration = time.monotonic() - started
+        self.executor.metrics.observe("application", "timeout" if timed_out else "ok", duration)
+        return {
+            "id": identity,
+            "exit_code": exit_code,
+            "timed_out": timed_out,
+            "budget_exhausted": budget_exhausted,
+            "stdout": streams[1].decode(errors="replace"),
+            "stderr": streams[2].decode(errors="replace"),
+            "stdout_truncated": truncated[1],
+            "stderr_truncated": truncated[2],
+            "seconds": duration,
+        }
+
+    def sandbox_deadline(self) -> datetime:
+        """Use the frozen budget when present; older jobs keep the previous deadline margin.
+
+        Raises:
+            ProtocolError: The budget record is malformed.
+        """
+        latest = self.request.deadline - timedelta(seconds=5)
+        try:
+            budget = self.files.read(f"{self.channel}/budget.json")
+        except FileNotFoundError:
+            return latest
+        if set(budget) != {"protocol_version", "sandbox_deadline"}:
+            raise ProtocolError("Invalid sandbox budget")
+        return min(timestamp(budget["sandbox_deadline"]), latest)
+
+    def tick(self) -> None:
+        """Consume immutable commands without an action-count limit, never replay an ambiguous invocation.
+
+        Raises:
+            ProtocolError: A command changed after execution.
+        """
+        for index in count(1):
+            path = f"{self.channel}/{index}"
+            try:
+                command = self.files.read(path + ".request.json")
+            except FileNotFoundError:
+                return
+            retained = f"control/executor/{self.request.job_id}.check-{index}.json"
+            outcome: dict[str, object]
+            try:
+                outcome = self.files.read(retained)
+            except FileNotFoundError:
+                if self.ledger.get("app_command") == index:
+                    self.stop()
+                    outcome = {"failure": "Interrupted command; execution cannot be replayed"}
+                else:
+                    try:
+                        self.start()
+                        self.ledger["app_command"] = index
+                        self.save()
+                        outcome = self.execute(command)
+                    except (
+                        OSError,
+                        ValueError,
+                        DockerError,
+                        subprocess.SubprocessError,
+                        http.client.HTTPException,
+                    ) as error:
+                        self.stop()
+                        outcome = {"failure": str(error)[:512]}
+                        event = {"event": "application_check_failed", "level": "error", "job_id": self.request.job_id}
+                        print(json.dumps({**event, "reason": outcome["failure"]}), flush=True)
+                outcome = {"command": command, "result": outcome}
+                self.files.write(retained, outcome, immutable=True)
+            if outcome["command"] != command:
+                raise ProtocolError("Application command changed after execution")
+            self.files.write(path + ".response.json", outcome, immutable=True)
+            if "failure" in object_value(outcome["result"]):
+                return
 
 
 class Executor:
@@ -602,6 +1350,8 @@ class Executor:
         self.started_at = now()
         self.observed_jobs: set[str] = set()
         self.completed_jobs: set[str] = set()
+        self.slot_lock = threading.Lock()
+        self.waiting_jobs: set[str] = set()
 
     def cancelled(self, request: Request) -> bool:
         """A valid permanent stop or elapsed deadline closes startup.
@@ -623,6 +1373,47 @@ class Executor:
         if stop["reason"] not in ("deadline", "operator", "recovery"):
             raise ProtocolError("Unsupported stop reason")
         return True
+
+    def slot_available(self, request: Request) -> bool:
+        """Count workload containers Docker still holds, so the limit survives executor restarts.
+
+        Raises:
+            DockerError: Docker cannot list workload containers.
+        """
+        result = self.docker.call(
+            "ps",
+            "--all",
+            "--filter",
+            "label=factory_horde.job_id",
+            "--filter",
+            "status=created",
+            "--filter",
+            "status=running",
+            "--filter",
+            "status=restarting",
+            "--format",
+            '{{.Label "factory_horde.job_id"}}',
+        )
+        if result.returncode:
+            raise DockerError("Workload containers cannot be listed")
+        # Rejected or cancelled starts stay `created` forever; a terminal ledger releases their slot.
+        holders = {job_id for job_id in result.stdout.split() if not self.terminal(job_id)}
+        if request.job_id in holders or len(holders) < self.settings.max_running_jobs:
+            return True
+        if request.job_id not in self.waiting_jobs:
+            self.waiting_jobs.add(request.job_id)
+            event = {"event": "workload_slot_wait", "level": "error", "job_id": request.job_id, "running": len(holders)}
+            print(json.dumps(event), flush=True)
+        return False
+
+    def terminal(self, job_id: str) -> bool:
+        """Report whether this executor durably published a terminal status for a job."""
+        if re.fullmatch(r"[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}", job_id) is None:
+            return False
+        try:
+            return self.files.read(f"control/executor/{job_id}.json").get("terminal") is not None
+        except FileNotFoundError:
+            return False
 
     def save_ledger(self, request: Request, ledger: dict[str, object]) -> None:
         """Persist side-effect intent and startup closure before acting."""
@@ -647,6 +1438,9 @@ class Executor:
             **facts,
         }
         if value["execution"] in ("exited", "never_started"):
+            if request.kind == "judge":
+                ApplicationRunner(self, request, ledger).stop()
+            self.docker.release_network(request)
             ledger.update(closed=True, terminal=value)
             self.save_ledger(request, ledger)
         self.files.write(f"control/statuses/{request.job_id}.json", value)
@@ -730,7 +1524,10 @@ class Executor:
         ledger["closed"] = True
         self.save_ledger(request, ledger)
         state = object_value(container["State"])
-        if state["Status"] == "created" and ledger.get("phase") not in ("start_attempted", "start_rejected"):
+        if state["Status"] == "created" and ledger.get("phase") not in (
+            "start_attempted",
+            "start_rejected",
+        ):
             ledger["container_id"] = string(container["Id"])
             self.status(
                 request,
@@ -826,6 +1623,10 @@ class Executor:
                         self.save_ledger(request, ledger)
                         raise
                 else:
+                    if self.settings.factory_network and state["Running"] is True:
+                        self.docker.inference_network(request)
+                    if request.kind == "judge" and state["Running"] is True:
+                        ApplicationRunner(self, request, ledger).tick()
                     self.observe(request, ledger, container)
                 return
             if ledger.get("phase") == "create_rejected":
@@ -845,6 +1646,9 @@ class Executor:
             ) or ledger.get("container_id"):
                 raise DockerError("Expected Docker execution is missing; replacement is forbidden")
             if closed:
+                # The job's whole window passed without a container: capacity or preparation failed.
+                event = {"event": "job_never_created", "level": "error", "job_id": request.job_id}
+                print(json.dumps({**event, "waited_for_slot": request.job_id in self.waiting_jobs}), flush=True)
                 self.status(
                     request,
                     ledger,
@@ -852,6 +1656,11 @@ class Executor:
                     execution="never_started",
                     startup_forbidden=True,
                     reason="Cancelled before creation",
+                )
+                return
+            if not self.slot_available(request):
+                self.status(
+                    request, ledger, state="pending", execution="unresolved", reason="Waiting for a workload slot"
                 )
                 return
             self.status(request, ledger, state="preparing", execution="unresolved")
@@ -900,22 +1709,36 @@ class Executor:
                     reason="Startup closed after pull",
                 )
                 return
-            ledger["phase"] = "create_attempted"
-            self.save_ledger(request, ledger)
-            try:
-                identifier = self.docker.create(request)
-            except DockerRejected:
-                ledger.update(phase="create_rejected", closed=True)
+            # Preparation failures leave the job reserved, so a transient proxy or network problem retries.
+            arguments = self.docker.prepare(request)
+            with self.slot_lock:
+                # Recheck under the lock: concurrent jobs must not both take the last slot.
+                if not self.slot_available(request):
+                    return
+                ledger["phase"] = "create_attempted"
                 self.save_ledger(request, ledger)
-                raise
-            ledger.update(phase="created", container_id=identifier)
-            self.save_ledger(request, ledger)
-        except (OSError, ValueError, KeyError, DockerError, subprocess.SubprocessError) as error:
+                try:
+                    identifier = self.docker.create(request, arguments)
+                except DockerRejected:
+                    ledger.update(phase="create_rejected", closed=True)
+                    self.save_ledger(request, ledger)
+                    raise
+                ledger.update(phase="created", container_id=identifier)
+                self.save_ledger(request, ledger)
+            self.waiting_jobs.discard(request.job_id)
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            DockerError,
+            subprocess.SubprocessError,
+        ) as error:
             self.status(request, ledger, reason=str(error)[:512] or type(error).__name__)
             print(
                 json.dumps(
                     {
                         "event": "job_unresolved",
+                        "level": "error",
                         "job_id": request.job_id,
                         "round_id": request.record["round_id"],
                         "reason": str(error)[:512],
@@ -937,7 +1760,14 @@ class Executor:
                     self.observed_jobs.discard(job_id)
                     rejected += 1
                     print(
-                        json.dumps({"event": "request_rejected", "job_id": job_id, "reason": str(error)[:512]}),
+                        json.dumps(
+                            {
+                                "event": "request_rejected",
+                                "level": "error",
+                                "job_id": job_id,
+                                "reason": str(error)[:512],
+                            }
+                        ),
                         flush=True,
                     )
         requested: set[str] = set()
@@ -957,7 +1787,15 @@ class Executor:
             except (OSError, ValueError) as error:
                 rejected += 1
                 print(
-                    json.dumps({"event": "request_rejected", "filename": name, "reason": str(error)[:512]}), flush=True
+                    json.dumps(
+                        {
+                            "event": "request_rejected",
+                            "level": "error",
+                            "filename": name,
+                            "reason": str(error)[:512],
+                        }
+                    ),
+                    flush=True,
                 )
         snapshot = self.metrics.snapshot()
         snapshot["active_workers"] = sum(not future.done() for future in self.active.values())
@@ -1023,6 +1861,9 @@ def main() -> None:
         poll_seconds=float(os.environ.get("EXECUTOR_POLL_SECONDS", "2")),
         workers=int(os.environ.get("EXECUTOR_WORKERS", "32")),
         tmp_size=os.environ.get("EXECUTOR_TMP_SIZE", "64m"),
+        judge_reserve_seconds=int(os.environ.get("EXECUTOR_JUDGE_RESERVE_SECONDS", "180")),
+        max_running_jobs=int(os.environ.get("EXECUTOR_MAX_RUNNING_JOBS", "4")),
+        registry_network=os.environ.get("EXECUTOR_REGISTRY_NETWORK", ""),
         factory_network=os.environ.get("EXECUTOR_FACTORY_NETWORK", ""),
         inference_url=os.environ.get("EXECUTOR_INFERENCE_URL", "http://inference-proxy:8080"),
     )
@@ -1035,12 +1876,18 @@ def main() -> None:
         or settings.poll_seconds <= 0
         or not math.isfinite(settings.poll_seconds)
         or not 5 <= settings.workers <= 256
+        or settings.judge_reserve_seconds < 0
+        or settings.max_running_jobs < 1
     ):
-        parser.error("Require non-root UID/GID and positive CPU, PID and polling settings")
+        parser.error(
+            "Require non-root UID/GID, positive CPU, PID, polling and job limits and a nonnegative judge reserve"
+        )
     if (
         re.fullmatch(r"[1-9][0-9]{0,5}[kmg]", settings.tmp_size) is None
         or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.factory_network) is None
         or settings.factory_network in RESERVED_NETWORKS
+        or re.fullmatch(r"(?:[A-Za-z0-9][A-Za-z0-9_.-]{0,62})?", settings.registry_network) is None
+        or settings.registry_network in RESERVED_NETWORKS
         or re.fullmatch(r"https?://[A-Za-z0-9._:/-]+", settings.inference_url) is None
     ):
         parser.error("Require a simple /tmp size, a user-defined Docker network name and an HTTP(S) inference URL")

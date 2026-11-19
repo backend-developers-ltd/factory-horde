@@ -2,7 +2,8 @@
 
 FactoryHorde is a localnet-first orchestration prototype for software factories submitted as immutable
 container images. A Nexus validator coordinates host Docker execution through shared files; a separate judge
-produces persistent random fixture scores. No inference, quality validation or public deployment is included.
+produces persistent scores: an adaptive Claude controller that chooses isolated project tests and grades observed behavior against frozen criteria, with
+random scoring available in explicit fixture mode. No public deployment is included.
 Origin: the Copier-rendered Nexus subnet template.
 
 Follow `spec/FactoryHorde-v2-sequential-implementation-tasks.md` in order and use `subnet_design.md` for the
@@ -54,14 +55,14 @@ and standalone checksum with `uv run --project validator python installer/releas
 after editing listed assets, and verify with `--check` before committing. `result_repository.py` owns immutable execution decisions
 and accepted scores; `result_store.py` supplies public Nexus projections with rebuildable indexes.
 `tasks.py` wires distinct factory/evaluation Nexus tasks with the shared provider;
-`file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks.
-`coordinator.py` and `round_actor.py` persist admission, enforce stage/stop gates and recover the same
+`file_communicator.py` publishes frozen requests and observes outcomes on actor-owned poll ticks, keeping only the newest context per job; Nexus expires contexts idle for 15 minutes (`CONTEXT_TTL` in `main.py`).
+`coordinator.py` and `round_actor.py` persist admission (verifying settled rounds once per process so poll cost does not grow with history), enforce stage/stop gates and recover the same
 jobs/deadlines without relying on task callbacks. Unresolved old workloads hold new round slots.
 Factory eligibility retains the minute-65 finish cutoff: late observation of a timely Docker exit
 can qualify, but actual late completion cannot. Executor shutdown interrupts local Docker CLI calls
 so held pulls do not delay restart for their full timeout; interrupted effects remain unresolved.
-`weighing.py` selects the latest usable completed round, filters current registration and revalidates
-membership before returning stable softmax weights. `weight_gate.py` suppresses empty opportunities;
+`weighing.py` selects the newest completed round when any miner was fully evaluated, filters current registration and revalidates
+membership before returning 90/10 winner weights with stable round/hotkey SHA-256 ties. `weight_gate.py` suppresses empty opportunities;
 both Nexus weight nodes receive `Settings.mechanism_id` and use the tasks' shared store provider.
 Weight writes are independently opt-in. `localnet/check_weights.py` uses the miner bootstrap SDK to
 verify the actual chain vector and mechanism-0 non-interference without relying on Pylon acknowledgements.
@@ -79,7 +80,7 @@ is persisted before replacing Compose assets and cleared only after successful C
 Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared.
 
-Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories, never judges, to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. Factories on that network can reach each other and share one credential without a quota. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds.
+Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories and judges to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; review mode requires the proxy, and localnet explicitly selects fixture mode; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. The configured network identifies the proxy; each workload gets its own internal isolated-gateway network connected only to that proxy. Application checks run in executor-owned networkless containers with a narrow judge-only file channel; parent terminal publication requires confirmed child termination. Inference shares one credential without a quota. `EXECUTOR_MAX_RUNNING_JOBS` (default 4) caps workload containers, counted from Docker so the limit survives restarts; waiting jobs never stretch round deadlines and are logged at error level; a factory cancelled before it ran is a validator-side gap (`factory_not_started`), not a rejected submission, and terminal jobs left in Docker's created state release their slot. Per-workload networks need small Docker address pools (see `installer/README.md`). With `EXECUTOR_REGISTRY_NETWORK`, a judge's `install` action briefly connects its application sandbox to the `registry-proxy` (Squid, PyPI and npm only) for a fixed wheels-only pip or scripts-free npm install; it first kills every other sandbox process, runs pip isolated from the project with only plain index requirements, and the executor restores and verifies `--network none` before any other command. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds. Admission freezes `TASK_REQUIREMENTS`, `JUDGE_MODE` and the optional `JUDGE_MODEL` with that text; judges record the model IDs actually used. Weights come only from the newest completed round: a miner without an accepted score for every task is excluded from that round, other miners are still weighted, older rounds never stand in, no weights are produced while a published judge of that round still lacks a retained result, and review rounds require the configured judge image digest. `TASK_DIRECTORY` enables discovery of all non-hidden JSON files in its read-only mount. Admission freezes the complete set before discovery; every miner runs every task, with separate executions and mean per-task scores. Judge sessions have no action-count limit or fixed command/session timeout; existing round stops remain authoritative. The judge's instructions and trusted guides, not controller code, require a later observation of the resulting state for each state change and tell the model to bound its own commands. Each judge has one sandbox time budget ending `EXECUTOR_JUDGE_RESERVE_SECONDS` before its deadline; once spent it finishes with the evidence it has. Undemonstrated or failing behaviour is unmet; a project that cannot run at all is rejected as an invalid submission; missing evidence for judge-side reasons makes that evaluation unavailable. Decisions, execution captures, assessments and final reasons are retained in each report directory.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
 changing tooling config, keep both in sync.
@@ -246,3 +247,5 @@ tested. Take great care to avoid drift between these files.
 ---
 
 `AGENTS.md` is the repository's sole agent instruction file.
+
+The adaptive judge uses trusted guides in `judge/skills/` and an observe/act loop. Model commands go through the executor to a separate networkless application container; never execute submitted code or model-selected commands on the host or in the judge controller. The application receives the full project in writable `/app`, a read-only `/submission`, and no controller mounts, credentials or Docker socket. Python, Node.js and POSIX shell are packaged; additional dependencies must be bundled or the judge reports unavailable evidence. Persist each decision before execution and each attributed observation afterward; recovery must not replay an ambiguous command. The output contract accepts arbitrary nonempty regular project trees, with no fixed entry-point filenames.

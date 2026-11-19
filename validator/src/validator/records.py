@@ -2,6 +2,7 @@
 
 import re
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from typing import Annotated, Literal, Self
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
@@ -41,6 +42,9 @@ type ImageReference = Annotated[
     ),
 ]
 type JobKind = Literal["factory", "judge"]
+type JudgeMode = Literal["review", "fixture"]
+type Criterion = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+type JudgeModel = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:\[\]-]{0,127}$")]
 type Score = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
 type NonnegativeInt = Annotated[int, Field(ge=0)]
 
@@ -94,6 +98,37 @@ class CohortMember(Record):
     image: ImageReference
     factory_job_id: UUID4 = Field(default_factory=uuid4)
     judge_job_id: UUID4 = Field(default_factory=uuid4)
+    task_id: Sha256 | None = Field(default=None, exclude_if=lambda v: v is None)
+
+
+class EvaluationPolicy(Record):
+    """Operator-selected scoring mode and ordered criteria shared by the whole round."""
+
+    mode: JudgeMode
+    requirements: Annotated[tuple[Criterion, ...], Field(min_length=1)]
+    # Frozen at admission so every evaluation in a round uses the same grader; absent in older rounds.
+    model: JudgeModel | None = Field(default=None, exclude_if=lambda v: v is None)
+
+    @field_validator("requirements")
+    @classmethod
+    def _unique_requirements(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(set(value)) != len(value):
+            raise ValueError("Evaluation requirements must be unique")
+        return value
+
+
+class FrozenTask(Record):
+    """One discovered task, frozen with its source filename and scoring criteria."""
+
+    task_id: Sha256
+    filename: str
+    specification: Annotated[str, Field(min_length=1)]
+    evaluation: EvaluationPolicy
+
+    @property
+    def specification_sha256(self) -> str:
+        """Hash the exact text supplied to factories and judges."""
+        return sha256(self.specification.encode()).hexdigest()
 
 
 class RoundPlan(Record):
@@ -110,15 +145,37 @@ class RoundPlan(Record):
     platform: Literal["linux/amd64"] = "linux/amd64"
     stop_grace_seconds: Annotated[int, Field(ge=0, le=60)] = 60
     specification_sha256: Sha256
+    evaluation: EvaluationPolicy | None = Field(default=None, exclude_if=lambda v: v is None)
+    tasks: tuple[FrozenTask, ...] = Field(default=(), exclude_if=lambda v: not v)
 
     @model_validator(mode="after")
     def _unique_membership(self) -> Self:
-        hotkeys = [m.miner_hotkey for m in self.cohort]
-        uids = [m.uid for m in self.cohort]
+        hotkeys = [(m.miner_hotkey, m.task_id) for m in self.cohort]
+        uids = [(m.uid, m.task_id) for m in self.cohort]
         jobs = [job for m in self.cohort for job in (m.factory_job_id, m.judge_job_id)]
         if len(set(hotkeys)) != len(hotkeys) or len(set(uids)) != len(uids) or len(set(jobs)) != len(jobs):
             raise ValueError("cohort identities, UIDs and job IDs must be unique")
+        task_ids = {task.task_id for task in self.tasks}
+        if len(task_ids) != len(self.tasks) or len({task.filename for task in self.tasks}) != len(self.tasks):
+            raise ValueError("task identities and filenames must be unique")
+        if any(m.task_id not in (task_ids or {None}) for m in self.cohort):
+            raise ValueError("cohort execution refers to an unknown task")
+        for hotkey in {m.miner_hotkey for m in self.cohort}:
+            members = [m for m in self.cohort if m.miner_hotkey == hotkey]
+            if {m.task_id for m in members} != (task_ids or {None}):
+                raise ValueError("every miner must have an execution for every task")
+            if len({(m.uid, m.image) for m in members}) != 1:
+                raise ValueError("miner identity and image must agree across tasks")
+        if self.tasks and (
+            self.specification_sha256 != self.tasks[0].specification_sha256
+            or self.evaluation != self.tasks[0].evaluation
+        ):
+            raise ValueError("primary task differs from the round compatibility fields")
         return self
+
+    def task_for(self, member: CohortMember) -> FrozenTask | None:
+        """Return task-specific inputs, or None for a legacy single-task round."""
+        return next((task for task in self.tasks if task.task_id == member.task_id), None)
 
     @property
     def directory(self) -> str:
@@ -192,6 +249,18 @@ class JobIdentity(Record):
     def projection_id(self) -> UUID:
         """Stable Nexus result identity across new runtime contexts and timestamps."""
         return uuid5(NAMESPACE_URL, f"factory-horde:v1:{self.kind}:{self.job_id}")
+
+
+type SkipReason = Literal[
+    "factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired", "factory_not_started"
+]
+
+
+class SkippedEvaluation(JobIdentity):
+    """A judge was never authorized; the reason determines eligibility for review weights."""
+
+    reason: SkipReason
+    observed_at: UtcTime
 
 
 class JobRequest(JobIdentity):
@@ -305,7 +374,7 @@ class JudgeReport(JobIdentity):
     """Untrusted report, structurally parsed before task 9's acceptance gate."""
 
     kind: JobKind = "judge"
-    checked_files: tuple[Literal["main.py", "README.md"], ...]
+    checked_files: tuple[RelativePath, ...]
     score: Score | None
     failure: Annotated[str, StringConstraints(min_length=1, max_length=512)] | None
 
@@ -317,9 +386,36 @@ class JudgeReport(JobIdentity):
             raise ValueError("report must contain either a successful score or a failure")
         if len(set(self.checked_files)) != len(self.checked_files):
             raise ValueError("file checks cannot be repeated")
-        if self.score is not None and set(self.checked_files) != {"main.py", "README.md"}:
-            raise ValueError("successful report requires both expected file checks")
+        if self.score is not None and not self.checked_files:
+            raise ValueError("successful report requires a nonempty project inventory")
         return self
+
+
+class CriterionVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    id: Annotated[int, Field(ge=1)]
+    requirement: Criterion
+    verdict: Literal["met", "partial", "unmet"]
+    reason: Criterion
+
+
+class ReviewEvidence(JobIdentity):
+    """The judge's linked, ordered explanation of the protocol-v1 score."""
+
+    model: Criterion
+    # Model IDs Claude Code reported using; absent from older judge images.
+    resolved_models: tuple[Criterion, ...] | None = Field(default=None, exclude_if=lambda v: v is None)
+    score: Score
+    requirements: Annotated[tuple[CriterionVerdict, ...], Field(min_length=1)]
+
+    def matches(self, policy: EvaluationPolicy, score: float) -> bool:
+        points = {"met": 1.0, "partial": 0.5, "unmet": 0.0}
+        return (
+            (policy.model is None or self.model == policy.model)
+            and tuple(item.requirement for item in self.requirements) == policy.requirements
+            and all(item.id == index for index, item in enumerate(self.requirements, 1))
+            and self.score == score == sum(points[item.verdict] for item in self.requirements) / len(self.requirements)
+        )
 
 
 class AcceptedResult(JobIdentity):
@@ -355,6 +451,8 @@ def request_for(plan: RoundPlan, member: CohortMember, kind: JobKind) -> JobRequ
     if member not in plan.cohort:
         raise ValueError("member is not in the frozen cohort")
     base = f"{plan.directory}/{member.miner_hotkey}"
+    if member.task_id is not None:
+        base += f"/tasks/{member.task_id}"
     return JobRequest(
         round_id=plan.round_id,
         job_id=member.factory_job_id if kind == "factory" else member.judge_job_id,

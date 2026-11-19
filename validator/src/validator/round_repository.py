@@ -5,11 +5,13 @@ from pathlib import Path
 
 from validator.record_files import RecordConflictError, RecordFiles, RecordFormatError, decode_record
 from validator.records import (
+    EvaluationPolicy,
     InputManifest,
     JobIdentity,
     JobRequest,
     JobStatus,
     JudgeReport,
+    ReviewEvidence,
     RoundLocation,
     RoundPlan,
     RoundRecord,
@@ -24,16 +26,20 @@ class RoundRepository:
 
     def __init__(self, root: Path) -> None:
         self.files = RecordFiles(root)
+        # Finished rounds without unresolved jobs and committed requests never change, so each is read once.
+        self._settled: dict[str, RoundRecord] = {}
+        self._requests: dict[str, JobRequest] = {}
 
     @staticmethod
     def _manifest(plan: RoundPlan, request: JobRequest) -> InputManifest:
-        member = next(m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey)
+        member = next(m for m in plan.cohort if m.factory_job_id == request.factory_job_id)
+        task = plan.task_for(member)
         return InputManifest(
             round_id=plan.round_id,
             miner_hotkey=member.miner_hotkey,
             factory_job_id=member.factory_job_id,
             judge_job_id=member.judge_job_id,
-            specification_sha256=plan.specification_sha256,
+            specification_sha256=task.specification_sha256 if task else plan.specification_sha256,
         )
 
     def prepare_round(self, plan: RoundPlan, specification: str) -> RoundRecord:
@@ -61,10 +67,15 @@ class RoundRepository:
             self.files.write_bytes(f"{plan.directory}/specification.md", content, immutable=True)
             for member in plan.cohort:
                 request = request_for(plan, member, "factory")
-                self.files.write_bytes(f"{request.input_dir}/specification.md", content, immutable=True)
+                task = plan.task_for(member)
+                task_content = task.specification.encode() if task else content
+                policy = task.evaluation if task else plan.evaluation
+                self.files.write_bytes(f"{request.input_dir}/specification.md", task_content, immutable=True)
                 self.files.publish(f"{request.input_dir}/task.json", self._manifest(plan, request))
+                if policy is not None:
+                    self.files.publish(f"{request.input_dir}/evaluation.json", policy)
                 self.files.mkdir(request.output_dir)
-                self.files.mkdir(f"{plan.directory}/{member.miner_hotkey}/evaluation")
+                self.files.mkdir(str(request_for(plan, member, "judge").report_dir))
             for control in ("requests", "stops", "statuses"):
                 self.files.mkdir(f"control/{control}")
             return record
@@ -94,6 +105,9 @@ class RoundRepository:
         for name in names:
             if not is_job_filename(name):
                 continue
+            if name in self._settled:
+                result.append(self._settled[name])
+                continue
             location = self.files.read(f"control/rounds/{name}", RoundLocation)
             if name != f"{location.round_id}.json":
                 raise RecordFormatError("round pointer identity differs from filename")
@@ -104,6 +118,8 @@ class RoundRepository:
                 continue
             if record.plan.round_id != location.round_id:
                 raise RecordFormatError("round pointer identity differs from target")
+            if record.stage == "complete" and not record.unresolved_jobs:
+                self._settled[name] = record
             result.append(record)
         return tuple(sorted(result, key=lambda r: (r.plan.deadlines.start, r.plan.sequence, r.plan.round_id)))
 
@@ -117,6 +133,7 @@ class RoundRepository:
             current = self.read_round(record.plan.directory)
             if current.plan != record.plan:
                 raise RecordConflictError("cannot change a frozen round plan")
+            self._settled.pop(f"{record.plan.round_id}.json", None)
             self.files.replace(f"{record.plan.directory}/round.json", record)
 
     def publish_request(self, plan: RoundPlan, request: JobRequest) -> None:
@@ -128,15 +145,22 @@ class RoundRepository:
         with self.files.lock:
             if self.read_round(plan.directory).plan != plan:
                 raise RecordConflictError("request does not use the persisted round plan")
-            member = next((m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey), None)
+            member = next((m for m in plan.cohort if m.factory_job_id == request.factory_job_id), None)
             if member is None or request != request_for(plan, member, request.kind):
                 raise RecordConflictError("request differs from its frozen cohort execution")
+            task = plan.task_for(member)
+            policy = task.evaluation if task else plan.evaluation
             specification = self.files.read_bytes(f"{request.input_dir}/specification.md")
-            if sha256(specification).hexdigest() != plan.specification_sha256:
+            if sha256(specification).hexdigest() != (task.specification_sha256 if task else plan.specification_sha256):
                 raise RecordConflictError("incomplete or changed specification")
             manifest = self.files.read(f"{request.input_dir}/task.json", InputManifest)
             if manifest != self._manifest(plan, request):
                 raise RecordConflictError("task manifest differs from its frozen cohort")
+            if (
+                policy is not None
+                and self.files.read(f"{request.input_dir}/evaluation.json", EvaluationPolicy) != policy
+            ):
+                raise RecordConflictError("evaluation criteria differ from the frozen round")
             self.files.list_names(request.output_dir)
             if request.report_dir is not None:
                 self.files.list_names(request.report_dir)
@@ -152,9 +176,13 @@ class RoundRepository:
         for name in self.files.list_names("control/requests"):
             if not is_job_filename(name):
                 continue
-            record = self.files.read(f"control/requests/{name}", JobRequest)
-            if name != f"{record.job_id}.json":
-                raise RecordFormatError("request identity does not match its filename")
+            record = self._requests.get(name)
+            if record is None:
+                record = self.files.read(f"control/requests/{name}", JobRequest)
+                if name != f"{record.job_id}.json":
+                    raise RecordFormatError("request identity does not match its filename")
+                # Requests are immutable publications; a changed file is still detected on publication.
+                self._requests[name] = record
             result.append(record)
         return tuple(result)
 
@@ -195,3 +223,15 @@ class RoundRepository:
     def _check_job(request: JobRequest, record: JobIdentity) -> None:
         if not request.same_job(record):
             raise RecordFormatError("record attribution does not match the expected job")
+
+    def review(self, request: JobRequest) -> ReviewEvidence:
+        """Read bounded judge evidence and verify the same job attribution as the report.
+
+        Raises:
+            ValueError: A factory request has no review.
+        """
+        if request.report_dir is None:
+            raise ValueError("only judges have a report directory")
+        evidence = decode_record(self.files.read_artifact(f"{request.report_dir}/review.json"), ReviewEvidence)
+        self._check_job(request, evidence)
+        return evidence

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
+from pathlib import Path
 from typing import Annotated, Literal, Self
 from uuid import UUID, uuid4
 
@@ -13,15 +14,20 @@ from prometheus_client import Counter, Histogram
 from pydantic import UUID4, Field, model_validator
 
 from validator.discovery import DiscoverySnapshot
-from validator.record_files import RecordFormatError
 from validator.records import (
+    CohortMember,
+    Criterion,
     Deadlines,
+    EvaluationPolicy,
+    FrozenTask,
     ImageReference,
     JobIdentity,
     JobRequest,
     Record,
     RoundPlan,
     RoundRecord,
+    SkippedEvaluation,
+    SkipReason,
     StopRequest,
     UtcTime,
     request_for,
@@ -70,6 +76,19 @@ class RoundTiming(Record):
         )
 
 
+class TaskDefinition(Record):
+    """Operator task data read once before admission intent is persisted."""
+
+    specification: Annotated[str, Field(min_length=1, max_length=200_000)]
+    requirements: tuple[Criterion, ...] = ()
+
+    @model_validator(mode="after")
+    def _nonempty(self) -> Self:
+        if not self.specification.strip():
+            raise ValueError("Task specification is empty")
+        return self
+
+
 class RoundSeed(Record):
     """Retained admission intent lets partial discovery/input publication resume with the same IDs."""
 
@@ -79,6 +98,9 @@ class RoundSeed(Record):
     judge_image: ImageReference
     stop_grace_seconds: Annotated[int, Field(ge=0, le=60)]
     specification: Annotated[str, Field(min_length=1)] = SPECIFICATION
+    evaluation: EvaluationPolicy | None = Field(default=None, exclude_if=lambda v: v is None)
+    tasks: tuple[FrozenTask, ...] = Field(default=(), exclude_if=lambda v: not v)
+    plan: RoundPlan | None = Field(default=None, exclude_if=lambda v: v is None)
 
 
 class Schedule(Record):
@@ -87,13 +109,6 @@ class Schedule(Record):
     next_start: UtcTime
     next_sequence: Annotated[int, Field(ge=1)]
     pending: RoundSeed | None = None
-
-
-class SkippedEvaluation(JobIdentity):
-    """An intended judge was never authorized; this is not an executor termination claim."""
-
-    reason: Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"]
-    observed_at: UtcTime
 
 
 class FactoryEligibility(JobIdentity):
@@ -124,13 +139,24 @@ class RoundCoordinator:
         judge_image: str,
         discover: Callable[[UUID], DiscoverySnapshot],
         specification: str = SPECIFICATION,
+        requirements: tuple[str, ...] = (),
+        task_directory: Path | None = None,
+        judge_model: str | None = None,
     ):
         self.repository = repository
         self.rounds = repository.rounds
+        # Finished rounds whose jobs are all terminal and projected; reconciling them again changes nothing.
+        self.settled: set[UUID] = set()
         self.timing = timing
         self.judge_image = judge_image
         self.discover = discover
+        self.task_directory = task_directory
+        self._task_error: str | None = None
         self.specification = specification
+        self.judge_model = judge_model
+        self.evaluation = EvaluationPolicy(
+            mode=repository.judge_mode, requirements=requirements or (specification,), model=judge_model
+        )
 
     def _save_schedule(self, schedule: Schedule) -> None:
         self.repository.files.replace("control/schedule.json", schedule)
@@ -146,28 +172,83 @@ class RoundCoordinator:
     def _admit(self, schedule: Schedule) -> RoundRecord:
         seed = schedule.pending
         if seed is None:
+            specification, evaluation = self.specification, self.evaluation
+            tasks: list[FrozenTask] = []
+            if self.task_directory is not None:
+                try:
+                    sources = sorted(
+                        path
+                        for path in self.task_directory.iterdir()
+                        if path.suffix == ".json" and not path.name.startswith(".") and path.is_file()
+                    )
+                    if not sources:
+                        raise ValueError("Task directory contains no JSON tasks")
+                    for path in sources:
+                        with path.open("rb") as source:
+                            content = source.read(1_048_577)
+                        if len(content) > 1_048_576:
+                            raise ValueError("Task file exceeds one MiB")
+                        task = TaskDefinition.model_validate_json(content)
+                        tasks.append(
+                            FrozenTask(
+                                task_id=sha256(path.name.encode()).hexdigest(),
+                                filename=path.name,
+                                specification=task.specification,
+                                evaluation=EvaluationPolicy(
+                                    model=self.judge_model,
+                                    mode=self.repository.judge_mode,
+                                    requirements=task.requirements or (task.specification,),
+                                ),
+                            )
+                        )
+                    specification, evaluation = tasks[0].specification, tasks[0].evaluation
+                except (OSError, ValueError) as error:
+                    _events.labels("invalid_task_file").inc()
+                    # Admission retries every poll; repeat the traceback only when the problem changes.
+                    if str(error) != self._task_error:
+                        self._task_error = str(error)
+                        _logger.exception("task_directory_admission_blocked", path=str(self.task_directory))
+                    raise
+                self._task_error = None
             seed = RoundSeed(
                 sequence=schedule.next_sequence,
                 deadlines=self.timing.deadlines(schedule.next_start),
                 judge_image=self.judge_image,
                 stop_grace_seconds=self.timing.stop_grace_seconds,
-                specification=self.specification,
+                specification=specification,
+                evaluation=evaluation,
+                tasks=tuple(tasks),
             )
             schedule = schedule.model_copy(update={"pending": seed})
             self._save_schedule(schedule)
-        snapshot = self.discover(seed.round_id)
-        plan = RoundPlan(
-            round_id=seed.round_id,
-            sequence=seed.sequence,
-            deadlines=seed.deadlines,
-            discovery_block=snapshot.block,
-            discovery_block_hash=snapshot.block_hash,
-            membership_snapshot="commitment_block",
-            cohort=snapshot.cohort,
-            judge_image=seed.judge_image,
-            stop_grace_seconds=seed.stop_grace_seconds,
-            specification_sha256=sha256(seed.specification.encode()).hexdigest(),
-        )
+        plan = seed.plan
+        if plan is None:
+            snapshot = self.discover(seed.round_id)
+            cohort = snapshot.cohort
+            if seed.tasks:
+                cohort = tuple(
+                    CohortMember(
+                        miner_hotkey=member.miner_hotkey, uid=member.uid, image=member.image, task_id=task.task_id
+                    )
+                    for member in snapshot.cohort
+                    for task in seed.tasks
+                )
+            plan = RoundPlan(
+                round_id=seed.round_id,
+                sequence=seed.sequence,
+                deadlines=seed.deadlines,
+                discovery_block=snapshot.block,
+                discovery_block_hash=snapshot.block_hash,
+                membership_snapshot="commitment_block",
+                cohort=cohort,
+                judge_image=seed.judge_image,
+                evaluation=seed.evaluation,
+                tasks=seed.tasks,
+                stop_grace_seconds=seed.stop_grace_seconds,
+                specification_sha256=sha256(seed.specification.encode()).hexdigest(),
+            )
+            seed = seed.model_copy(update={"plan": plan})
+            self._save_schedule(schedule.model_copy(update={"pending": seed}))
         record = self.rounds.prepare_round(plan, seed.specification)
         self._save_schedule(Schedule(next_start=plan.deadlines.round_end, next_sequence=seed.sequence + 1))
         _events.labels("admitted").inc()
@@ -254,29 +335,29 @@ class RoundCoordinator:
                 raise ValueError("Skipped evaluation attribution differs")
             return False
         result = self.repository.read(factory)
-        reason: (
-            Literal["factory_failed", "factory_late", "missing_output", "invalid_output", "evaluation_expired"] | None
-        ) = None
+        reason: SkipReason | None = None
         if now >= judge.deadline:
             reason = "evaluation_expired"
         elif eligibility is not None and eligibility.decision == "late":
             reason = "factory_late"
-        elif eligibility is not None and eligibility.decision == "failed":
-            reason = "factory_failed"
+        elif (eligibility is not None and eligibility.decision == "failed") or (
+            result is not None and result.failure is not None
+        ):
+            status = result.status if result is not None else self.rounds.status(factory)
+            # The window closed before the executor could run the factory (capacity, preparation or
+            # executor downtime); the miner is not at fault.
+            cancelled = status is not None and status.execution == "never_started" and status.state == "cancelled"
+            reason = "factory_not_started" if cancelled else "factory_failed"
         elif result is None:
             return False
-        elif result.failure is not None:
-            reason = "factory_failed"
         elif eligibility is None or eligibility.decision != "timely":
             return False
         else:
             try:
-                for name in ("main.py", "README.md"):
-                    self.repository.files.read_artifact(f"{factory.output_dir}/{name}")
+                if not self.repository.files.list_names(factory.output_dir):
+                    reason = "missing_output"
             except FileNotFoundError:
                 reason = "missing_output"
-            except RecordFormatError:
-                reason = "invalid_output"
         if reason is None:
             return True
         self.repository.files.publish(
@@ -306,6 +387,17 @@ class RoundCoordinator:
         ):
             raise ValueError("Task projection differs from the expected job")
         return True
+
+    def _log_outcome(self, plan: RoundPlan) -> None:
+        """Report once per round which miners count; validator-side gaps are errors to act on."""
+        outcome = self.repository.round_outcome(plan)
+        scored = sorted({score.miner_hotkey for score in outcome.scores})
+        _logger.info("round_outcome", round_id=str(plan.round_id), scored=scored, excluded=outcome.excluded)
+        for hotkey, reason in sorted(outcome.excluded.items()):
+            if reason != "submission_rejected":
+                _logger.error("miner_excluded", round_id=str(plan.round_id), miner_hotkey=hotkey, reason=reason)
+        if not outcome.scores:
+            _logger.error("round_without_weights", round_id=str(plan.round_id), cohort=len(plan.cohort))
 
     def _reconcile(
         self, record: RoundRecord, now: datetime, beat: BlockBeat | None, requests: dict[UUID, JobRequest]
@@ -369,6 +461,8 @@ class RoundCoordinator:
             self.rounds.save_round(updated)
             _events.labels("reconciled").inc()
             _logger.info("round_reconciled", round_id=str(plan.round_id), stage=stage, unresolved=len(unresolved))
+            if stage == "complete" and record.stage != "complete":
+                self._log_outcome(plan)
         return RoundTick(tuple(subscriptions), tuple(sorted(unresolved)), tuple(errors))
 
     def tick(self, now: datetime, beat: BlockBeat | None) -> RoundTick:
@@ -390,13 +484,15 @@ class RoundCoordinator:
             unresolved: set[UUID] = set()
             errors: list[str] = []
             for record in records:
-                if (
+                if record.plan.round_id in self.settled or (
                     schedule is not None
                     and schedule.pending is not None
                     and record.plan.round_id == schedule.pending.round_id
                 ):
                     continue
                 result = self._reconcile(record, now, beat, requests)
+                if record.stage == "complete" and not (result.jobs or result.unresolved or result.errors):
+                    self.settled.add(record.plan.round_id)
                 jobs.extend(result.jobs)
                 unresolved.update(result.unresolved)
                 errors.extend(result.errors)

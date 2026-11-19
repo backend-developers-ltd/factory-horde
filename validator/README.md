@@ -50,18 +50,24 @@ failures. Unsafe or unreadable artifacts are rejected; genuine host I/O failures
 remain unresolved. Accepted decisions survive loss of their raw report without redrawing a
 score. Nexus routing targets are observation metadata; miner attribution comes from
 the frozen business request. Weighing reads accepted hotkeys, not the router-based
-count helpers. Queries use the latest completed round with scores,
-independently of epoch ranges used for framework queries.
+count helpers. Queries use the newest completed round,
+independently of epoch ranges used for framework queries. Completed rounds without
+unresolved jobs, published requests, confirmed-stopped jobs and validated projections
+never change, so each process verifies them once; later coordinator ticks and
+readiness samples only revisit open work, keeping per-poll cost independent of history.
 
 Weight writes are separately enabled with `VALIDATOR_WEIGHTS_ENABLED=true` and
 Pylon identity credentials. Both Nexus weight opportunity and setter nodes use
 `MECHANISM_ID`; the setter shares the factory/evaluation store provider. The gate
-skips opportunities without usable registered scores. Empty rounds retain the
-latest nonempty completed round; chain epoch boundaries do not expire its scores.
-Successful zeros remain eligible and failures are excluded. Weighing uses
-`exp((score - maximum) / temperature)`, normalized over currently registered
-accepted hotkeys, with finite positive `VALIDATOR_WEIGHT_TEMPERATURE` default `0.1`.
-Membership is read again after calculation; a detected change aborts that attempt.
+skips opportunities without usable registered scores. Only the newest completed
+round counts; an older round never stands in for it. Each miner is evaluated
+independently: one without an accepted score for every task (failed factory,
+invalid submission, unavailable judge) is excluded from that round, and the round
+is usable when any miner was fully evaluated and no published judge still lacks a result. Round completion logs validator-side
+exclusions and rounds without scored miners at error level. Review rounds must
+use the configured judge image. Successful zeros remain eligible.
+
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. A review round requires the configured judge image digest. No eligible recipients means a skipped write.
 
 `VALIDATOR_WEIGHT_TEMPO` defaults to 360 blocks and must match the subnet;
 `VALIDATOR_WEIGHT_EPOCH_OFFSET` defaults to zero. These opportunities do not control
@@ -187,3 +193,5 @@ env -u UV_EXCLUDE_NEWER uv run ruff format
 env -u UV_EXCLUDE_NEWER uv run basedpyright
 env -u UV_EXCLUDE_NEWER uv run pytest -q --tb=line -r f
 ```
+
+Server task discovery uses `VALIDATOR_TASK_DIRECTORY` (the operator-owned host `TASK_DIRECTORY` in Compose). Admission freezes every non-hidden JSON task before discovery. Each miner receives a separate factory/judge execution for every task, and its round score averages all task scores. See the [operator task-file instructions](../installer/README.md#server-task-files). Behavioral evaluations retain per-step decisions, captured observations, assessments and final reasons; see the [judge guide](../judge/README.md).

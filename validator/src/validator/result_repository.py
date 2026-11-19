@@ -3,6 +3,7 @@
 import json
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from hashlib import sha256
 from typing import Literal
@@ -13,7 +14,16 @@ from prometheus_client import Counter, Histogram
 from pydantic import ValidationError
 
 from validator.record_files import RecordConflictError, RecordFormatError, encode_record
-from validator.records import AcceptedResult, JobRequest, JobStatus, RoundLocation, RoundPlan, request_for
+from validator.records import (
+    AcceptedResult,
+    JobRequest,
+    JobStatus,
+    JudgeMode,
+    RoundLocation,
+    RoundPlan,
+    SkippedEvaluation,
+    request_for,
+)
 from validator.result_records import CompletionBlock, JobResult
 from validator.round_repository import RoundRepository
 
@@ -51,12 +61,24 @@ def result_operation(operation: Literal["finalize", "query", "project", "rebuild
             _events.labels(operation, "ok").inc()
 
 
+@dataclass(frozen=True)
+class RoundOutcome:
+    """Accepted scores of fully evaluated miners and the reason each other miner is excluded."""
+
+    scores: tuple[AcceptedResult, ...]
+    excluded: dict[str, str] = field(default_factory=dict)
+    # Published judges without a retained result; their scores may still be accepted.
+    pending: bool = False
+
+
 class ResultRepository:
     """One actor-shared repository; immutable decisions are the only source of accepted scores."""
 
-    def __init__(self, rounds: RoundRepository):
+    def __init__(self, rounds: RoundRepository, judge_mode: JudgeMode = "review", judge_image: str | None = None):
         self.rounds = rounds
         self.files = rounds.files
+        self.judge_mode: JudgeMode = judge_mode
+        self.judge_image = judge_image
 
     def authorize(self, request: JobRequest) -> RoundPlan:
         """Require the exact published request and frozen round attribution.
@@ -66,7 +88,7 @@ class ResultRepository:
         """
         location = self.files.read(f"control/rounds/{request.round_id}.json", RoundLocation)
         plan = self.rounds.read_round(location.directory).plan
-        member = next((m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey), None)
+        member = next((m for m in plan.cohort if m.factory_job_id == request.factory_job_id), None)
         if (
             plan.round_id != request.round_id
             or member is None
@@ -105,7 +127,9 @@ class ResultRepository:
     def _accept(
         self, request: JobRequest, plan: RoundPlan, status: JobStatus, block: CompletionBlock
     ) -> AcceptedResult:
-        member = next(m for m in plan.cohort if m.miner_hotkey == request.miner_hotkey)
+        member = next(m for m in plan.cohort if m.factory_job_id == request.factory_job_id)
+        task = plan.task_for(member)
+        policy = task.evaluation if task else plan.evaluation
         factory = request_for(plan, member, "factory")
         self.authorize(factory)
         factory_status = self._terminal(factory)
@@ -124,6 +148,9 @@ class ResultRepository:
             raise ResultRejected("Judge finished after the evaluation window")
         try:
             report = self.rounds.report(request)
+            if report.score is not None and policy is not None and policy.mode == "review":
+                if not self.rounds.review(request).matches(policy, report.score):
+                    raise ResultRejected("Review differs from the frozen criteria or report score")
         except (FileNotFoundError, RecordFormatError, ValidationError, json.JSONDecodeError) as error:
             raise ResultRejected(f"Judge report rejected: {type(error).__name__}") from error
         if report.score is None:
@@ -160,12 +187,30 @@ class ResultRepository:
             status = self._terminal(request)
             completion = CompletionBlock.from_beat(beat)
             accepted = None
+            submission_rejected = False
             failure = None if status.application_succeeded else status.reason or "Execution failed"
             if failure is None and request.kind == "judge":
                 try:
                     accepted = self._accept(request, plan, status, completion)
                 except ResultRejected as error:
                     failure = str(error)
+            elif (
+                request.kind == "judge"
+                and plan.evaluation is not None
+                and plan.evaluation.mode == "review"
+                and status.execution == "exited"
+                and not status.forced
+                and not status.oom_killed
+                and status.exit_code in (1, 75)
+            ):
+                try:
+                    report = self.rounds.report(request)
+                except FileNotFoundError, RecordFormatError, ValidationError:
+                    pass
+                else:
+                    if report.failure:
+                        failure = report.failure
+                        submission_rejected = status.exit_code == 1 and failure.startswith("Invalid submission: ")
             result = JobResult(
                 request=request,
                 status=status,
@@ -175,8 +220,17 @@ class ResultRepository:
                 completion=completion,
                 accepted=accepted,
                 failure=failure,
+                submission_rejected=submission_rejected,
             )
             self.files.publish(self.result_path(request), result)
+            if request.kind == "judge" and accepted is None and not submission_rejected:
+                _logger.error(
+                    "judge_evaluation_unavailable",
+                    job_id=str(request.job_id),
+                    round_id=str(request.round_id),
+                    miner_hotkey=request.miner_hotkey,
+                    reason=failure,
+                )
             _logger.info(
                 "job_result_finalized",
                 job_id=str(request.job_id),
@@ -187,18 +241,65 @@ class ResultRepository:
             )
             return result
 
+    def _submission_rejected(self, request: JobRequest, result: JobResult | None) -> bool:
+        """A miner can be rejected by its judge or before judging if its factory failed or produced invalid output."""
+        if result is not None:
+            return result.submission_rejected
+        try:
+            skipped = self.files.read(f"control/skipped-evaluations/{request.job_id}.json", SkippedEvaluation)
+        except FileNotFoundError:
+            return False
+        return request.same_job(skipped) and skipped.reason in (
+            "factory_failed",
+            "factory_late",
+            "missing_output",
+            "invalid_output",
+        )
+
+    def round_outcome(self, plan: RoundPlan) -> RoundOutcome:
+        """Score each miner independently; any task without an accepted score excludes only that miner.
+
+        Exclusion reasons are `submission_rejected` (the miner's factory or project failed),
+        `evaluation_unavailable` (a validator-side judging failure) and `missing_result`.
+        """
+        scores: list[AcceptedResult] = []
+        excluded: dict[str, str] = {}
+        pending = False
+        for member in plan.cohort:
+            request = request_for(plan, member, "judge")
+            result = self.read(request)
+            pending |= result is None and self._published(request)
+            if result is not None and result.accepted is not None:
+                scores.append(result.accepted)
+            elif member.miner_hotkey not in excluded or excluded[member.miner_hotkey] == "submission_rejected":
+                if self._submission_rejected(request, result):
+                    excluded.setdefault(member.miner_hotkey, "submission_rejected")
+                else:
+                    excluded[member.miner_hotkey] = "evaluation_unavailable" if result else "missing_result"
+        return RoundOutcome(tuple(score for score in scores if score.miner_hotkey not in excluded), excluded, pending)
+
+    def _published(self, request: JobRequest) -> bool:
+        try:
+            self.files.read(f"control/requests/{request.job_id}.json", JobRequest)
+        except FileNotFoundError:
+            return False
+        return True
+
     def latest_usable_round(self) -> tuple[RoundPlan, tuple[AcceptedResult, ...]] | None:
-        """Return the latest completed round with scores, skipping empty rounds independently of epoch."""
+        """Only the newest completed round counts; older rounds never stand in for it.
+
+        A review round must use the configured judge image. Miners without accepted scores
+        for every task are excluded, so the round is usable when any miner was fully evaluated.
+        A round completed by its deadline is not usable while a published judge still lacks a
+        retained result, because a timely judge observed late can still change the winner.
+        """
         with self.files.lock, result_operation("query"):
-            for record in reversed(self.rounds.rounds()):
-                if record.stage != "complete":
-                    continue
-                scores: list[AcceptedResult] = []
-                for member in record.plan.cohort:
-                    request = request_for(record.plan, member, "judge")
-                    result = self.read(request)
-                    if result is not None and result.accepted is not None:
-                        scores.append(result.accepted)
-                if scores:
-                    return record.plan, tuple(scores)
-        return None
+            completed = [record for record in self.rounds.rounds() if record.stage == "complete"]
+            if not completed:
+                return None
+            plan = completed[-1].plan
+            mode = plan.evaluation.mode if plan.evaluation is not None else "fixture"
+            if mode != self.judge_mode or (mode == "review" and self.judge_image != plan.judge_image):
+                return None
+            outcome = self.round_outcome(plan)
+            return (plan, outcome.scores) if outcome.scores and not outcome.pending else None

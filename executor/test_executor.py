@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import override
@@ -19,6 +20,8 @@ from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 
 from .executor import (
+    REQUIREMENT,
+    ApplicationRunner,
     Docker,
     DockerError,
     DockerRejected,
@@ -32,6 +35,7 @@ from .executor import (
     now,
     object_value,
     parse,
+    timestamp,
 )
 
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
@@ -54,6 +58,7 @@ class FakeDocker(Docker):
         self.pull_error = False
         self.created = 0
         self.started = 0
+        self.running: list[str] = []
 
     @override
     def inspect(self, request: Request) -> dict[str, object] | None:
@@ -63,12 +68,14 @@ class FakeDocker(Docker):
 
     @override
     def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[0] == "ps":
+            return subprocess.CompletedProcess(args, 0, "\n".join(self.running), "")
         return subprocess.CompletedProcess(
             args, int(self.pull_error), "", "fixture pull failure" if self.pull_error else ""
         )
 
     @override
-    def create(self, request: Request) -> str:
+    def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
         self.created += 1
         self.container = {"Id": "a" * 64, "State": {"Status": "created", "Running": False}}
         return "a" * 64
@@ -131,6 +138,16 @@ def test_executor_metrics_match_validator_bridge(executor: Executor) -> None:
     assert metrics.factory_horde_executor_operations_total[0].value == 1
     histogram = metrics.factory_horde_executor_operation_seconds[0]
     assert histogram.count == 1 and histogram.sum == 0.75 and histogram.buckets[-1] == 1
+
+
+@pytest.mark.parametrize(("operation", "outcome"), [("ps", "ok"), ("application", "timeout")])
+def test_capacity_and_sandbox_timeout_metrics_keep_the_bridge_valid(
+    executor: Executor, operation: str, outcome: str
+) -> None:
+    executor.metrics.observe(operation, outcome, 1)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        executor.poll(pool)
+    ExecutorMetrics.model_validate_json(executor.files.read_bytes("control/executor-metrics.json"))
 
 
 def test_durable_exit_survives_new_executor_without_docker(executor: Executor, job_request: Request) -> None:
@@ -396,6 +413,8 @@ def test_sigterm_interrupts_held_pull_before_restart(
         "    sys.exit(1)\n"
         "if command == 'info':\n"
         "    print('fixture-daemon')\n"
+        "elif command == 'ps':\n"
+        "    pass\n"
         "elif command == 'pull':\n"
         f"    pathlib.Path({str(marker)!r}).write_text('held')\n"
         "    time.sleep(600)\n"
@@ -488,8 +507,8 @@ class SlowCreateDocker(FakeDocker):
         self.release = threading.Event()
 
     @override
-    def create(self, request: Request) -> str:
-        identifier = super().create(request)
+    def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
+        identifier = super().create(request, arguments)
         self.creating.set()
         if not self.release.wait(10):
             raise TimeoutError("Fixture create was not released")
@@ -714,12 +733,20 @@ def test_default_workloads_stay_offline_without_environment(
         arguments = create_arguments(executor, request, executor.settings)
         assert values(arguments, "--network") == ["none"]
         assert values(arguments, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=64m"]
-        assert "--env" not in arguments and arguments[-1] == request.image
+        assert values(arguments, "--env") == (
+            [f"FACTORY_HORDE_JUDGE_IMAGE={request.image}"] if request.kind == "judge" else []
+        )
+        assert arguments[-1] == request.image
 
 
-def test_only_factories_join_the_inference_network(
-    executor: Executor, job_request: Request, judge_request: Request
+def test_factories_and_judges_join_the_inference_network(
+    executor: Executor, job_request: Request, judge_request: Request, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+
+    def inference_network(_docker: Docker, request: Request) -> str:
+        return request.name + "-inference"
+
+    monkeypatch.setattr(Docker, "inference_network", inference_network)
     settings = Settings(
         executor.settings.root,
         os.getuid(),
@@ -729,18 +756,19 @@ def test_only_factories_join_the_inference_network(
         inference_url="http://proxy.example:8080",
     )
     factory = create_arguments(executor, job_request, settings)
-    assert values(factory, "--network") == ["factory-horde-inference"]
+    assert values(factory, "--network") == [job_request.name + "-inference"]
     assert values(factory, "--env") == [
         "ANTHROPIC_BASE_URL=http://proxy.example:8080",
         "CLAUDE_CODE_OAUTH_TOKEN=inference-proxy",
     ]
     assert values(factory, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and factory[-1] == job_request.image
     judge = create_arguments(executor, judge_request, settings)
-    assert values(judge, "--network") == ["none"] and "--env" not in judge
-    assert values(judge, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"]
+    assert values(judge, "--network") == [judge_request.name + "-inference"]
+    assert values(judge, "--env") == [f"FACTORY_HORDE_JUDGE_IMAGE={judge_request.image}", *values(factory, "--env")]
+    assert values(judge, "--tmpfs") == ["/tmp:rw,nosuid,nodev,size=1g"] and judge[-1] == judge_request.image
     unchanged = create_arguments(executor, job_request, executor.settings)
     assert [a for a in factory if a not in unchanged] == [
-        "factory-horde-inference",
+        job_request.name + "-inference",
         "/tmp:rw,nosuid,nodev,size=1g",
         "--env",
         "ANTHROPIC_BASE_URL=http://proxy.example:8080",
@@ -764,7 +792,12 @@ def run_main(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, environment: dict[
     monkeypatch.setattr(Executor, "run", run)
     monkeypatch.setattr(signal, "signal", keep_handlers)
     monkeypatch.setattr(sys, "argv", ["executor.py", "--root", str(tmp_path)])
-    for key in WORKLOAD_KEYS:
+    for key in (
+        *WORKLOAD_KEYS,
+        "EXECUTOR_JUDGE_RESERVE_SECONDS",
+        "EXECUTOR_MAX_RUNNING_JOBS",
+        "EXECUTOR_REGISTRY_NETWORK",
+    ):
         monkeypatch.delenv(key, raising=False)
     for key, value in environment.items():
         monkeypatch.setenv(key, value)
@@ -782,6 +815,11 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
     configured = ("factory-horde-inference", "https://proxy.example/base", "1g")
     (settings,) = run_main(tmp_path, monkeypatch, dict(zip(WORKLOAD_KEYS, configured, strict=True)))
     assert (settings.factory_network, settings.inference_url, settings.tmp_size) == configured
+    assert default.judge_reserve_seconds == 180 and default.max_running_jobs == 4
+    (limited,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_MAX_RUNNING_JOBS": "6"})
+    assert limited.max_running_jobs == 6
+    (reserved,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_JUDGE_RESERVE_SECONDS": "300"})
+    assert reserved.judge_reserve_seconds == 300
 
 
 @pytest.mark.parametrize(
@@ -801,6 +839,10 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
         ("EXECUTOR_TMP_SIZE", "0m"),
         ("EXECUTOR_TMP_SIZE", "64"),
         ("EXECUTOR_TMP_SIZE", "64m,exec"),
+        ("EXECUTOR_JUDGE_RESERVE_SECONDS", "-1"),
+        ("EXECUTOR_MAX_RUNNING_JOBS", "0"),
+        ("EXECUTOR_REGISTRY_NETWORK", "host"),
+        ("EXECUTOR_REGISTRY_NETWORK", "two words"),
     ],
 )
 def test_invalid_workload_settings_are_rejected_at_startup(
@@ -809,3 +851,215 @@ def test_invalid_workload_settings_are_rejected_at_startup(
     with pytest.raises(SystemExit) as error:
         run_main(tmp_path, monkeypatch, {key: value})
     assert error.value.code == 2 and not list(tmp_path.iterdir())
+
+
+class RejectedApplicationDocker(FakeDocker):
+    """A running judge whose application container creation the daemon definitively rejects."""
+
+    def __init__(self, executor: Executor):
+        super().__init__(executor)
+        self.app_creates = 0
+
+    @override
+    def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ("container", "inspect"):
+            return subprocess.CompletedProcess(args, 1, "", f"Error: No such container: {args[2]}")
+        if args[0] == "create":
+            self.app_creates += 1
+            return subprocess.CompletedProcess(args, 1, "", "Error response from daemon: no space left on device")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    @override
+    def require(self, *args: str, timeout: float = 30) -> str:
+        return Docker.require(self, *args, timeout=timeout)
+
+
+def test_rejected_application_create_answers_judge_and_allows_terminal_status(
+    executor: Executor, judge_request: Request
+) -> None:
+    daemon = RejectedApplicationDocker(executor)
+    executor.docker = daemon
+    executor.save_ledger(judge_request, {"phase": "start_attempted", "closed": False, "container_id": "a" * 64})
+    daemon.container = {"Id": "a" * 64, "State": {"Status": "running", "Running": True, "StartedAt": now()}}
+    channel = f"control/runners/{judge_request.job_id}"
+    executor.files.write(f"{channel}/1.request.json", {"id": "step-1", "argv": ["ls"], "stdin": "", "observation": "x"})
+    executor.step(judge_request)
+    response = executor.files.read(f"{channel}/1.response.json")
+    assert "no space left on device" in str(object_value(response["result"])["failure"])
+    executor.step(judge_request)
+    assert executor.files.read(f"{channel}/1.response.json") == response and daemon.app_creates == 1
+    daemon.finish()
+    executor.step(judge_request)
+    terminal = status(executor, judge_request)
+    assert terminal.execution == "exited" and terminal.confirmed_stopped
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [DockerError("Expected one inference proxy on the configured network"), DockerRejected("address pools exhausted")],
+)
+def test_network_preparation_failure_stays_retryable(
+    executor: Executor, job_request: Request, monkeypatch: pytest.MonkeyPatch, failure: DockerError
+) -> None:
+    executor.settings = replace(executor.settings, factory_network="factory-horde-inference")
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    outcomes: list[DockerError | None] = [failure, None]
+
+    def network(_self: Docker, request: Request) -> str:
+        outcome = outcomes.pop(0)
+        if outcome is not None:
+            raise outcome
+        return request.name + "-inference"
+
+    monkeypatch.setattr(Docker, "inference_network", network)
+    executor.step(job_request)
+    ledger = executor.files.read(f"control/executor/{job_request.job_id}.json")
+    assert ledger["phase"] == "reserved" and ledger["closed"] is False
+    assert status(executor, job_request).execution == "unresolved" and daemon.created == 0
+    executor.step(job_request)
+    assert daemon.created == 1
+    assert executor.files.read(f"control/executor/{job_request.job_id}.json")["phase"] == "created"
+
+
+def test_judge_budget_is_frozen_once_with_a_reserve(executor: Executor, judge_request: Request) -> None:
+    executor.settings = replace(executor.settings, judge_reserve_seconds=60)
+    docker = Docker(executor.settings, executor.files, executor.metrics, executor.shutdown)
+    docker.prepare(judge_request)
+    channel = f"control/runners/{judge_request.job_id}"
+    budget = executor.files.read(f"{channel}/budget.json")
+    assert timestamp(budget["sandbox_deadline"]) == judge_request.deadline - timedelta(seconds=60)
+    replace_docker = Docker(
+        replace(executor.settings, judge_reserve_seconds=1), executor.files, executor.metrics, executor.shutdown
+    )
+    replace_docker.prepare(judge_request)
+    assert executor.files.read(f"{channel}/budget.json") == budget
+    runner = ApplicationRunner(executor, judge_request, {})
+    assert runner.sandbox_deadline() == judge_request.deadline - timedelta(seconds=60)
+
+
+def test_reserve_never_exceeds_half_of_the_judge_duration(executor: Executor, judge_request: Request) -> None:
+    executor.settings = replace(executor.settings, judge_reserve_seconds=86400)
+    Docker(executor.settings, executor.files, executor.metrics, executor.shutdown).prepare(judge_request)
+    created = timestamp(judge_request.record["created_at"])
+    half = judge_request.deadline - (judge_request.deadline - created) / 2
+    assert ApplicationRunner(executor, judge_request, {}).sandbox_deadline() == half
+
+
+def test_spent_budget_returns_an_unexecuted_capture(executor: Executor, judge_request: Request) -> None:
+    channel = f"control/runners/{judge_request.job_id}"
+    executor.files.write(
+        f"{channel}/budget.json",
+        {"protocol_version": 1, "sandbox_deadline": (datetime.now(UTC) - timedelta(seconds=1)).isoformat()},
+    )
+    outcome = ApplicationRunner(executor, judge_request, {}).execute(
+        {"id": "step-3", "argv": ["ls"], "stdin": "", "observation": "x"}
+    )
+    assert outcome["id"] == "step-3" and outcome["budget_exhausted"] is True and outcome["exit_code"] == -1
+
+
+def test_jobs_wait_for_a_workload_slot(
+    executor: Executor, job_request: Request, capsys: pytest.CaptureFixture[str]
+) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=2)
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    daemon.running = [str(uuid4()), str(uuid4())]
+    executor.step(job_request)
+    executor.step(job_request)
+    waiting = status(executor, job_request)
+    assert waiting.state == "pending" and waiting.reason == "Waiting for a workload slot" and daemon.created == 0
+    assert capsys.readouterr().out.count('"workload_slot_wait"') == 1
+    daemon.running.pop()
+    executor.step(job_request)
+    assert daemon.created == 1
+
+
+def test_a_job_holding_a_slot_is_never_blocked(executor: Executor, job_request: Request) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=1)
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    daemon.running = [job_request.job_id]
+    assert executor.slot_available(job_request)
+    daemon.running = [str(uuid4())]
+    assert not executor.slot_available(job_request)
+
+
+def test_a_terminal_job_left_in_created_state_releases_its_slot(executor: Executor, job_request: Request) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=1)
+    executor.docker = FakeDocker(executor)
+    rejected = str(uuid4())
+    executor.docker.running = [rejected]
+    executor.files.write(f"control/executor/{rejected}.json", {"phase": "start_rejected", "closed": True})
+    assert not executor.slot_available(job_request)
+    executor.files.write(
+        f"control/executor/{rejected}.json", {"phase": "start_rejected", "closed": True, "terminal": {}}
+    )
+    assert executor.slot_available(job_request)
+
+
+def test_a_job_never_created_before_its_deadline_is_logged_as_error(
+    executor: Executor, job_request: Request, capsys: pytest.CaptureFixture[str]
+) -> None:
+    executor.settings = replace(executor.settings, max_running_jobs=1)
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    daemon.running = [str(uuid4())]
+    executor.step(job_request)
+    cancel(executor, job_request)
+    executor.step(job_request)
+    assert status(executor, job_request).execution == "never_started"
+    logged = [json.loads(line) for line in capsys.readouterr().out.splitlines() if "job_never_created" in line]
+    assert logged == [
+        {"event": "job_never_created", "level": "error", "job_id": job_request.job_id, "waited_for_slot": True}
+    ]
+
+
+def test_install_without_a_registry_network_is_reported_not_attempted(
+    executor: Executor, judge_request: Request
+) -> None:
+    outcome = ApplicationRunner(executor, judge_request, {}).execute(
+        {"id": "step-1", "install": {"ecosystem": "pypi", "manifest": "requirements.txt"}, "observation": "x"}
+    )
+    assert outcome["install_unavailable"] is True and outcome["exit_code"] == 1 and outcome["id"] == "step-1"
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["requests", "requests==2.32.3", "Flask[async] >=3, <4", "numpy~=2.1; python_version >= '3.12'", "a.b_c-d"],
+)
+def test_plain_index_requirements_are_accepted(line: str) -> None:
+    assert REQUIREMENT.fullmatch(line)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "./pkg",
+        "-e ./pkg",
+        "--no-binary :all:",
+        "-r other.txt",
+        "-c constraints.txt",
+        "--index-url https://example.com",
+        "requests @ https://example.com/requests.zip",
+        "git+https://example.com/repo.git",
+        "/abs/pkg",
+        "pkg.whl \\",
+    ],
+)
+def test_options_paths_and_urls_are_not_requirements(line: str) -> None:
+    assert REQUIREMENT.fullmatch(line) is None
+
+
+@pytest.mark.parametrize(
+    "install",
+    [
+        {"ecosystem": "cargo", "manifest": "Cargo.toml"},
+        {"ecosystem": "npm", "manifest": "requirements.txt"},
+        {"ecosystem": "pypi", "manifest": "../requirements.txt"},
+        {"ecosystem": "pypi"},
+    ],
+)
+def test_invalid_install_requests_are_rejected(executor: Executor, judge_request: Request, install: object) -> None:
+    with pytest.raises(ProtocolError):
+        ApplicationRunner(executor, judge_request, {}).execute({"id": "step-1", "install": install, "observation": "x"})

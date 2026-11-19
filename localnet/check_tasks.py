@@ -10,8 +10,9 @@ from uuid import uuid4
 
 from dotenv import dotenv_values
 from pylon_client.artanis import Config, IdentityName, PylonAuthToken, PylonClient
+
 from validator.discovery import freeze_discovery
-from validator.records import Deadlines, JobRequest, RoundPlan, RoundRecord, request_for
+from validator.records import Deadlines, EvaluationPolicy, JobRequest, RoundPlan, RoundRecord, request_for
 from validator.result_records import JobResult
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
@@ -35,7 +36,7 @@ def main() -> None:
     subprocess.run(["systemctl", "is-active", "--quiet", "factory-horde-localnet-executor"], check=True)
     root = Path(config["FACTORY_HORDE_DATA_ROOT"] or "")
     rounds = RoundRepository(root)
-    results = ResultRepository(rounds)
+    results = ResultRepository(rounds, "fixture")
     registrations = Registrations.model_validate_json((ROOT / "state/registrations.json").read_bytes())
     own = next(row.hotkey for row in registrations.registrations if row.identity == "validator")
     images = dotenv_values(ROOT / "state/published-images.env")
@@ -67,6 +68,7 @@ def main() -> None:
         judge_image=images["GHCR_JUDGE_IMAGE"] or "",
         stop_grace_seconds=5,
         specification_sha256=hashlib.sha256(specification.encode()).hexdigest(),
+        evaluation=EvaluationPolicy(mode="fixture", requirements=(specification,)),
     )
     rounds.prepare_round(plan, specification)
     failed = json.loads((ROOT / "state/task7-pull-failure.json").read_bytes())

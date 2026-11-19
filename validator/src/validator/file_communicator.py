@@ -149,6 +149,9 @@ class FileCommunicatorActor(CommunicatorActor[JobRequest, JobStatus]):
                 location = rounds.files.read(f"control/rounds/{request.round_id}.json", RoundLocation)
                 plan = rounds.read_round(location.directory).plan
                 rounds.publish_request(plan, request)
+                # The coordinator resends unfinished jobs on fresh contexts; older ones are left to expire.
+                for stale in [key for key, other in self.pending.items() if other.request.job_id == request.job_id]:
+                    del self.pending[stale]
                 self.pending[ctx.id] = Subscription(request)
             except (OSError, ValueError) as error:
                 self.pending.pop(ctx.id, None)

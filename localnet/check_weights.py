@@ -6,6 +6,7 @@ import math
 import subprocess
 import time
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from typing import Protocol, cast
 from uuid import UUID, uuid4
@@ -47,13 +48,27 @@ class Registrations(BaseModel):
 class Calculation(BaseModel):
     round_id: UUID
     calculated_at: datetime
-    temperature: float = Field(gt=0, allow_inf_nan=False)
+    policy: str
+    winner: str
+    tie_rule: str
     uids: dict[str, int]
     weights: dict[str, float]
 
 
 class Location(BaseModel):
     directory: str
+
+
+class TaskIdentity(BaseModel):
+    task_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class TaskPlan(BaseModel):
+    tasks: list[TaskIdentity] = Field(default_factory=list)
+
+
+class TaskRound(BaseModel):
+    plan: TaskPlan
 
 
 class Accepted(BaseModel):
@@ -123,7 +138,7 @@ def snapshot(chain: bt.Subtensor, validator: str) -> ChainSnapshot:
 
 
 def verify(root: Path, current: ChainSnapshot, previous: ChainSnapshot, calculation: Calculation) -> dict[str, float]:
-    """Recompute softmax independently from accepted records and compare with encoded chain weights.
+    """Recompute 90/10 allocation independently from accepted records and compare with encoded chain weights.
 
     Raises:
         RuntimeError: Chain attribution, accepted score, normalization or mechanism isolation differs.
@@ -133,29 +148,46 @@ def verify(root: Path, current: ChainSnapshot, previous: ChainSnapshot, calculat
     if current.validator_uid != previous.validator_uid or current.mapping != previous.mapping:
         raise RuntimeError("Registration changed during independent verification")
     location = Location.model_validate_json((root / f"control/rounds/{calculation.round_id}.json").read_bytes())
+    round_path = root / location.directory
+    plan = TaskRound.model_validate_json((round_path / "round.json").read_bytes()).plan
     scores: dict[str, float] = {}
     for hotkey, uid in calculation.uids.items():
         if current.mapping.get(hotkey) != uid:
             raise RuntimeError("Weight recipient does not match current Subtensor registration")
-        result = Decision.model_validate_json((root / location.directory / hotkey / "result.json").read_bytes())
-        if (
-            result.failure is not None
-            or result.accepted is None
-            or result.accepted.round_id != calculation.round_id
-            or result.accepted.miner_hotkey != hotkey
-        ):
-            raise RuntimeError("A weight recipient lacks a linked accepted score")
-        scores[hotkey] = result.accepted.score
+        paths = (
+            [round_path / hotkey / "tasks" / task.task_id / "result.json" for task in plan.tasks]
+            if plan.tasks
+            else [round_path / hotkey / "result.json"]
+        )
+        task_scores: list[float] = []
+        for path in paths:
+            result = Decision.model_validate_json(path.read_bytes())
+            if (
+                result.failure is not None
+                or result.accepted is None
+                or result.accepted.round_id != calculation.round_id
+                or result.accepted.miner_hotkey != hotkey
+            ):
+                raise RuntimeError("A weight recipient lacks a linked accepted task score")
+            task_scores.append(result.accepted.score)
+        scores[hotkey] = math.fsum(task_scores) / len(task_scores)
     if len(scores) != 5:
         raise RuntimeError("This acceptance run requires five registered successful baseline miners")
     maximum = max(scores.values())
-    terms = {key: math.exp((score - maximum) / calculation.temperature) for key, score in scores.items()}
-    total = math.fsum(terms.values())
-    expected = {key: value / total for key, value in terms.items()}
+    winner = min(
+        (key for key, score in scores.items() if score == maximum),
+        key=lambda key: (
+            sha256(json.dumps([str(calculation.round_id), key], separators=(",", ":")).encode()).digest(),
+            key,
+        ),
+    )
+    expected = {key: 1.0 if len(scores) == 1 else 0.9 if key == winner else 0.1 / (len(scores) - 1) for key in scores}
+    if calculation.policy != "winner-90-10" or calculation.winner != winner:
+        raise RuntimeError("Unexpected allocation policy or winner")
     if expected.keys() != calculation.weights.keys() or any(
         not math.isclose(value, calculation.weights[key], rel_tol=1e-12) for key, value in expected.items()
     ):
-        raise RuntimeError("Calculated request differs from independent softmax")
+        raise RuntimeError("Calculated request differs from independent 90/10 allocation")
     raw = dict(dict(current.mechanism_one).get(current.validator_uid, []))
     if not raw or set(raw) != set(calculation.uids.values()) or sum(raw.values()) <= 0:
         raise RuntimeError("Chain vector does not identify exactly the accepted recipients")
@@ -212,6 +244,8 @@ def main() -> None:
                     "--env",
                     "VALIDATOR_WEIGHTS_ENABLED=true",
                     "--env",
+                    f"VALIDATOR_JUDGE_MODE={config.get('JUDGE_MODE', 'fixture')}",
+                    "--env",
                     "MECHANISM_ID=1",
                     "validator",
                 ],
@@ -260,7 +294,7 @@ def main() -> None:
                 "mechanism_zero_unchanged": True,
                 "validator_restarted_between_updates": True,
                 "encoding": (
-                    "Compared normalized Subtensor u16 vector with independent stable softmax; "
+                    "Compared normalized Subtensor u16 vector with independent stable 90/10 allocation; "
                     "absolute tolerance 2 * recipients / 65535."
                 ),
             }

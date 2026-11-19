@@ -1,0 +1,3 @@
+# HTTP service evaluation
+
+Read the service's startup and routing code. Start it inside the sandbox as a background process with stdout and stderr redirected to files and stdin from `/dev/null`, so the launching command returns immediately; never start a server in the foreground. Probe readiness over localhost with a bounded retry loop before testing routes, and give every client request a timeout. Python's `urllib.request` and Node's `fetch` are available without additional dependencies. Exercise request/response semantics and verify mutations with subsequent reads. Inspect service logs when requests fail and distinguish startup or harness mistakes from implementation defects. Keep all clients and servers inside the sandbox; external network access is disabled.

@@ -15,13 +15,22 @@ from pathlib import Path
 from typing import override
 from uuid import uuid4
 
+from installer import release
 from nexus.v1 import BlockBeat, BlockHash, BlockNumber, Timestamp
 from pylon_client.artanis import Config, PylonAuthToken, PylonClient
-from validator.records import CohortMember, Deadlines, JobRequest, RoundPlan, RoundRecord, StopRequest, request_for
+
+from validator.records import (
+    CohortMember,
+    Deadlines,
+    EvaluationPolicy,
+    JobRequest,
+    RoundPlan,
+    RoundRecord,
+    StopRequest,
+    request_for,
+)
 from validator.result_repository import ResultRepository
 from validator.round_repository import RoundRepository
-
-from installer import release
 
 from .check import Registrations
 from .check_executor import wait_status
@@ -263,6 +272,7 @@ class Check:
             stop_grace_seconds=5,
             cohort=tuple(CohortMember(miner_hotkey=m.hotkey, uid=m.uid, image=image) for m in miners),
             specification_sha256=hashlib.sha256(specification.encode()).hexdigest(),
+            evaluation=EvaluationPolicy(mode="fixture", requirements=(specification,)),
         )
         self.repository().prepare_round(plan, specification)
         return plan
@@ -289,7 +299,7 @@ class Check:
         ) as client:
             latest = client.v1.open_access.get_latest_block_info()
         beat = BlockBeat(BlockNumber(latest.number), Timestamp(latest.timestamp), BlockHash(latest.hash))
-        results = ResultRepository(rounds)
+        results = ResultRepository(rounds, "fixture")
         results.finalize(factory, beat)
         result = results.finalize(judge, beat)
         if result.accepted is None:

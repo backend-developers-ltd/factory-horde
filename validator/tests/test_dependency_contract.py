@@ -50,7 +50,7 @@ from nexus.v1 import (
 )
 from pylon_client.artanis import Config, IdentityName, PylonAuthToken, PylonClient
 
-from validator.main import Settings, Validator
+from validator.main import CONTEXT_TTL, Settings, Validator
 
 
 class StoreProvider(TaskResultStoreProvider[str, str, str]):
@@ -232,4 +232,6 @@ def test_scaffold_settings_and_graph_import(tmp_path: Path) -> None:
         }
     )
     assert settings.mechanism_id == 1
-    assert Validator(settings).settings is settings
+    validator = Validator(settings)
+    assert validator.settings is settings
+    assert validator.context_ttl == CONTEXT_TTL

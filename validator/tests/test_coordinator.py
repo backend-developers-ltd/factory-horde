@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+import structlog.testing
 from nexus.v1 import BlockBeat, ContextId, ReceiveEvent, SubnetBuilder
 from pydantic import ValidationError
 
@@ -16,17 +17,20 @@ from validator.coordinator import (
     RoundTick,
     RoundTiming,
     Schedule,
-    SkippedEvaluation,
 )
 from validator.discovery import DiscoverySnapshot
 from validator.record_files import RecordFiles
 from validator.records import (
     CohortMember,
+    CriterionVerdict,
     Deadlines,
+    EvaluationPolicy,
     JobRequest,
     JobStatus,
     JudgeReport,
+    ReviewEvidence,
     RoundPlan,
+    SkippedEvaluation,
     StopRequest,
     request_for,
 )
@@ -135,7 +139,7 @@ class Fixture:
 
 @pytest.fixture
 def fixture(tmp_path: Path) -> Fixture:
-    return Fixture(ResultRepository(RoundRepository(tmp_path)))
+    return Fixture(ResultRepository(RoundRepository(tmp_path), "fixture"))
 
 
 def test_defaults_and_invalid_windows() -> None:
@@ -210,6 +214,24 @@ def test_unresolved_factory_allows_other_scores_but_skips_next_slot(fixture: Fix
     assert fixture.repository.files.read(f"control/stops/{hanging.job_id}.json", StopRequest) == stop
 
 
+def test_a_published_judge_without_a_result_holds_weights_after_round_end(fixture: Fixture) -> None:
+    plan = fixture.start()
+    for member in plan.cohort:
+        fixture.status(request_for(plan, member, "factory"))
+    coordinator = fixture.coordinator()
+    coordinator.tick(plan.deadlines.evaluation_start, BEAT)
+    first, late = (request_for(plan, member, "judge") for member in plan.cohort)
+    fixture.status(first)
+    coordinator.tick(plan.deadlines.round_end, BEAT)
+    assert fixture.repository.rounds.rounds()[0].stage == "complete"
+    assert fixture.repository.latest_usable_round() is None
+    # A timely exit observed after the round ended still counts once it is finalized.
+    fixture.status(late, observed_at=plan.deadlines.round_end + timedelta(minutes=3))
+    coordinator.tick(plan.deadlines.round_end + timedelta(minutes=3), BEAT)
+    usable = fixture.repository.latest_usable_round()
+    assert usable is not None and {s.miner_hotkey for s in usable[1]} == {first.miner_hotkey, late.miner_hotkey}
+
+
 def test_live_judge_is_stopped_and_holds_admission_without_a_chain_beat(fixture: Fixture) -> None:
     plan = fixture.start()
     for member in plan.cohort:
@@ -273,14 +295,74 @@ def test_configured_specification_is_frozen_with_the_admission(fixture: Fixture)
 
     repository = fixture.repository
     with pytest.raises(OSError):
-        RoundCoordinator(repository, TIMING, JUDGE, unavailable, "First task.").tick(START, BEAT)
+        RoundCoordinator(repository, TIMING, JUDGE, unavailable, "First task.", ("Add", "Remove")).tick(START, BEAT)
     pending = repository.files.read("control/schedule.json", Schedule).pending
     assert pending is not None and pending.specification == "First task."
-    result = RoundCoordinator(repository, TIMING, JUDGE, fixture.discovery, "Second task.").tick(START, BEAT)
+    result = RoundCoordinator(repository, TIMING, JUDGE, fixture.discovery, "Second task.", ("List",)).tick(START, BEAT)
     plan = repository.rounds.rounds()[0].plan
     assert plan.round_id == pending.round_id and plan.specification_sha256 == sha256(b"First task.").hexdigest()
     for path in (plan.directory, *(job.input_dir for job in result.jobs)):
         assert repository.files.read_bytes(f"{path}/specification.md") == b"First task."
+    assert plan.evaluation == pending.evaluation == EvaluationPolicy(mode="fixture", requirements=("Add", "Remove"))
+    for job in result.jobs:
+        assert repository.files.read(f"{job.input_dir}/evaluation.json", EvaluationPolicy) == pending.evaluation
+
+
+@pytest.mark.parametrize("second_outcome", ["outage", "invalid submission", "legacy score", "wrong criteria"])
+@pytest.mark.parametrize("round_count", [1, 2])
+def test_review_rounds_exclude_only_unevaluated_miners(tmp_path: Path, second_outcome: str, round_count: int) -> None:
+    repo = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
+    fixture = Fixture(repo)
+    coordinator = RoundCoordinator(repo, TIMING, JUDGE, fixture.discovery, "Build a CLI.", ("Add",))
+    for sequence in range(1, round_count + 1):
+        start = START + (sequence - 1) * TIMING.interval
+        assert not coordinator.tick(start, BEAT).errors
+        plan = repo.rounds.rounds()[-1].plan
+        for member in plan.cohort:
+            fixture.status(request_for(plan, member, "factory"))
+        assert not coordinator.tick(plan.deadlines.evaluation_start, BEAT).errors
+        for index, member in enumerate(plan.cohort):
+            job = request_for(plan, member, "judge")
+            outcome = second_outcome if sequence == round_count and index == 1 else "success"
+            if outcome in ("invalid submission", "outage"):
+                invalid = outcome == "invalid submission"
+                fixture.status(job, code=1 if invalid else 75)
+                failed = repo.rounds.report(job).model_copy(
+                    update={
+                        "score": None,
+                        "failure": "Invalid submission: too large" if invalid else "Review unavailable: rate limit",
+                    }
+                )
+                repo.files.replace(f"{job.report_dir}/report.json", failed)
+            else:
+                fixture.status(job)
+                if outcome != "legacy score":
+                    item = CriterionVerdict(
+                        id=1,
+                        requirement="Remove" if outcome == "wrong criteria" else "Add",
+                        verdict="unmet",
+                        reason="Missing",
+                    )
+                    evidence = ReviewEvidence(
+                        round_id=job.round_id,
+                        job_id=job.job_id,
+                        factory_job_id=job.factory_job_id,
+                        kind="judge",
+                        miner_hotkey=job.miner_hotkey,
+                        model="test",
+                        score=0.0,
+                        requirements=(item,),
+                    )
+                    repo.files.publish(f"{job.report_dir}/review.json", evidence)
+        assert not coordinator.tick(plan.deadlines.round_end - timedelta(seconds=1), BEAT).errors
+    recovered = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
+    selected = recovered.latest_usable_round()
+    # The newest round is always used; the miner without an accepted score is excluded, never a fallback.
+    assert selected is not None and selected[0].sequence == round_count and len(selected[1]) == 1
+    outcome = recovered.round_outcome(selected[0])
+    assert list(outcome.excluded.values()) == [
+        "submission_rejected" if second_outcome == "invalid submission" else "evaluation_unavailable"
+    ]
 
 
 @pytest.mark.parametrize("boundary", ["generation_end", "evaluation_start", "judge_end", "round_end"])
@@ -316,7 +398,8 @@ def test_ineligible_factory_never_authorizes_judge(fixture: Fixture, failure: st
     factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
     fixture.status(factory, code=7 if failure == "nonzero" else 0, forced=failure == "forced")
     if failure == "missing_output":
-        (fixture.repository.files.root / factory.output_dir / "main.py").unlink()
+        for path in (fixture.repository.files.root / factory.output_dir).iterdir():
+            path.unlink()
     now = plan.deadlines.judge_end if failure == "late" else plan.deadlines.evaluation_start
     result = fixture.coordinator().tick(now, BEAT)
     assert not result.errors
@@ -331,6 +414,27 @@ def test_ineligible_factory_never_authorizes_judge(fixture: Fixture, failure: st
             "late": "evaluation_expired",
         }[failure]
     )
+
+
+def test_factory_cancelled_before_it_ran_is_not_blamed_on_the_miner(fixture: Fixture) -> None:
+    fixture.count = 1
+    plan = fixture.start()
+    factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
+    status = JobStatus(
+        **factory.model_dump(include={"round_id", "job_id", "miner_hotkey", "kind", "factory_job_id"}),
+        state="cancelled",
+        observed_at=plan.deadlines.generation_end,
+        execution="never_started",
+        startup_forbidden=True,
+        reason="Cancelled before creation",
+    )
+    fixture.repository.files.replace(f"control/statuses/{factory.job_id}.json", status)
+    with structlog.testing.capture_logs() as logs:
+        assert not fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT).errors
+    skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
+    assert skipped.reason == "factory_not_started"
+    assert fixture.repository.round_outcome(plan).excluded == {factory.miner_hotkey: "missing_result"}
+    assert any(log["event"] == "miner_excluded" and log["log_level"] == "error" for log in logs)
 
 
 @pytest.mark.parametrize("offset", [-1, 0, 1, 300])
@@ -364,7 +468,7 @@ def test_finish_cutoff_survives_late_observation_and_restart(
         skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
         assert skipped.reason == "factory_late"
     # A fresh repository/coordinator retains the decision, IDs and original cutoff.
-    fixture.repository = ResultRepository(RoundRepository(fixture.repository.files.root))
+    fixture.repository = ResultRepository(RoundRepository(fixture.repository.files.root), "fixture")
     fixture.coordinator().tick(observed + timedelta(seconds=1), BEAT)
     assert fixture.repository.files.read(relative, FactoryEligibility) == eligibility
 
@@ -462,38 +566,31 @@ def test_completed_legacy_fixture_does_not_override_new_schedule(fixture: Fixtur
     assert fixture.repository.rounds.rounds()[0].stage == "complete"
 
 
-@pytest.mark.parametrize("artifact", ["symlink", "directory", "unreadable"])
-def test_unsafe_output_is_ineligible_but_host_io_failure_stays_unresolved(
-    fixture: Fixture, monkeypatch: pytest.MonkeyPatch, artifact: str
+def test_arbitrary_project_layout_is_admitted_and_host_io_remains_retryable(
+    fixture: Fixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture.count = 1
     plan = fixture.start()
     factory, judge = (request_for(plan, plan.cohort[0], kind) for kind in ("factory", "judge"))
     fixture.status(factory)
-    original = RecordFiles.read_artifact
+    original = RecordFiles.list_names
 
-    def unavailable(files: RecordFiles, relative: str) -> bytes:
-        if relative.endswith("/main.py"):
+    def unavailable(files: RecordFiles, relative: str) -> tuple[str, ...]:
+        if relative == factory.output_dir:
             raise OSError("injected disk failure")
         return original(files, relative)
 
     with monkeypatch.context() as patch:
-        patch.setattr(RecordFiles, "read_artifact", unavailable)
+        patch.setattr(RecordFiles, "list_names", unavailable)
         failed = fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT)
         assert failed.errors and judge.job_id in failed.unresolved
-    path = fixture.repository.files.root / factory.output_dir / "main.py"
-    if artifact == "unreadable":
-        path.chmod(0)
-    else:
+    root = fixture.repository.files.root / factory.output_dir
+    for path in root.iterdir():
         path.unlink()
-        if artifact == "directory":
-            path.mkdir()
-        else:
-            path.symlink_to("/etc/passwd")
+    (root / "library.py").write_text("def add(a, b): return a + b")
     observed = fixture.coordinator().tick(plan.deadlines.evaluation_start, BEAT)
-    assert not observed.errors and not observed.unresolved
-    skipped = fixture.repository.files.read(f"control/skipped-evaluations/{judge.job_id}.json", SkippedEvaluation)
-    assert skipped.reason == "invalid_output"
+    assert not observed.errors
+    assert judge in fixture.repository.rounds.requests()
 
 
 @pytest.mark.parametrize("raw", [b"\xff", b'{"score":' + b"9" * 5000 + b"}"], ids=["utf8", "integer"])
@@ -538,3 +635,41 @@ def test_judge_actual_finish_controls_recovered_score(fixture: Fixture, offset: 
         assert decision is not None
         assert (decision.accepted is not None) == (offset <= 0)
         assert bool(decision.failure) == (offset > 0)
+
+
+def test_review_history_requires_selected_judge_revision(tmp_path: Path) -> None:
+    test_review_rounds_exclude_only_unevaluated_miners(tmp_path, "invalid submission", 1)
+    assert ResultRepository(RoundRepository(tmp_path), "review", JUDGE).latest_usable_round() is not None
+    assert ResultRepository(RoundRepository(tmp_path), "review", IMAGE).latest_usable_round() is None
+    assert ResultRepository(RoundRepository(tmp_path), "review").latest_usable_round() is None
+
+
+def test_round_completion_logs_validator_side_exclusions(tmp_path: Path) -> None:
+    with structlog.testing.capture_logs() as logs:
+        test_review_rounds_exclude_only_unevaluated_miners(tmp_path, "outage", 1)
+    events = {entry["event"]: entry for entry in logs}
+    assert events["judge_evaluation_unavailable"]["log_level"] == "error"
+    assert events["miner_excluded"]["log_level"] == "error"
+    assert events["miner_excluded"]["reason"] == "evaluation_unavailable"
+    assert "round_without_weights" not in events
+
+
+def test_judge_model_is_frozen_into_round_inputs_and_checked_at_acceptance(tmp_path: Path) -> None:
+    repository = ResultRepository(RoundRepository(tmp_path), "review", JUDGE)
+    fixture = Fixture(repository)
+    coordinator = RoundCoordinator(
+        repository, TIMING, JUDGE, fixture.discovery, "Build a CLI.", ("Add",), judge_model="claude-test-1"
+    )
+    result = coordinator.tick(START, BEAT)
+    plan = repository.rounds.rounds()[0].plan
+    assert plan.evaluation is not None and plan.evaluation.model == "claude-test-1"
+    for job in result.jobs:
+        assert repository.files.read(f"{job.input_dir}/evaluation.json", EvaluationPolicy).model == "claude-test-1"
+    item = CriterionVerdict(id=1, requirement="Add", verdict="met", reason="observed")
+    job = request_for(plan, plan.cohort[0], "judge")
+    identity = job.model_dump(include={"round_id", "job_id", "factory_job_id", "kind", "miner_hotkey"})
+    evidence = ReviewEvidence(**identity, model="claude-test-1", score=1.0, requirements=(item,))
+    assert evidence.matches(plan.evaluation, 1.0)
+    assert not evidence.model_copy(update={"model": "sonnet"}).matches(plan.evaluation, 1.0)
+    legacy = EvaluationPolicy(mode="review", requirements=("Add",))
+    assert "model" not in legacy.model_dump() and evidence.model_copy(update={"model": "sonnet"}).matches(legacy, 1.0)

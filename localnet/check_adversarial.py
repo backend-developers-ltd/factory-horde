@@ -20,6 +20,7 @@ from pylon_client.artanis import (
     PylonClient,
 )
 from tenacity import Retrying, stop_after_attempt
+
 from validator.discovery import decode_reference
 from validator.records import RoundPlan, RoundRecord, request_for
 from validator.result_repository import ResultRepository
@@ -80,7 +81,7 @@ class Adversarial(Check):
             base=runtime.state / self.name,
             runtime=runtime,
         )
-        self.results = ResultRepository(self.repository)
+        self.results = ResultRepository(self.repository, "fixture")
         self.miners = [row for row in self.registrations.registrations if row.identity.startswith("miner")]
         self.own = next(row.hotkey for row in self.registrations.registrations if row.identity == "validator")
         self.original: dict[str, bytes] = {}
@@ -146,6 +147,7 @@ class Adversarial(Check):
         ]
         settings = {
             "VALIDATOR_DISPATCH_ENABLED": "true",
+            "VALIDATOR_JUDGE_MODE": "fixture",
             "VALIDATOR_WEIGHTS_ENABLED": "false",
             "VALIDATOR_HOTKEY": self.own,
             "VALIDATOR_JUDGE_IMAGE": self.profiles[judge].image,

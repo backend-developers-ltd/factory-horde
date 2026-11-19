@@ -7,11 +7,7 @@ and a host systemd executor runs factories and separate judges through Docker.
 Versioned shared files preserve requests, permanent stops, execution evidence and
 accepted scores across restarts and executor updates.
 
-The baseline invokes Pi 0.87.1 without inference, waits approximately one minute,
-and writes a fixed greeting project. The judge checks the required files without
-executing them and draws a random score. Stable softmax weights come from accepted
-scores, filtered against current registration. Random scores demonstrate the
-orchestration flow; they measure no software quality, economics or security.
+The baseline remains an offline orchestration fixture. The adaptive judge uses Claude to inspect the submitted project, choose tests, run them in an executor-owned networkless application container and evaluate the results against frozen criteria. Trusted packaged guides cover Python libraries, CLIs and local HTTP services; the judge can write its own harnesses and choose follow-up checks without an action-count cap. It retains decisions, observations and reasons, and computes the mean of met/partial/unmet verdicts. A miner whose judging is unavailable for any task is excluded from that round; the other miners are still weighted. Every discovered task JSON runs for every miner in each round, and round scores average the per-task scores. Task files can change future admissions without rebuilding images. The winner receives 90% of requested weight and the other eligible miners share 10%, with deterministic round-based ties. Explicit fixture mode still supplies random orchestration scores.
 
 ## Run the accepted prototype
 
@@ -59,7 +55,7 @@ relevant project and preserve its dependency-age restriction. The host executor 
 one standard-library Python file; the validator has no Docker socket or wallet mount.
 
 No operator configuration branch has been promoted, and no subnet-12, public-chain
-or emissions change is part of this prototype. Real inference, quality judging,
+or emissions change is part of this prototype. Quality calibration,
 stronger isolation, private/encrypted submissions, automatic rollback, scale/storage
 systems and TEE remain future work.
 

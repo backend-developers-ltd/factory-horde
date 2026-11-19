@@ -38,9 +38,14 @@ rounds/<YYYY-MM-DD>/round-<sequence>-<HH-MM-SS>-<round-id>/
   round.json                      # frozen plan plus mutable stage/unresolved jobs
   specification.md
   <miner-hotkey>/
-    input/{specification.md,task.json}
-    output/{main.py,README.md}
+    input/{specification.md,task.json,evaluation.json}
+    output/<project files>
     evaluation/report.json
+    evaluation/step-N.decision.json    # attributed next action, persisted before execution
+    evaluation/step-N.observation.json # executor capture or retrieved earlier evidence
+    evaluation/execution.json         # final agent-v1 step/command summary
+    evaluation/assessment.json        # final verdicts with evidence references
+    evaluation/review.json        # verdicts for a successful model review
     factory-result.json           # immutable factory JobResult
     result.json                   # immutable judge JobResult, containing AcceptedResult on success
 ```
@@ -57,7 +62,7 @@ request is authorized at that point.
 |---|---|---|
 | Round plan/stage, task manifest, request, stop | Validator | Frozen cohort, authorization and application state |
 | Status | Executor | Docker observation and startup closure |
-| Report | Judge | Untrusted file checks and random score/failure |
+| Report | Judge | Untrusted file checks and review or random score/failure |
 | Accepted result | Validator | One validated score and stable Nexus projection metadata |
 
 `protocol_version` is integer `1`; extra fields, unsupported versions, duplicate
@@ -75,20 +80,20 @@ Selected platform is `linux/amd64`, matching task 2's Pylon image.
 | `factory-v1` | `/usr/local/bin/factory-horde-factory` | `input_dir` → `/input:ro`, `output_dir` → `/output:rw` |
 | `judge-v1` | `/usr/local/bin/factory-horde-judge` | `input_dir` → `/input:ro`, `output_dir` → `/submission:ro`, `report_dir` → `/report:rw` |
 
-The factory writes `/output/main.py` and `/output/README.md`. The judge reads
-`/input/task.json` for round/miner and both job IDs, checks the specification and
-submission, and writes `/report/report.json`. No generated code is executed.
-Images must provide these executables; task 5 supplies their implementation.
-Requests cannot supply shell commands, Docker flags, wallets or arbitrary mount
-destinations. Operator settings supply UID/GID, resource limits and Docker access;
-task 4 establishes actual ownership, with installer verification in task 15.
+The factory writes the project required by the task into `/output`. No fixed entry-point filenames are required. Admission requires a nonempty output directory; the judge inventories the full tree, rejecting symlinks, non-regular or unreadable files and projects larger than 64 MiB or 4096 files. `checked_files` contains unique relative project paths, nonempty for a successful score.
 
-By default every workload runs with `--network none`, no environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory containers then join that Docker network instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable, and judges always run without a network or environment.
+The judge reads `/input/task.json` for attribution and verifies the frozen specification and evaluation policy. Its tool-less Claude controller chooses one action at a time using trusted packaged testing guides. Commands are published through an executor-owned `/runner` exchange, never run by the host or judge controller. The executor executes the requested `argv` and stdin inside a separate networkless application container containing a writable project copy. Python, Node.js and POSIX shell are packaged; dependencies cannot be downloaded. The sandbox has no controller mounts, credentials or Docker socket. The legacy `args` request remains supported for already-frozen CLI judge images. Captures include exit status, stdout/stderr (16 KiB each), truncation, duration and stop status. There is no action-count or additional judging time limit; the existing round deadline still closes work and requires confirmed application termination.
 
-The network is the internal one that the `inference` Compose profile creates together with the proxy. It has no route to the internet or to the host, so the proxy is the only service a factory can reach. The proxy forwards only paths matching `/v1/messages*` to `https://api.anthropic.com` and answers 404 for everything else. Factories that run at the same time share this network and can reach each other, and the proxy applies no per-factory quota: all factories draw on the same credential.
+Each decision is durable before its command; captured results are returned before the next decision. The judge can request older evidence when it no longer fits recent context. The final assessment must reference observed commands for every criterion, including commands that read source/documentation. Unassessed requirements make evaluation unavailable. Successful `/report/review.json` contains the verdict mean; the validator verifies identity, ordered rubric and arithmetic before accepting `/report/report.json`. Decisions, captures and final reports are retained and reused after interruptions, without replaying ambiguous commands. A directory lock serializes the judge session.
+
+The optional `evaluation` field in a round plan contains protocol version 1, mode, ordered requirements and, when `JUDGE_MODEL` is set, the judging `model`; each task freezes its own policy. A review is accepted only if its `model` equals the frozen one. The judge records the model IDs Claude Code reported using (`resolved_models`) in each decision, `execution.json` and `review.json`. The validator copies it into `/input/evaluation.json`. Historical round plans without this field are eligible only for explicit fixture weights. Images must provide the fixed factory/judge executables. Job requests cannot supply Docker flags, wallets or arbitrary mounts. Operator settings supply UID/GID, resource limits and Docker access; only the trusted host executor operates Docker.
+
+The executor runs at most `EXECUTOR_MAX_RUNNING_JOBS` (default 4) workload containers at once, counting created and running containers labelled with a job ID whose ledger has no terminal status; a waiting job publishes a `pending` status with reason `Waiting for a workload slot` and keeps its frozen deadline. A factory cancelled before it ran (`cancelled`, `never_started`) skips its judge with reason `factory_not_started`, a validator-side gap rather than a rejected submission. By default every workload runs with `--network none`, no inference environment variables and a 64 MiB `/tmp` (`EXECUTOR_TMP_SIZE`). A factory that calls a model reads two variables that its deployer supplies: `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_OAUTH_TOKEN`. This executor supplies them only when the operator sets `EXECUTOR_FACTORY_NETWORK`: factory and judge containers each join a separate executor-owned internal network linked only to that network's inference proxy instead of `none` and receive `ANTHROPIC_BASE_URL` set to `EXECUTOR_INFERENCE_URL` (default `http://inference-proxy:8080`) and `CLAUDE_CODE_OAUTH_TOKEN` set to the fixed placeholder `inference-proxy`. The placeholder is not a credential; it only makes Claude Code send OAuth-style requests. The inference proxy holds the real credential and replaces the `Authorization` header, so a factory never sees it. Requests still cannot choose the network or any variable. Judges also receive `FACTORY_HORDE_JUDGE_IMAGE`, derived by the executor from the immutable request for evidence attribution. Missing `ANTHROPIC_BASE_URL` in review mode returns exit 75. Random scoring requires a frozen fixture policy.
+
+The configured network identifies the inference proxy. Each workload gets its own labelled internal bridge with isolated gateway mode; the executor reconnects the proxy on recovery and removes that bridge after confirmed workload termination. Peers and host/internet services are unreachable. The proxy forwards `/v1/messages*` to Anthropic, provides `/healthz`, and returns 404 otherwise. All inference still shares one subscription without quotas.
 
 `RoundRepository.prepare_round` records the plan/IDs before preparing input. It
-publishes the complete specification and manifest immutably, creates output/report
+publishes the complete specification, manifest and frozen evaluation policy, creates output/report
 directories and preserves existing evidence on replay. `publish_request` requires
 the persisted plan, matching specification hash, exact manifest and canonical
 paths before making a request visible. The coordinator applies the stage gate before
@@ -97,8 +102,8 @@ publication; the communicator may idempotently republish the same frozen request
 `Schedule` persists the next slot and an optional `RoundSeed` before discovery. A new
 seed takes its specification from `VALIDATOR_SPECIFICATION` (the operator's
 `TASK_SPECIFICATION`; unset or empty keeps the built-in greeting task). The
-seed freezes round ID, sequence, judge, specification and all deadlines; a retained
-discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
+seed freezes the round ID, sequence, judge image, specification, scoring mode, criteria
+and all deadlines. A retained discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
 input publication is repaired using those same identities. The schedule advances
 only after preparation succeeds. No new round is admitted before an actual block
 beat in the current runtime or while old work remains unresolved. Expired intended
@@ -162,8 +167,8 @@ It contains the complete immutable request, terminal executor status, original
 Docker start/finish times (observation time for never-started jobs), first acceptance
 block number/hash/timestamp, stable result ID and either a failure or an accepted
 judge score. The existing `AcceptedResult` schema is embedded in the successful
-judge decision. This is the only persisted copy of the score. The entire decision
-publishes in one operation; score and outcome cannot become partially committed.
+judge decision. It is the authoritative record of the score used for weights.
+The validator publishes the entire decision in one operation.
 
 Unconfirmed execution raises `ResultNotReady`; it is never finalized as stopped.
 After confirmed clean judge termination, a missing, malformed or misattributed report
@@ -172,9 +177,10 @@ failure into a new run or score. Once accepted, a decision is reused even if raw
 reports/statuses are later lost. Publication conflicts fail and preserve the original.
 
 Unsafe or unreadable workload artifacts (including symlinks, nonregular/oversized
-files and denied file permissions) are rejected. Ineligible factory output records
-an `invalid_output` skipped evaluation; a bad final report records a failed judge
-decision. Ordinary host I/O failures remain unresolved and cannot invent a terminal
+files and denied file permissions) are rejected. An empty or missing factory output
+records a `missing_output` skipped evaluation; the judge rejects an unsafe project tree
+as an invalid submission before any model call (`invalid_output` remains readable in
+older records); a bad final report records a failed judge decision. Ordinary host I/O failures remain unresolved and cannot invent a terminal
 execution or a score.
 
 `FileTaskResultStore` implements the public Nexus store/provider contracts with fixed
@@ -186,15 +192,14 @@ A process restart rebuilds by-ID and ordered block indexes from these references
 Epoch queries use inclusive original completion-block ranges. Returned mutable
 Pylon routing models are copied to preserve thread-safe cached observations.
 
-`latest_usable_round` reads completed rounds and skips empty ones, including when
-other jobs remain unresolved. This query supplies score history; it does not grant
-permission to start another round. Synthetic routing identities never attribute
-scores: use `AcceptedResult.miner_hotkey`, not Nexus routed-neuron count helpers.
-The weight gate and setter read this same provider/repository. They filter accepted
-hotkeys against current registration, apply stable softmax at the configured positive
-temperature and recheck registration after calculation. A detected membership change
-aborts that attempt. `WeightCalculation` records the source round, membership block,
-epoch, UID mapping, temperature and derived weights without copying accepted scores.
+`latest_usable_round` reads only the newest completed round; an older round never
+stands in for it. A scoring-mode or judge-image mismatch makes that round unusable.
+While a published judge of that round has no retained result, the round is not yet
+usable. A miner without an accepted score for every task (failed factory, invalid
+submission, unavailable judge) is excluded; the round is usable when any miner was
+fully evaluated, in both review and fixture mode. Without a usable round the weight
+gate skips submission.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. A review round requires the configured judge image digest. No eligible recipients means a skipped write. `WeightCalculation` records policy `winner-90-10`, winner, tie rule, source round, membership block, epoch, UID mapping and weights. Legacy temperature-based diagnostic files are ignored by monitoring; historical accepted scores are preserved.
 Absent usable history/recipients suppresses the opportunity before the setter;
 an empty mapping is never used as a skip signal. Only an independent Subtensor read
 proves the resulting mechanism-specific chain vector.
@@ -289,3 +294,18 @@ env -u UV_EXCLUDE_NEWER uv run ruff format
 env -u UV_EXCLUDE_NEWER uv run basedpyright
 env -u UV_EXCLUDE_NEWER uv run pytest -q --tb=line -r f
 ```
+
+## Internal application runner channel
+
+A judge receives `/runner`, a job-local executor channel that is never mounted into the application. For each command, numbered consecutively from 1 without a limit, it publishes `<index>.request.json` with exactly `id`, `argv`, `stdin` and `observation`. Already-frozen jobs from the earlier CLI judge may instead send `args`, which the executor runs as arguments to `/app/main.py`. The executor persists command intent and a private immutable result before exposing `<index>.response.json` containing the original `command` and `result`. An interrupted ambiguous command is unavailable and never repeated. This extends internal execution only; miner submissions and protocol-v1 reports retain their existing schemas.
+
+The executor records the application container identity and permanent stop intent in the parent ledger. Application code sees only its runtime, read-only submission, 256 MiB writable `/app` (also `HOME`) and 256 MiB `/tmp`, without a network or inference variables. Both writable mounts allow execution, so project scripts, built binaries and bundled native extensions can run. Captures are limited to 16 KiB per stream; commands have no individual duration limit; all of a judge's commands share the sandbox budget described below. When the budget ends or the job is stopped, the full container is killed and no further checks run. Parent terminal publication waits for confirmed child termination, including recovery after executor interruption. Runner counters and latency use the existing executor metric transport with bounded `application` operation labels.
+
+The model chooses one action at a time and receives each capture before its next decision. There is no action-count limit. Verification of state changes is required by the judge's instructions and trusted guides rather than by controller-checked metadata: a claimed change counts only after a later observation of the resulting state. The instructions also tell the model to keep every command bounded (background long-lived processes, wrap submitted code in its own `timeout`), because one command that never returns consumes the remaining sandbox time. Only the four command fields cross the runner channel, except for an install request `{id, install: {ecosystem, manifest}, observation}`: with `EXECUTOR_REGISTRY_NETWORK` set, the executor runs a fixed `pip install --only-binary :all: --target /app/.deps` or `npm install --ignore-scripts` while the sandbox is attached to a job-owned network whose only peer is the registry proxy, then restores and verifies `--network none`. Interrupted installs are detached before anything else runs. Without the setting, the capture reports `install_unavailable: true`. When preparing a judge, the executor writes `budget.json` with a frozen `sandbox_deadline`, which ends `EXECUTOR_JUDGE_RESERVE_SECONDS` (default 180, at most half the judge duration) before the judge deadline. All commands share that budget. A command still running when it ends is stopped with its container, and its capture reports `budget_exhausted: true`; commands requested later return the same flag without executing. The judge then finishes with the evidence it has. A `reject` decision, allowed only after an observed command, reports a project that cannot run at all as `Invalid submission: Project cannot run: …`. `assessment.json` retains final criterion evidence references and unassessed reasons before score publication. Missing evidence produces an unavailable evaluation, never a partial or zero score; protocol-v1 accepted reviews remain unchanged.
+
+
+### Multiple tasks in one round
+
+A directory-backed round freezes every discovered non-hidden JSON task in `plan.tasks`, including its filename, specification and evaluation policy. Each cohort execution carries a `task_id` (SHA-256 of its filename); all miners cover the complete same set, with distinct factory/judge IDs. Task-scoped paths are `<round>/<hotkey>/tasks/<task_id>/{input,output,evaluation}`. Existing single-task records and paths remain readable. Protocol-v1 job requests, manifests and reports retain their existing fields; job IDs and paths distinguish tasks. Each task supplies its own specification hash and rubric. The round’s legacy specification/evaluation fields mirror the first task for compatibility; admission and acceptance use the task-specific fields.
+
+A pending admission persists the complete plan before input publication, preserving task membership and execution IDs across restart. Per-task accepted results remain immutable. Only miners with accepted scores for every task enter the equal-weight mean used by weighting and monitoring. An unavailable judge or an attributed submission failure excludes only the affected miner; weights use the newest completed round when at least one miner was fully evaluated, and never an older round. Round completion logs every validator-side exclusion, and a round without any scored miner, at error level. No task is silently dropped from its denominator.

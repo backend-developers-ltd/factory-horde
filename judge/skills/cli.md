@@ -1,0 +1,3 @@
+# Command-line evaluation
+
+Inspect the entry point and help output, then invoke the documented interface. Run each invocation under `timeout` with a short bound so an unexpected wait or loop cannot consume the evaluation's time. Use returned identifiers in subsequent commands. Test state changes through a fresh invocation that reads the resulting state; perform this observation after the last mutation too. Check error paths, exit statuses, output and persistence separately. A harness can launch several subprocesses and assert their results. Do not infer successful persistence from a command's success message alone.

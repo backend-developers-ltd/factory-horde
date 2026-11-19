@@ -9,7 +9,17 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 from pydantic import BaseModel
-from validator.records import CohortMember, Deadlines, JobRequest, JobStatus, RoundPlan, RoundRecord, request_for
+
+from validator.records import (
+    CohortMember,
+    Deadlines,
+    EvaluationPolicy,
+    JobRequest,
+    JobStatus,
+    RoundPlan,
+    RoundRecord,
+    request_for,
+)
 from validator.round_repository import RoundRepository
 
 from .check import Registrations
@@ -146,6 +156,7 @@ def main() -> None:
         judge_image=images["GHCR_JUDGE_IMAGE"] or "",
         stop_grace_seconds=5,
         specification_sha256=hashlib.sha256(specification.encode()).hexdigest(),
+        evaluation=EvaluationPolicy(mode="fixture", requirements=(specification,)),
     )
     record = repository.prepare_round(plan, specification)
     factory, judge = request_for(plan, member, "factory"), request_for(plan, member, "judge")

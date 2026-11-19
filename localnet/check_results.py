@@ -20,6 +20,7 @@ from nexus.v1 import (
     Timestamped,
 )
 from pylon_client.artanis import Config, IdentityName, PylonAuthToken, PylonClient
+
 from validator.records import JobStatus, RoundPlan, request_for
 from validator.result_repository import ResultRepository
 from validator.result_store import EVALUATION_TASK, FACTORY_TASK, FileTaskResultStore
@@ -40,7 +41,7 @@ def main() -> None:
     evidence = json.loads((ROOT / "state/task7-executor-pair.json").read_bytes())
     plan = RoundPlan.model_validate_json(json.dumps(evidence["plan"]))
     rounds = RoundRepository(Path(config["FACTORY_HORDE_DATA_ROOT"] or ""))
-    repository = ResultRepository(rounds)
+    repository = ResultRepository(rounds, "fixture")
     (member,) = plan.cohort
     factory, judge = (request_for(plan, member, kind) for kind in ("factory", "judge"))
     expected = {
@@ -88,7 +89,7 @@ def main() -> None:
         )
         with builder.context_store.create_context() as ctx:
             replay = store.add_successful_task_result(ctx, name, delayed)
-        recovered = FileTaskResultStore(ResultRepository(RoundRepository(rounds.files.root)))
+        recovered = FileTaskResultStore(ResultRepository(RoundRepository(rounds.files.root), "fixture"))
         if (
             original != replay
             or recovered.get_task_result(name, TaskResultId(job.projection_id)) != original

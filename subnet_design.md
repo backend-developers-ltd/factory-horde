@@ -1,8 +1,8 @@
 # FactoryHorde V2 working design
 
-This prototype measures whether a submitted software factory completes the local
-orchestration contract. Its random scores deliberately measure no application
-quality. The [V2 specification](spec/FactoryHorde-initial-prototype-specification-v2.md)
+The localnet prototype exercises the orchestration contract with random fixture
+scores. In review mode the judge grades each factory's output against criteria
+fixed at the start of the round. The [V2 specification](spec/FactoryHorde-initial-prototype-specification-v2.md)
 is authoritative; the [task list](spec/FactoryHorde-v2-sequential-implementation-tasks.md)
 tracks implementation and evidence. This document records the implemented shape and defaults;
 [acceptance evidence](spec/evidence/task17-acceptance.json) states what was exercised.
@@ -14,7 +14,7 @@ The existing rendered scaffold must not be rendered again.
 |---|---|---|
 | Miner submitter | Validate and commit a public digest using its own Pylon identity; exact read-back; exit | `miner/miner.py` and `miner/Dockerfile` |
 | Baseline factory | Invoke pinned Pi help/version without inference, wait approximately 60 seconds, write fresh greeting project | `miner/factory/` |
-| Judge | Check readable `main.py` and `README.md` without executing them; write one uniform random score report | `judge/` |
+| Judge | Adaptively inspect and test projects in an isolated application sandbox, then grade captured observations against frozen criteria, or draw a uniform random score in explicit fixture mode; write one report | `judge/` |
 | Validator | Discover/freeze cohort, schedule, publish jobs/stops, accept scores, calculate weights | `validator/src/validator/` |
 | Host executor | Poll files, pull/create/start/inspect/stop Docker jobs, reconcile after restart | `executor/executor.py` (one standard-library-only file) |
 | Operator installation | Configure ownership, host paths, executor system unit, Compose and coherent updates | `installer/`, `envs/deployed/` |
@@ -39,7 +39,7 @@ actor-owned wall-clock producer
                                        -> shared-tree result adapter
 
 Nexus chain clock -> SetWeightsBeatNode -> usable-result gate
-  -> WeightSetterNode + FactoryHorde softmax callback -> Pylon
+  -> WeightSetterNode + FactoryHorde 90/10 callback -> Pylon
 
 shared files <-> host executor <-> detached factory / judge containers
 ```
@@ -130,24 +130,23 @@ factory finish cutoff and requires confirmed clean
 zero exit and a valid report linked to the exact judge/factory/round/miner. Forced,
 nonzero, malformed, missing or unconfirmed judge outcomes receive no score.
 
-Confirmed eligible jobs may yield a usable completed round result while another
+In fixture mode, confirmed eligible jobs may yield a usable completed round result while another
 job stays unresolved. Unresolved factories or judges still hold/skip every new
 generation slot until reconciled. Safety comes from durable stop intent and Docker
 evidence, not Nexus success branches or callback counts.
 
 ## Scores and chain weights
 
-The judge draws once from uniform `[0,1]`; accept one finite score in that range,
-including zero, immutably. Report/result-store recovery reads existing evidence;
-it never reruns a job or redraws its score. Use the latest valid completed round,
-not the previous chain epoch. Empty rounds preserve that history; absent usable
-history suppresses submission at a gate before the setter. No fallback invented
-scores, empty-map skip assumption or EMA.
+Review mode averages verdicts over the frozen rubric. Explicit fixture mode draws
+once from a uniform distribution on `[0,1]`. Both modes persist finite scores in
+that range, including zero. The weight gate uses only the newest completed round in
+the selected mode; older rounds never stand in for it. A miner without an accepted
+score for every task, including one whose reviewer was unavailable, is excluded from
+that round while the other miners are still weighted. Without a usable round the
+gate skips the weight submission.
 
-Filter accepted scores to currently registered hotkeys; UID reuse must not transfer
-scores. Compute `exp((score - max_score) / temperature)` and normalize over eligible
-miners only, with finite positive temperature default `0.1`. Failures are excluded,
-not assigned zero. Registration changes during calculation require revalidation.
+After filtering accepted scores to registered hotkeys, give one highest-scoring miner 90% and divide 10% equally among the rest; a singleton receives 100%. Ties, including all-zero scores, choose the smallest SHA-256 digest of compact UTF-8 JSON `[str(round_id), miner_hotkey]`, with hotkey as the final collision tiebreaker. This is the accepted first-version implementation choice. Invalid submissions remain excluded, and registration is revalidated before returning the vector. A review round requires the configured judge image digest. No eligible recipients means a skipped write.
+
 Pass configured `MECHANISM_ID` to both weight-status gating and actual writes; retain
 the scaffold default `0` and explicitly exercise `1` on a capable local runtime.
 
@@ -176,6 +175,10 @@ for ordinary repair. Localnet bootstrap accepts the installer's isolated `.env`
 with its own adjacent wallets and registration evidence.
 
 Generic HTTP, validator-only, inference and host-tmux recipes yield to V2. Mainnet,
-subnet 12 / Compute Horde changes, public emissions, real generation/quality judging,
+subnet 12 / Compute Horde changes, public emissions, judge quality calibration,
 private/encrypted submissions, stronger isolation, TEE and scale systems are future
 work. A random-score demonstration is neither economic nor security validation.
+
+## Behavioral judging extension
+
+Every JSON task discovered in the configured server directory is frozen at admission before discovery. Every miner runs every task in separate factory/judge executions within the round; eligible miners receive the equal-weight mean of their task scores. The host executor owns a networkless application container and a narrow file command channel for each judge. It captures bounded results outside the application, preserves shared disposable state across checks, never replays ambiguous commands, and confirms child termination before parent acceptance. There is no action-count cap or fixed command/model/session timeout; existing round stops remain authoritative. Each factory/judge has a separate internal network connected only to the inference proxy. The [judge guide](judge/README.md) specifies evidence and failure handling. Historical V2 acceptance remains evidence for its original revisions.

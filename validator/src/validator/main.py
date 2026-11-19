@@ -38,7 +38,7 @@ from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
 from validator.monitoring import ChainViewNode, MonitoringNode, read_chain_view
 from validator.otel import OtelSettings, setup_otel
-from validator.records import ImageReference, MinerHotkey
+from validator.records import Criterion, ImageReference, JudgeMode, JudgeModel, MinerHotkey
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
 from validator.result_repository import ResultRepository
 from validator.round_actor import RoundCoordinatorNode
@@ -65,15 +65,18 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     judge_stop_reserve: timedelta = timedelta(minutes=5)
     stop_grace_seconds: int = Field(default=60, ge=0, le=60)
     specification: str = Field(default=SPECIFICATION, min_length=1)
+    task_directory: Path | None = None
+    requirements: tuple[Criterion, ...] = ()
+    judge_mode: JudgeMode = "review"
+    judge_model: JudgeModel | None = None
     weights_enabled: bool = False
-    weight_temperature: float = Field(default=0.1, gt=0, allow_inf_nan=False)
     weight_tempo: int = Field(default=360, gt=0)
     weight_epoch_offset: int = Field(default=0, ge=0)
     metrics_host: str = "0.0.0.0"
     metrics_port: int = Field(default=9101, ge=1, le=65535)
     observation_max_age_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
 
-    @field_validator("validator_hotkey", "judge_image", mode="before")
+    @field_validator("validator_hotkey", "judge_image", "task_directory", "judge_model", mode="before")
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
@@ -126,18 +129,22 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
         )
 
 
+# Unfinished jobs are resent on fresh contexts every minute, so only finished or abandoned contexts idle this long.
+CONTEXT_TTL = timedelta(minutes=15)
+
+
 class Validator(NexusValidator):
     """Containerized Nexus runtime; all scheduling runs on its coordinator actor."""
 
     def __init__(self, settings: Settings) -> None:
-        super().__init__(settings)
+        super().__init__(settings, context_ttl=CONTEXT_TTL)
         observer = ChainObserverNode(settings.data_root, settings.mechanism_id, settings.dispatch_enabled)
         errors = ErrorLoggerNode("factory-horde-errors")
         observed = MessageLoggerNode[ChainObservation]("factory-horde-observed")
         self.connect(self.subnet_clock.source, observer.sink)
         self.connect(observer.error, errors.sink)
         self.connect(observer.ok, observed.sink)
-        self.results = ResultRepository(RoundRepository(settings.data_root))
+        self.results = ResultRepository(RoundRepository(settings.data_root), settings.judge_mode, settings.judge_image)
         self.tasks = FileTasks(self.results)
         self.tasks.connect(self, errors)
         monitoring = MonitoringNode(
@@ -173,6 +180,9 @@ class Validator(NexusValidator):
                     settings.judge_image,
                     discovery,
                     settings.specification,
+                    settings.requirements,
+                    settings.task_directory,
+                    settings.judge_model,
                 )
             )
             self.connect(self.tasks.poll_clock.source, coordinator.sink)
@@ -187,7 +197,6 @@ class Validator(NexusValidator):
             weigher = Weigher(
                 self.tasks.store_provider.get_task_result_store(),
                 partial(read_membership, settings.pylon_config(), settings.netuid),
-                settings.weight_temperature,
             )
             opportunity = SetWeightsBeatNode(
                 "factory-horde-weight-opportunities",

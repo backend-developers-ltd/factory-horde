@@ -1,0 +1,4599 @@
+{
+  "source_commit": "5e3c526a4940a266bbf84b7d37ee9ee8ccaa6ea4",
+  "images": {
+    "validator": {
+      "kind": "validator",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-validator-refinery@sha256:95f4f24815169be851fb6eee57ab4bc3ea342e4529f9e6d54c6e9f81a69fa0bb",
+      "commit": "5e3c526a4940a266bbf84b7d37ee9ee8ccaa6ea4",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/44264989586"
+    },
+    "judge": {
+      "kind": "judge",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+      "commit": "5e3c526a4940a266bbf84b7d37ee9ee8ccaa6ea4",
+      "platform": "linux/amd64",
+      "run": "https://github.com/backend-developers-ltd/factory-horde/actions/runs/44265026851"
+    }
+  },
+  "round": {
+    "protocol_version": 1,
+    "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+    "sequence": 1,
+    "deadlines": {
+      "protocol_version": 1,
+      "start": "2026-11-18T08:16:01.131028Z",
+      "generation_end": "2026-11-18T08:17:01.131028Z",
+      "evaluation_start": "2026-11-18T08:17:16.131028Z",
+      "judge_end": "2026-11-18T08:36:46.131028Z",
+      "round_end": "2026-11-18T08:37:16.131028Z"
+    },
+    "discovery_block": 16793,
+    "discovery_block_hash": "0xd21b58e9e614c755a19d315fbc21bcea154acd2197da5c6c77c1921c0b549758",
+    "membership_snapshot": "commitment_block",
+    "cohort": [
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "uid": 2,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "c2c90107-5e08-45a1-8194-4ece8c8d3516",
+        "judge_job_id": "9fe6933f-5902-4649-bdee-d1f0b6691e66",
+        "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "uid": 2,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "cf35949b-4f53-4900-9932-3c819baee1c2",
+        "judge_job_id": "4b1f3ed6-8221-402c-8ee3-7578f2525899",
+        "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "uid": 3,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "6edee5c9-73c1-4d1d-b3f5-caedf12c1438",
+        "judge_job_id": "14b7b899-a00b-4f22-8123-c2301a0f2477",
+        "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "uid": 3,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "b4bac1b1-dccb-4421-8031-ef8dcd7b7188",
+        "judge_job_id": "f8de0c43-e246-4613-a19e-4a50a1746e65",
+        "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "uid": 4,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "5107f654-4907-4c88-91cc-e950ba913e1a",
+        "judge_job_id": "9752ace7-a554-4fe8-acb5-5f9ecc5fd141",
+        "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "uid": 4,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "e0dafb6b-5924-4f6c-8526-cf52aac7016b",
+        "judge_job_id": "afabd09e-399a-4a01-9b33-13ad067aecba",
+        "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "uid": 5,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "70eb1a83-a6d4-4a75-9503-67b4833eb35a",
+        "judge_job_id": "a4e839bd-54d4-488f-a82b-3e412f025172",
+        "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "uid": 5,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "eb1cf931-7200-47b6-83d8-df3cd828b57b",
+        "judge_job_id": "4d68cada-a7fd-412f-98d2-b472390e377c",
+        "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "uid": 6,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "109dd766-b74b-4c1e-a254-dcdc759a0be0",
+        "judge_job_id": "818da4e6-30af-4396-a7a3-dbe9343343c7",
+        "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d"
+      },
+      {
+        "protocol_version": 1,
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "uid": 6,
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-control@sha256:cbb04c7b42153d15ce0ba6b658d0f17c2d94743acc9c411256c1d1f66b000143",
+        "factory_job_id": "daa81589-79a4-4848-9963-a3900435d2ab",
+        "judge_job_id": "422035ba-8db7-4e63-a2a8-bac6a596a934",
+        "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79"
+      }
+    ],
+    "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+    "platform": "linux/amd64",
+    "stop_grace_seconds": 5,
+    "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c",
+    "evaluation": {
+      "protocol_version": 1,
+      "mode": "review",
+      "requirements": [
+        "The complete CLI is in main.py and uses only the Python standard library.",
+        "Tasks persist in a JSON file across invocations.",
+        "add creates a task.",
+        "list displays the stored tasks.",
+        "done marks the selected task complete.",
+        "remove deletes the selected task.",
+        "README.md describes installation and usage."
+      ]
+    },
+    "tasks": [
+      {
+        "protocol_version": 1,
+        "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d",
+        "filename": "todo-basic.json",
+        "specification": "Write a command-line to-do list manager in Python. Put the complete program in a single file named main.py that uses only the standard library, stores tasks in a JSON file, and supports the subcommands add, list, done and remove. Also write README.md describing installation and usage.",
+        "evaluation": {
+          "protocol_version": 1,
+          "mode": "review",
+          "requirements": [
+            "The complete CLI is in main.py and uses only the Python standard library.",
+            "Tasks persist in a JSON file across invocations.",
+            "add creates a task.",
+            "list displays the stored tasks.",
+            "done marks the selected task complete.",
+            "remove deletes the selected task.",
+            "README.md describes installation and usage."
+          ]
+        }
+      },
+      {
+        "protocol_version": 1,
+        "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79",
+        "filename": "todo-multiple.json",
+        "specification": "Write a command-line to-do list manager in Python. Put the complete program in a single file named main.py that uses only the standard library, stores tasks in a JSON file, and supports the subcommands add, list, done and remove. Also write README.md describing installation and usage.\nVerify that multiple tasks remain independent: deleting one must preserve the others.",
+        "evaluation": {
+          "protocol_version": 1,
+          "mode": "review",
+          "requirements": [
+            "The complete CLI is in main.py and uses only the Python standard library.",
+            "Tasks persist in a JSON file across invocations.",
+            "add creates a task.",
+            "list displays the stored tasks.",
+            "done marks the selected task complete.",
+            "remove deletes the selected task.",
+            "README.md describes installation and usage.",
+            "Adding two distinct tasks preserves both; deleting one leaves the other unchanged."
+          ]
+        }
+      }
+    ]
+  },
+  "mean_scores": {
+    "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 0.9330357142857143,
+    "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 0.9330357142857143,
+    "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 0.26785714285714285,
+    "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 0.06696428571428571,
+    "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 0.06696428571428571
+  },
+  "working_outranks_defects": true,
+  "executed_checks": {
+    "minimum": 12,
+    "maximum": 18,
+    "total": 156
+  },
+  "reports": {
+    "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i/6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d": {
+      "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d",
+      "variant": 0,
+      "score": 0.9285714285714286,
+      "review": {
+        "factory_job_id": "c2c90107-5e08-45a1-8194-4ece8c8d3516",
+        "job_id": "9fe6933f-5902-4649-bdee-d1f0b6691e66",
+        "kind": "judge",
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (stdlib), and it ran successfully in all checks (e.g. a2, v3).",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Tasks added in separate invocations (a2, a3) all appeared in later list calls (v3), and state changes persisted (v4, v5), so storage persists across runs.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "met"
+          },
+          {
+            "id": 3,
+            "reason": "a2 printed 'Added 1' and v2 listed '1 [ ] buy milk'; a3 and v3 confirmed a second task.",
+            "requirement": "add creates a task.",
+            "verdict": "met"
+          },
+          {
+            "id": 4,
+            "reason": "v3 listed both stored tasks with ids, status marks and text; the empty list case (a1) did not crash.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "met"
+          },
+          {
+            "id": 5,
+            "reason": "a4 'done 1' printed Updated and v4 showed task 1 as [x] while task 2 stayed [ ]. a6 and v6 showed a nonexistent id gives an error and changes nothing.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "met"
+          },
+          {
+            "id": 6,
+            "reason": "a5 'remove 1' printed Updated and v5 showed only task 2 remaining.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "met"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives usage commands and notes that Python 3 is required with no dependencies, but its installation guidance is minimal. It says nothing about getting the file or running it elsewhere.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.9285714285714286
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "list"
+            ],
+            "id": "a1",
+            "observation": "Empty store: no output, exit 0, no crash",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "Still no tasks listed",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "buy",
+              "milk"
+            ],
+            "id": "a2",
+            "observation": "Prints Added 1",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Shows 1 [ ] buy milk (persisted via tasks.json)",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk",
+              "dog"
+            ],
+            "id": "a3",
+            "observation": "Prints Added 2",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Shows both tasks 1 and 2 unchecked",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Task 1 shown [x], task 2 still [ ]",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a5",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "Only task 2 walk dog remains",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "99"
+            ],
+            "id": "a6",
+            "observation": "Error 'No such task', nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List unchanged: only task 2 unchecked",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "abc"
+            ],
+            "id": "a7",
+            "observation": "argparse error for invalid int, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v7",
+            "observation": "List unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [
+              "add"
+            ],
+            "id": "a8",
+            "observation": "argparse error: text required, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "List unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          },
+          {
+            "args": [
+              "bogus"
+            ],
+            "id": "a9",
+            "observation": "argparse invalid choice error, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "--help"
+            ],
+            "id": "v9",
+            "observation": "Help lists add, list, done, remove subcommands",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a9"
+            ]
+          }
+        ],
+        "factory_job_id": "c2c90107-5e08-45a1-8194-4ece8c8d3516",
+        "job_id": "9fe6933f-5902-4649-bdee-d1f0b6691e66",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 0,
+            "id": "a1",
+            "seconds": 2.0497537159972126,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v1",
+            "seconds": 2.705184714999632,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a2",
+            "seconds": 2.5589093290000164,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v2",
+            "seconds": 1.811617142000614,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a3",
+            "seconds": 1.6708575359989482,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v3",
+            "seconds": 2.582745920997695,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a4",
+            "seconds": 2.3293093070024042,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v4",
+            "seconds": 1.8199353330019221,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [x] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a5",
+            "seconds": 1.5997383979993174,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v5",
+            "seconds": 1.4462622610008111,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a6",
+            "seconds": 1.6512607669974386,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v6",
+            "seconds": 1.5587418919967604,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a7",
+            "seconds": 1.0579873630013026,
+            "stderr": "usage: main.py remove [-h] id\nmain.py remove: error: argument id: invalid int value: 'abc'\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v7",
+            "seconds": 2.716074366999237,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a8",
+            "seconds": 2.464788564000628,
+            "stderr": "usage: main.py add [-h] text [text ...]\nmain.py add: error: the following arguments are required: text\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v8",
+            "seconds": 2.1141750930000853,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a9",
+            "seconds": 1.607129433999944,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: argument command: invalid choice: 'bogus' (choose from 'add', 'list', 'done', 'remove')\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v9",
+            "seconds": 0.9168051929991634,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "usage: main.py [-h] {add,list,done,remove} ...\n\nPersistent to-do manager\n\npositional arguments:\n  {add,list,done,remove}\n\noptions:\n  -h, --help            show this help message and exit\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+      }
+    },
+    "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i/22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79": {
+      "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79",
+      "variant": 0,
+      "score": 0.9375,
+      "review": {
+        "factory_job_id": "cf35949b-4f53-4900-9932-3c819baee1c2",
+        "job_id": "4b1f3ed6-8221-402c-8ee3-7578f2525899",
+        "kind": "judge",
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib, and it ran successfully in all checks (a1-v7).",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Tasks added in a1 and a2 appeared in later separate invocations (v2) and in later list calls, so they persisted across invocations.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "met"
+          },
+          {
+            "id": 3,
+            "reason": "a1 printed 'Added 1' and v1 listed '1 [ ] buy milk'. a2 and a6 also added tasks correctly.",
+            "requirement": "add creates a task.",
+            "verdict": "met"
+          },
+          {
+            "id": 4,
+            "reason": "list output in v2 showed both stored tasks with ids, status markers and text.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "met"
+          },
+          {
+            "id": 5,
+            "reason": "After done 1 (a3), v3 showed '1 [x] buy milk' and task 2 still '[ ]'.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "met"
+          },
+          {
+            "id": 6,
+            "reason": "After remove 1 (a4), v4 showed only task 2. Removing a missing id (a5) gave 'No such task', exit 2, and changed nothing (v5).",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "met"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives usage commands and says Python 3 is required with no dependencies. It has no real installation steps, and it is a single short paragraph.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          },
+          {
+            "id": 8,
+            "reason": "v2 showed both tasks. After removing task 1, v4 showed task 2 unchanged, and v6 showed it still intact after a new add.",
+            "requirement": "Adding two distinct tasks preserves both; deleting one leaves the other unchanged.",
+            "verdict": "met"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.9375
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy",
+              "milk"
+            ],
+            "id": "a1",
+            "observation": "Prints 'Added 1'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "Shows '1 [ ] buy milk'",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk",
+              "dog"
+            ],
+            "id": "a2",
+            "observation": "Prints 'Added 2'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Shows both tasks 1 buy milk and 2 walk dog, persisted across invocations",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Prints 'Updated'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shows [x], task 2 still [ ]",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Prints 'Updated'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only '2 [ ] walk dog' remains unchanged; task 1 gone",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Error 'No such task', nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List still shows only '2 [ ] walk dog'",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "third",
+              "task"
+            ],
+            "id": "a6",
+            "observation": "Prints 'Added 3' (id not reused wrongly)",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "Shows 2 walk dog and 3 third task",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "abc"
+            ],
+            "id": "a7",
+            "observation": "Argparse error for invalid int, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v7",
+            "observation": "List unchanged: tasks 2 and 3 not done",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          }
+        ],
+        "factory_job_id": "cf35949b-4f53-4900-9932-3c819baee1c2",
+        "job_id": "4b1f3ed6-8221-402c-8ee3-7578f2525899",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 0,
+            "id": "a1",
+            "seconds": 2.5193690829983098,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v1",
+            "seconds": 3.097014000002673,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a2",
+            "seconds": 1.812471342000208,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v2",
+            "seconds": 2.576758424002037,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a3",
+            "seconds": 1.7069091829980607,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v3",
+            "seconds": 2.551030875001743,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [x] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a4",
+            "seconds": 1.7687640510011988,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v4",
+            "seconds": 1.320803929000249,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a5",
+            "seconds": 1.67865508199975,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v5",
+            "seconds": 1.7181016269969405,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a6",
+            "seconds": 1.5059866449992114,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 3\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v6",
+            "seconds": 1.3957567170000402,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n3 [ ] third task\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a7",
+            "seconds": 2.399714570001379,
+            "stderr": "usage: main.py done [-h] id\nmain.py done: error: argument id: invalid int value: 'abc'\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v7",
+            "seconds": 1.6087222399983148,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n3 [ ] third task\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "a4e83565cf77f66d3935d38072fda487e4e4ff5d5c31b205a6dd5a72323c7380"
+      }
+    },
+    "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw/6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d": {
+      "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d",
+      "variant": 0,
+      "score": 0.9285714285714286,
+      "review": {
+        "factory_job_id": "6edee5c9-73c1-4d1d-b3f5-caedf12c1438",
+        "job_id": "14b7b899-a00b-4f22-8123-c2301a0f2477",
+        "kind": "judge",
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (standard library), and it ran successfully in all checks (a1-v8).",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Tasks added in a1 and a2 appeared in later separate invocations (v1, v2) and changes persisted through v3 and v4, which shows JSON file persistence.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "met"
+          },
+          {
+            "id": 3,
+            "reason": "a1 and a2 printed 'Added 1' and 'Added 2', and v1 and v2 listed the new tasks.",
+            "requirement": "add creates a task.",
+            "verdict": "met"
+          },
+          {
+            "id": 4,
+            "reason": "list printed stored tasks with id, done status and text (v1, v2, v3, v4).",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "met"
+          },
+          {
+            "id": 5,
+            "reason": "After done 1 (a3), v3 showed task 1 as [x] and task 2 still [ ].",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "met"
+          },
+          {
+            "id": 6,
+            "reason": "After remove 1 (a4), v4 listed only task 2.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "met"
+          },
+          {
+            "id": 7,
+            "reason": "README.md documents usage for all four commands and says no dependencies are needed, but it has no real installation section. Only a one-line requirement of Python 3 is given.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.9285714285714286
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy",
+              "milk"
+            ],
+            "id": "a1",
+            "observation": "Prints Added 1",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "Shows 1 [ ] buy milk",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk dog"
+            ],
+            "id": "a2",
+            "observation": "Prints Added 2",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Shows both tasks 1 and 2, persisted across invocations",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shows [x], task 2 still [ ]",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only task 2 remains; task 1 gone",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Error No such task, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List unchanged: only task 2 unfinished",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "abc"
+            ],
+            "id": "a6",
+            "observation": "argparse error invalid int, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "add"
+            ],
+            "id": "a7",
+            "observation": "argparse error missing text, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v7",
+            "observation": "List unchanged, no new task",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [
+              "bogus"
+            ],
+            "id": "a8",
+            "observation": "argparse invalid choice error, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "List unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          }
+        ],
+        "factory_job_id": "6edee5c9-73c1-4d1d-b3f5-caedf12c1438",
+        "job_id": "14b7b899-a00b-4f22-8123-c2301a0f2477",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 0,
+            "id": "a1",
+            "seconds": 2.599237868998898,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v1",
+            "seconds": 2.7216655599986552,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a2",
+            "seconds": 1.7446791949987528,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v2",
+            "seconds": 2.5307796859997325,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a3",
+            "seconds": 1.778939984000317,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v3",
+            "seconds": 2.0627371549999225,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [x] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a4",
+            "seconds": 1.9097053090008558,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v4",
+            "seconds": 1.9193129049999698,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a5",
+            "seconds": 1.8124486970009457,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v5",
+            "seconds": 1.4222192089982855,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a6",
+            "seconds": 1.7315754470000684,
+            "stderr": "usage: main.py remove [-h] id\nmain.py remove: error: argument id: invalid int value: 'abc'\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v6",
+            "seconds": 1.3050949640019098,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a7",
+            "seconds": 1.4388323800012586,
+            "stderr": "usage: main.py add [-h] text [text ...]\nmain.py add: error: the following arguments are required: text\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v7",
+            "seconds": 2.4788809639976535,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a8",
+            "seconds": 2.415596889997687,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: argument command: invalid choice: 'bogus' (choose from 'add', 'list', 'done', 'remove')\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v8",
+            "seconds": 2.250407331997849,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+      }
+    },
+    "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw/22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79": {
+      "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79",
+      "variant": 0,
+      "score": 0.9375,
+      "review": {
+        "factory_job_id": "b4bac1b1-dccb-4421-8031-ef8dcd7b7188",
+        "job_id": "f8de0c43-e246-4613-a19e-4a50a1746e65",
+        "kind": "judge",
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib, and all checks ran successfully through it.",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Tasks added in separate invocations (a1, a2) were listed later in v2, so state persisted across runs.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "met"
+          },
+          {
+            "id": 3,
+            "reason": "a1 and a2 printed 'Added 1' and 'Added 2', and v1 and v2 show the new tasks.",
+            "requirement": "add creates a task.",
+            "verdict": "met"
+          },
+          {
+            "id": 4,
+            "reason": "The list checks v1 through v8 show stored tasks in the format '1 [ ] buy milk'.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "met"
+          },
+          {
+            "id": 5,
+            "reason": "After a3 ran 'done 1', v3 shows task 1 as [x] and task 2 still [ ].",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "met"
+          },
+          {
+            "id": 6,
+            "reason": "After a4 ran 'remove 1', v4 shows task 1 gone. After a8, v8 shows task 3 gone. A nonexistent id (a6) exits with code 2 and leaves the list unchanged (v6).",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "met"
+          },
+          {
+            "id": 7,
+            "reason": "README.md describes usage and says no dependencies are needed. It has no installation section beyond 'Requires Python 3', which is minimal.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          },
+          {
+            "id": 8,
+            "reason": "Both tasks were preserved (v2). Removing task 1 left task 2 unchanged (v4). Task 3 was then added and removed with task 2 intact (v5, v8).",
+            "requirement": "Adding two distinct tasks preserves both; deleting one leaves the other unchanged.",
+            "verdict": "met"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.9375
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy",
+              "milk"
+            ],
+            "id": "a1",
+            "observation": "Prints 'Added 1'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "Shows '1 [ ] buy milk'",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk dog"
+            ],
+            "id": "a2",
+            "observation": "Prints 'Added 2'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Shows both tasks 1 buy milk and 2 walk dog, both undone",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Prints 'Updated'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shows [x], task 2 remains [ ]",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Prints 'Updated'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only '2 [ ] walk dog' remains, unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "third"
+            ],
+            "id": "a5",
+            "observation": "Prints 'Added 3' (max id +1)",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "Shows 2 walk dog and 3 third, independent",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "99"
+            ],
+            "id": "a6",
+            "observation": "Error 'No such task', nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List still shows tasks 2 and 3 unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "abc"
+            ],
+            "id": "a7",
+            "observation": "argparse error for invalid int, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v7",
+            "observation": "List unchanged: 2 and 3 both undone",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "3"
+            ],
+            "id": "a8",
+            "observation": "Prints 'Updated'",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "Only task 2 walk dog remains",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          }
+        ],
+        "factory_job_id": "b4bac1b1-dccb-4421-8031-ef8dcd7b7188",
+        "job_id": "f8de0c43-e246-4613-a19e-4a50a1746e65",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 0,
+            "id": "a1",
+            "seconds": 2.435959439000726,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v1",
+            "seconds": 2.606565583999327,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a2",
+            "seconds": 2.2578513079970435,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 2\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v2",
+            "seconds": 1.6939246260008076,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [ ] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a3",
+            "seconds": 2.9041989799989096,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v3",
+            "seconds": 2.0871062030018948,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "1 [x] buy milk\n2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a4",
+            "seconds": 1.5671829740022076,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v4",
+            "seconds": 1.9155137309971906,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a5",
+            "seconds": 1.33700462699926,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 3\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v5",
+            "seconds": 1.7176991980013554,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n3 [ ] third\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a6",
+            "seconds": 1.2991790830019454,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v6",
+            "seconds": 1.2628824169987638,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n3 [ ] third\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a7",
+            "seconds": 2.473738452001271,
+            "stderr": "usage: main.py done [-h] id\nmain.py done: error: argument id: invalid int value: 'abc'\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v7",
+            "seconds": 2.505446226001368,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n3 [ ] third\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a8",
+            "seconds": 2.059352905002015,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Updated\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v8",
+            "seconds": 1.687582824000856,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "2 [ ] walk dog\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "a4e83565cf77f66d3935d38072fda487e4e4ff5d5c31b205a6dd5a72323c7380"
+      }
+    },
+    "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa/6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d": {
+      "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d",
+      "variant": 1,
+      "score": 0.2857142857142857,
+      "review": {
+        "factory_job_id": "5107f654-4907-4c88-91cc-e950ba913e1a",
+        "job_id": "9752ace7-a554-4fe8-acb5-5f9ecc5fd141",
+        "kind": "judge",
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib (standard library).",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "Code never writes tasks.json; a1 printed Added 1 but v1 list was empty and a2 again printed Added 1 (a1, v1, a2, v2).",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add prints 'Added 1' (a1) but the task is not stored, since list afterwards is empty (v1).",
+            "requirement": "add creates a task.",
+            "verdict": "partial"
+          },
+          {
+            "id": 4,
+            "reason": "list returned empty output in every call (v1, v2, v3, v4) because nothing is persisted, so stored tasks are never displayed.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 1 failed with exit 2 'No such task' since the task was never saved (a3, v3).",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove 2 failed with exit 2 'No such task' since nothing was persisted (a4, v4).",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives usage commands and notes no dependencies (Python 3 required), but its installation section is minimal, and it claims tasks are stored in tasks.json, which the code never does.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.2857142857142857
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy",
+              "milk"
+            ],
+            "id": "a1",
+            "observation": "Prints Added 1",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "Shows task 1 buy milk if persisted; with the given code list is likely empty, revealing missing persistence (criteria 2,3)",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk",
+              "dog"
+            ],
+            "id": "a2",
+            "observation": "Prints Added 2 if persisted, else Added 1",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Lists both tasks with ids 1 and 2 if persistence works",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shows [x], task 2 shows [ ]",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "2"
+            ],
+            "id": "a4",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only task 1 remains; task 2 gone",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Error exit nonzero with No such task",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List unchanged from previous state",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "abc"
+            ],
+            "id": "a6",
+            "observation": "Argparse error about invalid int, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          }
+        ],
+        "factory_job_id": "5107f654-4907-4c88-91cc-e950ba913e1a",
+        "job_id": "9752ace7-a554-4fe8-acb5-5f9ecc5fd141",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 0,
+            "id": "a1",
+            "seconds": 2.492105901998002,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v1",
+            "seconds": 2.783046053998987,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a2",
+            "seconds": 1.5660019240021938,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v2",
+            "seconds": 2.0981820369997877,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a3",
+            "seconds": 2.5519003630033694,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v3",
+            "seconds": 1.9981603339983849,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a4",
+            "seconds": 1.3149325259983016,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v4",
+            "seconds": 1.8110083540013875,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a5",
+            "seconds": 1.4779754980008875,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v5",
+            "seconds": 1.6582591769983992,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a6",
+            "seconds": 1.5061642110013054,
+            "stderr": "usage: main.py remove [-h] id\nmain.py remove: error: argument id: invalid int value: 'abc'\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v6",
+            "seconds": 1.8901680999988457,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+      }
+    },
+    "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa/22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79": {
+      "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79",
+      "variant": 1,
+      "score": 0.25,
+      "review": {
+        "factory_job_id": "e0dafb6b-5924-4f6c-8526-cf52aac7016b",
+        "job_id": "afabd09e-399a-4a01-9b33-13ad067aecba",
+        "kind": "judge",
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is a single file importing only argparse, json and pathlib, all standard library.",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "met"
+          },
+          {
+            "id": 2,
+            "reason": "The program never writes tasks.json; v1 list printed nothing after a1, and a2 and a6 each printed 'Added 1', so nothing persisted.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add prints 'Added 1' (a1), but the task is never saved, so no task is actually created across invocations (v1 empty).",
+            "requirement": "add creates a task.",
+            "verdict": "partial"
+          },
+          {
+            "id": 4,
+            "reason": "list output was empty in v1, v2, v3, v4, v5 and v6 because nothing is stored.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 1 failed with 'No such task' and exit 2 (a3), and the list still showed nothing (v3).",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove 1 failed with 'No such task' and exit 2 (a4) because the tasks were never saved.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives usage commands and says no dependencies and Python 3 are needed, but it has no real installation steps, and it claims tasks are stored in tasks.json when they are not.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          },
+          {
+            "id": 8,
+            "reason": "The two added tasks both got id 1 and list showed nothing (a1, a2, v2), so neither task was preserved and the delete scenario failed (a4).",
+            "requirement": "Adding two distinct tasks preserves both; deleting one leaves the other unchanged.",
+            "verdict": "unmet"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.25
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy milk"
+            ],
+            "id": "a1",
+            "observation": "Prints Added 1",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "In a new process, list shows 1 [ ] buy milk (persistence; fails if the program does not save)",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk dog"
+            ],
+            "id": "a2",
+            "observation": "Prints Added 2",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Lists both 1 buy milk and 2 walk dog, both unchecked",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shows [x], task 2 remains [ ]",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Prints Updated",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only 2 [ ] walk dog remains, unchanged; task 1 gone",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Error for nonexistent task, nonzero exit",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List still shows 2 [ ] walk dog unchanged",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "third task"
+            ],
+            "id": "a6",
+            "observation": "Prints Added 3 (id after removal does not collide)",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "Shows 2 walk dog and 3 third task, distinct ids",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          }
+        ],
+        "factory_job_id": "e0dafb6b-5924-4f6c-8526-cf52aac7016b",
+        "job_id": "afabd09e-399a-4a01-9b33-13ad067aecba",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 0,
+            "id": "a1",
+            "seconds": 3.2386130830018374,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v1",
+            "seconds": 1.7431545780018496,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a2",
+            "seconds": 2.816712699001073,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v2",
+            "seconds": 1.4655867250003212,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a3",
+            "seconds": 2.116193560999818,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v3",
+            "seconds": 1.982774314998096,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a4",
+            "seconds": 1.3115074889974494,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v4",
+            "seconds": 1.7737358450031024,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 2,
+            "id": "a5",
+            "seconds": 1.6569973669975298,
+            "stderr": "usage: main.py [-h] {add,list,done,remove} ...\nmain.py: error: No such task\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v5",
+            "seconds": 1.57883053200203,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "a6",
+            "seconds": 1.502756395999313,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "Added 1\n",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 0,
+            "id": "v6",
+            "seconds": 2.1086004019998654,
+            "stderr": "",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "a4e83565cf77f66d3935d38072fda487e4e4ff5d5c31b205a6dd5a72323c7380"
+      }
+    },
+    "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8/6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d": {
+      "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d",
+      "variant": 2,
+      "score": 0.07142857142857142,
+      "review": {
+        "factory_job_id": "70eb1a83-a6d4-4a75-9503-67b4833eb35a",
+        "job_id": "a4e839bd-54d4-488f-a82b-3e412f025172",
+        "kind": "judge",
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'); no CLI exists (all checks a1-v8 printed 'Not implemented').",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 2,
+            "reason": "No persistence occurs; every invocation exited 1 with 'Not implemented' (a1, v1).",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add 'buy milk' exited 1 with 'Not implemented' and no task was created (a1, v1).",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "list exited 1 with 'Not implemented' and displayed nothing (v1, v2, v8).",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 1 exited 1 with 'Not implemented'; nothing was marked complete (a3, v3).",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove 1 exited 1 with 'Not implemented'; nothing was removed (a4, v4).",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives a brief usage line for all four subcommands and says no dependencies are needed. It has no real installation section, and the commands it describes don't work because main.py is a stub.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.07142857142857142
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy milk"
+            ],
+            "id": "a1",
+            "observation": "Confirms task added (id 1).",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "List shows 'buy milk' as pending; persisted from a previous invocation.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "write report"
+            ],
+            "id": "a2",
+            "observation": "Confirms second task added (id 2).",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "List shows both tasks, buy milk and write report, both pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Confirms task 1 marked done.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shown as completed (e.g. [x]); task 2 still pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Confirms task 1 removed.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only 'write report' remains; 'buy milk' absent.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Error message for nonexistent id, nonzero exit, no crash traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List unchanged: write report still pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "abc"
+            ],
+            "id": "a6",
+            "observation": "Error for invalid id, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List unchanged with write report.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "bogus"
+            ],
+            "id": "a7",
+            "observation": "Usage/error message for unknown subcommand, nonzero exit.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "--help"
+            ],
+            "id": "v7",
+            "observation": "Help lists add, list, done, remove subcommands.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "2"
+            ],
+            "id": "a8",
+            "observation": "Confirms task 2 removed.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "Shows empty list message with no tasks.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          }
+        ],
+        "factory_job_id": "70eb1a83-a6d4-4a75-9503-67b4833eb35a",
+        "job_id": "a4e839bd-54d4-488f-a82b-3e412f025172",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 1,
+            "id": "a1",
+            "seconds": 0.4556000850025157,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v1",
+            "seconds": 0.6656557679998514,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a2",
+            "seconds": 0.6764491520007141,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v2",
+            "seconds": 0.6432322229993588,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a3",
+            "seconds": 0.452548122000735,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v3",
+            "seconds": 0.6734107720003522,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a4",
+            "seconds": 0.5110526310018031,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v4",
+            "seconds": 0.6075947130011627,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a5",
+            "seconds": 0.5091342289997556,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v5",
+            "seconds": 0.44351910300247255,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a6",
+            "seconds": 0.37374264099707943,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v6",
+            "seconds": 0.5162996950020897,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a7",
+            "seconds": 0.4292125590000069,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v7",
+            "seconds": 0.3240610979992198,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a8",
+            "seconds": 0.3735518139983469,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v8",
+            "seconds": 0.3051512919992092,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+      }
+    },
+    "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8/22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79": {
+      "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79",
+      "variant": 2,
+      "score": 0.0625,
+      "review": {
+        "factory_job_id": "eb1cf931-7200-47b6-83d8-df3cd828b57b",
+        "job_id": "4d68cada-a7fd-412f-98d2-b472390e377c",
+        "kind": "judge",
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'); no CLI exists (all checks exit 1 with 'Not implemented').",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 2,
+            "reason": "No persistence occurs; list after add (v1, v2) outputs nothing and only 'Not implemented'.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add 'buy milk' exited 1 with 'Not implemented' and created nothing.",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "list produced no task output, only 'Not implemented' with exit 1.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 2 exited 1 with 'Not implemented'; no task was marked complete (v4 shows nothing).",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove 1 exited 1 with 'Not implemented'; nothing was deleted.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md exists with a one-line usage and storage description, but gives no real installation steps and documents a non-functional program.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          },
+          {
+            "id": 8,
+            "reason": "Adding and removing tasks does not work at all; every invocation fails with 'Not implemented'.",
+            "requirement": "Adding two distinct tasks preserves both; deleting one leaves the other unchanged.",
+            "verdict": "unmet"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.0625
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy milk"
+            ],
+            "id": "a1",
+            "observation": "Confirms task added (e.g. id 1).",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "List shows 'buy milk' as pending, persisted from the previous invocation.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk dog"
+            ],
+            "id": "a2",
+            "observation": "Confirms second task added (id 2).",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "List shows both 'buy milk' and 'walk dog' with distinct ids.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "read book"
+            ],
+            "id": "a3",
+            "observation": "Third task added (id 3).",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Three tasks listed, all pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "2"
+            ],
+            "id": "a4",
+            "observation": "Task 2 marked complete.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "walk dog shown as done; buy milk and read book still pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a5",
+            "observation": "Task 1 removed.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "buy milk gone; walk dog (done, same id 2) and read book (pending, id 3) unchanged.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "new task"
+            ],
+            "id": "a6",
+            "observation": "Added after removal without colliding with existing ids.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "Shows walk dog, read book, new task with unique ids; earlier states preserved.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "99"
+            ],
+            "id": "a7",
+            "observation": "Error message for nonexistent id, nonzero exit, no crash/traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v7",
+            "observation": "List unchanged from before the failed remove.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "abc"
+            ],
+            "id": "a8",
+            "observation": "Graceful error for invalid id, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "List unchanged; no task changed state.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          },
+          {
+            "args": [
+              "bogus"
+            ],
+            "id": "a9",
+            "observation": "Usage/error output for unknown subcommand, nonzero exit.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v9",
+            "observation": "Tasks still intact and listed.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a9"
+            ]
+          }
+        ],
+        "factory_job_id": "eb1cf931-7200-47b6-83d8-df3cd828b57b",
+        "job_id": "4d68cada-a7fd-412f-98d2-b472390e377c",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 1,
+            "id": "a1",
+            "seconds": 0.6308090179991268,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v1",
+            "seconds": 0.7093143029997009,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a2",
+            "seconds": 0.472519420000026,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v2",
+            "seconds": 0.6090450890005741,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a3",
+            "seconds": 0.8258017839980312,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v3",
+            "seconds": 0.5280696079971676,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a4",
+            "seconds": 0.5982332790008513,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v4",
+            "seconds": 0.6468056539997633,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a5",
+            "seconds": 0.4445655509989592,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v5",
+            "seconds": 0.6195706729995436,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a6",
+            "seconds": 0.48600895699928515,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v6",
+            "seconds": 0.41645766900182934,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a7",
+            "seconds": 0.4348794649995398,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v7",
+            "seconds": 0.39493890599987935,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a8",
+            "seconds": 0.4246060410005157,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v8",
+            "seconds": 0.33298886899865465,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a9",
+            "seconds": 0.3129979719997209,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v9",
+            "seconds": 0.5270459130006202,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "a4e83565cf77f66d3935d38072fda487e4e4ff5d5c31b205a6dd5a72323c7380"
+      }
+    },
+    "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq/6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d": {
+      "task_id": "6c727ba64d91715c086237ac7ede24bd6b004cff56539eab1e2100fda6f3783d",
+      "variant": 2,
+      "score": 0.07142857142857142,
+      "review": {
+        "factory_job_id": "109dd766-b74b-4c1e-a254-dcdc759a0be0",
+        "job_id": "818da4e6-30af-4396-a7a3-dbe9343343c7",
+        "kind": "judge",
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'), so no CLI exists, even though it imports nothing outside the standard library (all checks a1-v8 exit 1 with 'Not implemented').",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 2,
+            "reason": "No JSON persistence exists; add and list both fail with 'Not implemented' (a1, a2, v1, v2).",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add exited 1 with 'Not implemented' and created nothing (a1, a2).",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "list exited 1 with 'Not implemented' and displayed no tasks (v1, v2).",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 1 exited 1 with 'Not implemented' and marked nothing complete (a3, v3).",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove 1 exited 1 with 'Not implemented' and deleted nothing (a4, v4).",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives a usage line for each subcommand and says no dependencies are needed. It has no real installation section, and the program it describes does not work.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.07142857142857142
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy milk"
+            ],
+            "id": "a1",
+            "observation": "Reports task added with an id.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "List shows 'buy milk' as pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk dog"
+            ],
+            "id": "a2",
+            "observation": "Second task added, persisted from first run.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Both tasks shown, buy milk id 1 and walk dog id 2, proving persistence across invocations.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Task 1 marked complete.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 shown as done/completed; task 2 still pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Task 1 removed.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "Only walk dog remains; buy milk is gone.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Error message for nonexistent id, nonzero exit, no crash traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List unchanged: only walk dog, pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "99"
+            ],
+            "id": "a6",
+            "observation": "Error for nonexistent id, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List still only walk dog.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "bogus"
+            ],
+            "id": "a7",
+            "observation": "Usage error for invalid subcommand, nonzero exit.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "--help"
+            ],
+            "id": "v7",
+            "observation": "Help lists add, list, done, remove subcommands.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "abc"
+            ],
+            "id": "a8",
+            "observation": "Graceful error for non-numeric id.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "List unchanged.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          }
+        ],
+        "factory_job_id": "109dd766-b74b-4c1e-a254-dcdc759a0be0",
+        "job_id": "818da4e6-30af-4396-a7a3-dbe9343343c7",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 1,
+            "id": "a1",
+            "seconds": 0.7526404210002511,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v1",
+            "seconds": 0.7652254210006504,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a2",
+            "seconds": 0.7346833410010731,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v2",
+            "seconds": 0.6182194670000172,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a3",
+            "seconds": 0.3387134859985963,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v3",
+            "seconds": 0.44368943800145644,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a4",
+            "seconds": 0.8385651589996996,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v4",
+            "seconds": 0.5474599489971297,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a5",
+            "seconds": 0.5796075519974693,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v5",
+            "seconds": 0.42839367800115724,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a6",
+            "seconds": 0.37463777100128937,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v6",
+            "seconds": 0.466601645002811,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a7",
+            "seconds": 0.426660911001818,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v7",
+            "seconds": 0.415322096003365,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a8",
+            "seconds": 0.38014278300033766,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v8",
+            "seconds": 0.3035687810006493,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "24acd8d1f32ea63388d35957e10f1bc5b4d3a83e0a0dec7337c4126a9f18368c"
+      }
+    },
+    "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq/22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79": {
+      "task_id": "22ae601719cf6d1bfa62d9a1af1684a74648ee83ae92826e3e6080f2ab036f79",
+      "variant": 2,
+      "score": 0.0625,
+      "review": {
+        "factory_job_id": "daa81589-79a4-4848-9963-a3900435d2ab",
+        "job_id": "422035ba-8db7-4e63-a2a8-bac6a596a934",
+        "kind": "judge",
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "model": "sonnet",
+        "protocol_version": 1,
+        "requirements": [
+          {
+            "id": 1,
+            "reason": "main.py is only a stub that raises SystemExit('Not implemented'), so no CLI exists (all checks a1\u2013v9 exit 1 with 'Not implemented').",
+            "requirement": "The complete CLI is in main.py and uses only the Python standard library.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 2,
+            "reason": "No persistence occurs; a1 and v1/v2 all exit 1 with 'Not implemented' and no stored tasks are listed.",
+            "requirement": "Tasks persist in a JSON file across invocations.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 3,
+            "reason": "add 'buy milk' exited 1 with 'Not implemented' and v1 showed no task.",
+            "requirement": "add creates a task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 4,
+            "reason": "list exited 1 with 'Not implemented' and displayed no tasks.",
+            "requirement": "list displays the stored tasks.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 5,
+            "reason": "done 1 exited 1 with 'Not implemented'; v3 shows nothing marked done.",
+            "requirement": "done marks the selected task complete.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 6,
+            "reason": "remove 1 exited 1 with 'Not implemented'; no deletion was performed or shown in v4.",
+            "requirement": "remove deletes the selected task.",
+            "verdict": "unmet"
+          },
+          {
+            "id": 7,
+            "reason": "README.md gives a brief usage line and a no-dependency note, but there is no real install section, and it documents a program that is only a stub.",
+            "requirement": "README.md describes installation and usage.",
+            "verdict": "partial"
+          },
+          {
+            "id": 8,
+            "reason": "Both adds (a1, a2) failed with 'Not implemented', so no tasks were preserved and the delete behavior (a4, v4) could not be shown.",
+            "requirement": "Adding two distinct tasks preserves both; deleting one leaves the other unchanged.",
+            "verdict": "unmet"
+          }
+        ],
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "score": 0.0625
+      },
+      "execution": {
+        "checks": [
+          {
+            "args": [
+              "add",
+              "buy milk"
+            ],
+            "id": "a1",
+            "observation": "Exit 0; confirms task 'buy milk' added.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v1",
+            "observation": "Lists exactly one task 'buy milk', not done, with an id.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a1"
+            ]
+          },
+          {
+            "args": [
+              "add",
+              "walk dog"
+            ],
+            "id": "a2",
+            "observation": "Exit 0; confirms 'walk dog' added.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v2",
+            "observation": "Both 'buy milk' and 'walk dog' listed with distinct ids, both pending (persisted across invocations).",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a2"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "1"
+            ],
+            "id": "a3",
+            "observation": "Exit 0; task 1 marked complete.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v3",
+            "observation": "Task 1 'buy milk' shown as done; 'walk dog' still pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a3"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "1"
+            ],
+            "id": "a4",
+            "observation": "Exit 0; task 1 removed.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v4",
+            "observation": "'buy milk' gone; 'walk dog' still present, pending and unchanged (id may remain 2 or be renumbered).",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a4"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "99"
+            ],
+            "id": "a5",
+            "observation": "Nonzero exit or clear error message for nonexistent id, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v5",
+            "observation": "List unchanged: only 'walk dog'.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a5"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "99"
+            ],
+            "id": "a6",
+            "observation": "Error message for nonexistent id, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v6",
+            "observation": "List unchanged: 'walk dog' still pending.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a6"
+            ]
+          },
+          {
+            "args": [
+              "done",
+              "abc"
+            ],
+            "id": "a7",
+            "observation": "Graceful error for non-numeric id, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v7",
+            "observation": "List unchanged.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a7"
+            ]
+          },
+          {
+            "args": [],
+            "id": "a8",
+            "observation": "Prints usage/help or error, no traceback.",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v8",
+            "observation": "List still shows only 'walk dog'.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a8"
+            ]
+          },
+          {
+            "args": [
+              "remove",
+              "2"
+            ],
+            "id": "a9",
+            "observation": "Removes last task (id 2, or 1 if renumbered; if error, check list).",
+            "requires_verification": true,
+            "stdin": "",
+            "verifies": []
+          },
+          {
+            "args": [
+              "list"
+            ],
+            "id": "v9",
+            "observation": "Empty list message, no crash.",
+            "requires_verification": false,
+            "stdin": "",
+            "verifies": [
+              "a9"
+            ]
+          }
+        ],
+        "factory_job_id": "daa81589-79a4-4848-9963-a3900435d2ab",
+        "job_id": "422035ba-8db7-4e63-a2a8-bac6a596a934",
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "kind": "judge",
+        "miner_hotkey": "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq",
+        "model": "sonnet",
+        "observations": [
+          {
+            "exit_code": 1,
+            "id": "a1",
+            "seconds": 0.4893026249992545,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v1",
+            "seconds": 0.5946685480012093,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a2",
+            "seconds": 0.5909080390010786,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v2",
+            "seconds": 0.5927566409991414,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a3",
+            "seconds": 0.5207924300011655,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v3",
+            "seconds": 0.6672826829999394,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a4",
+            "seconds": 0.4844999779998034,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v4",
+            "seconds": 0.5670413980005833,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a5",
+            "seconds": 0.45082174699928146,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v5",
+            "seconds": 0.4252367270019022,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a6",
+            "seconds": 0.3175007919999189,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v6",
+            "seconds": 0.4243455460018595,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a7",
+            "seconds": 0.4294245060009416,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v7",
+            "seconds": 0.44368469699838897,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a8",
+            "seconds": 0.43535799899837,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v8",
+            "seconds": 0.3838035660010064,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "a9",
+            "seconds": 0.593368093999743,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          },
+          {
+            "exit_code": 1,
+            "id": "v9",
+            "seconds": 0.45220754600086366,
+            "stderr": "Not implemented\n",
+            "stderr_truncated": false,
+            "stdout": "",
+            "stdout_truncated": false,
+            "timed_out": false
+          }
+        ],
+        "protocol_version": 1,
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "specification_sha256": "a4e83565cf77f66d3935d38072fda487e4e4ff5d5c31b205a6dd5a72323c7380"
+      }
+    }
+  },
+  "verification": {
+    "regression_tests_passed": 328,
+    "optional_image_tests_skipped": 9,
+    "real_container_tests_passed": 7,
+    "proxy_boundary_test_skipped": "No test proxy was configured for this unchanged networking path",
+    "command_longer_than_60_seconds": "61-second command completed successfully",
+    "ruff": "passed",
+    "basedpyright": "passed",
+    "release_manifest": "verified"
+  },
+  "chain_verification": {
+    "checked_at": "2026-11-18T08:20:59.240227+00:00",
+    "image_id": "ghcr.io/backend-developers-ltd/factory-horde-validator-refinery@sha256:95f4f24815169be851fb6eee57ab4bc3ea342e4529f9e6d54c6e9f81a69fa0bb",
+    "netuid": 2,
+    "mechanism_id": 1,
+    "before": {
+      "block": 17544,
+      "block_hash": "0xe85be8104cbadab155ab50f32d028685b5ae88b01af05fc00bc8c92d80e89983",
+      "validator_hotkey": "5HbZNUbgUbHjk6zsStBz8Ks77WzJB7ZhLfhySncbQjBsC7ZP",
+      "validator_uid": 1,
+      "mapping": {
+        "5HDy54bmAbnTLXeYtCF7p6RfuyB4N8tNPMjPgu9mJxUBqTyh": 0,
+        "5HbZNUbgUbHjk6zsStBz8Ks77WzJB7ZhLfhySncbQjBsC7ZP": 1,
+        "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 2,
+        "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 3,
+        "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 4,
+        "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 5,
+        "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 6
+      },
+      "mechanism_zero": [],
+      "mechanism_one": [
+        [
+          1,
+          [
+            [
+              4,
+              1820
+            ],
+            [
+              6,
+              1820
+            ],
+            [
+              5,
+              1820
+            ],
+            [
+              3,
+              1820
+            ],
+            [
+              2,
+              65535
+            ]
+          ]
+        ]
+      ],
+      "last_update": 12283,
+      "tempo": 360,
+      "min_allowed_weights": 1,
+      "max_weight_limit": 1.0,
+      "weights_rate_limit": 100
+    },
+    "after": [
+      {
+        "block": 17578,
+        "block_hash": "0xc12c668d78afe44449d6e6354f5b47cfb2e45b34606f23bfbc2c6f24c58392ac",
+        "validator_hotkey": "5HbZNUbgUbHjk6zsStBz8Ks77WzJB7ZhLfhySncbQjBsC7ZP",
+        "validator_uid": 1,
+        "mapping": {
+          "5HDy54bmAbnTLXeYtCF7p6RfuyB4N8tNPMjPgu9mJxUBqTyh": 0,
+          "5HbZNUbgUbHjk6zsStBz8Ks77WzJB7ZhLfhySncbQjBsC7ZP": 1,
+          "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 2,
+          "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 3,
+          "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 4,
+          "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 5,
+          "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 6
+        },
+        "mechanism_zero": [],
+        "mechanism_one": [
+          [
+            1,
+            [
+              [
+                4,
+                1820
+              ],
+              [
+                6,
+                1820
+              ],
+              [
+                5,
+                1820
+              ],
+              [
+                3,
+                1820
+              ],
+              [
+                2,
+                65535
+              ]
+            ]
+          ]
+        ],
+        "last_update": 17573,
+        "tempo": 360,
+        "min_allowed_weights": 1,
+        "max_weight_limit": 1.0,
+        "weights_rate_limit": 100
+      },
+      {
+        "block": 17703,
+        "block_hash": "0x649fc066b870eb5ee4dec1d7737a50853ad329cf369370f415d8bc29bf6a313d",
+        "validator_hotkey": "5HbZNUbgUbHjk6zsStBz8Ks77WzJB7ZhLfhySncbQjBsC7ZP",
+        "validator_uid": 1,
+        "mapping": {
+          "5HDy54bmAbnTLXeYtCF7p6RfuyB4N8tNPMjPgu9mJxUBqTyh": 0,
+          "5HbZNUbgUbHjk6zsStBz8Ks77WzJB7ZhLfhySncbQjBsC7ZP": 1,
+          "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 2,
+          "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 3,
+          "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 4,
+          "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 5,
+          "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 6
+        },
+        "mechanism_zero": [],
+        "mechanism_one": [
+          [
+            1,
+            [
+              [
+                4,
+                1820
+              ],
+              [
+                6,
+                1820
+              ],
+              [
+                5,
+                1820
+              ],
+              [
+                3,
+                1820
+              ],
+              [
+                2,
+                65535
+              ]
+            ]
+          ]
+        ],
+        "last_update": 17699,
+        "tempo": 360,
+        "min_allowed_weights": 1,
+        "max_weight_limit": 1.0,
+        "weights_rate_limit": 100
+      }
+    ],
+    "calculations": [
+      {
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "calculated_at": "2026-11-18T08:20:16.391156Z",
+        "policy": "winner-90-10",
+        "winner": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "tie_rule": "sha256-json-round-hotkey",
+        "uids": {
+          "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 4,
+          "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 6,
+          "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 5,
+          "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 3,
+          "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 2
+        },
+        "weights": {
+          "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 0.025,
+          "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 0.025,
+          "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 0.025,
+          "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 0.025,
+          "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 0.9
+        }
+      },
+      {
+        "round_id": "b866b120-d5a2-4ef7-be8f-1cee8e44fed9",
+        "calculated_at": "2026-11-18T08:20:55.480242Z",
+        "policy": "winner-90-10",
+        "winner": "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i",
+        "tie_rule": "sha256-json-round-hotkey",
+        "uids": {
+          "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 4,
+          "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 6,
+          "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 5,
+          "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 3,
+          "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 2
+        },
+        "weights": {
+          "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 0.025,
+          "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 0.025,
+          "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 0.025,
+          "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 0.025,
+          "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 0.9
+        }
+      }
+    ],
+    "independently_calculated_weights": {
+      "5CAbEk1WNs3rp3KEYAeRaB65ckhHJoLmkbVdbNx1hsZsfKfa": 0.025,
+      "5CSE2nUt1JaTWukPtwcK3FctDUCrRtk34h5tZYJ7E6y3Q8Sq": 0.025,
+      "5E9Xsjv8ZT1UT116wmNJC7j8DoPg8iFHA2EZYy1CLzGNpfW8": 0.025,
+      "5EnbmDeEVtGdxPiYsJd3S6t3898uBYZBDYaQKiBLoS62hmhw": 0.025,
+      "5HKJoWU9qZvv4bUQk4hdx1iAocqjEUBxtk4NLEZL9iPfGH3i": 0.9
+    },
+    "mechanism_zero_unchanged": true,
+    "validator_restarted_between_updates": true,
+    "encoding": "Compared normalized Subtensor u16 vector with independent stable 90/10 allocation; absolute tolerance 2 * recipients / 65535."
+  },
+  "refinery": {
+    "images": {
+      "VALIDATOR_IMAGE": "ghcr.io/backend-developers-ltd/factory-horde-validator-refinery@sha256:95f4f24815169be851fb6eee57ab4bc3ea342e4529f9e6d54c6e9f81a69fa0bb",
+      "JUDGE_IMAGE": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e"
+    },
+    "other_configuration_unchanged": true,
+    "removed_selector": "TASK_FILE",
+    "tasks": {
+      "current.json": "ca19596c4763d1cea86e3edc2b59aac206c86400513a04006b322fd26510c8c8"
+    },
+    "tasks_unchanged": true,
+    "task_file_removed": true,
+    "services": [
+      {
+        "name": "/factory-horde-validator-1",
+        "state": "running",
+        "health": "healthy",
+        "image": "ghcr.io/backend-developers-ltd/factory-horde-validator-refinery@sha256:95f4f24815169be851fb6eee57ab4bc3ea342e4529f9e6d54c6e9f81a69fa0bb"
+      },
+      {
+        "name": "/factory-horde-pylon-1",
+        "state": "running",
+        "health": "healthy",
+        "image": "docker.io/backenddevelopersltd/bittensor-pylon@sha256:2e7a3470b1ff6f4a72f53a075c1f215cd352a0d289387bad10f328825f396dbb"
+      }
+    ],
+    "executor": "active",
+    "executor_sha256": "acd4b514b1365904b570f34ceeb3671bb10322957793849ee937d1980c6c0149",
+    "runtime": {
+      "settings": {
+        "dispatch_enabled": true,
+        "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:b2b65bcd097f2bd02ceb4b15c521a1ff6b2901a37411e24042746db065a8279e",
+        "generation_window": "PT30M",
+        "confirmation_window": "PT5M",
+        "evaluation_window": "PT25M",
+        "judge_stop_reserve": "PT5M",
+        "stop_grace_seconds": 60,
+        "task_directory": "/tasks",
+        "weights_enabled": true
+      },
+      "discovered_task_count": 1,
+      "task_files_valid": true
+    },
+    "latest_frozen_round": {
+      "round_id": "e2721fd3-a895-45a2-a8c4-cd1a987d1cf2",
+      "sequence": 199,
+      "judge_image": "ghcr.io/backend-developers-ltd/factory-horde-judge@sha256:411c410fe12398028806adcb28a317d52b972bb883030b7d859b64820afc9522",
+      "deadlines": {
+        "evaluation_start": "2026-11-18T08:05:47.402468Z",
+        "generation_end": "2026-11-18T08:00:47.402468Z",
+        "judge_end": "2026-11-18T08:25:47.402468Z",
+        "protocol_version": 1,
+        "round_end": "2026-11-18T08:30:47.402468Z",
+        "start": "2026-11-18T07:30:47.402468Z"
+      },
+      "stage": "complete"
+    },
+    "configuration_revision": "5e3c526a4940a266bbf84b7d37ee9ee8ccaa6ea4",
+    "configuration_branch": "deploy-config-refinery",
+    "limitation": "New admission behavior is active; a completed Refinery round using the new release has not yet been observed. Multi-task end-to-end and chain verification were performed on localnet."
+  }
+}

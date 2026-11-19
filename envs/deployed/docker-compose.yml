@@ -38,7 +38,7 @@ services:
 
   validator:
     # Published application release; isolated source builds may explicitly override this reference.
-    image: "${VALIDATOR_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-validator-${ENVIRONMENT:?}@sha256:520bb7c1e27c72c5351d15fda2a71e9952790b76e099ecfc4e8399843f9f360a}"
+    image: "${VALIDATOR_IMAGE:-ghcr.io/backend-developers-ltd/factory-horde-validator-${ENVIRONMENT:?}@sha256:f273c05d283e4dc54943e802dec83d66dc76dde89906b3f1116b3854ec8e5714}"
     platform: linux/amd64
     restart: unless-stopped
     user: "${CONTAINER_UID:?}:${CONTAINER_GID:?}"
@@ -60,8 +60,11 @@ services:
       VALIDATOR_STOP_GRACE_SECONDS: "${STOP_GRACE_SECONDS:-60}"
       # Empty keeps the validator's built-in specification.
       VALIDATOR_SPECIFICATION: "${TASK_SPECIFICATION:-}"
+      VALIDATOR_TASK_DIRECTORY: "${TASK_DIRECTORY:+/tasks}"
+      VALIDATOR_REQUIREMENTS: "${TASK_REQUIREMENTS:-[]}"
+      VALIDATOR_JUDGE_MODE: "${JUDGE_MODE:-review}"
+      VALIDATOR_JUDGE_MODEL: "${JUDGE_MODEL:-}"
       VALIDATOR_WEIGHTS_ENABLED: "${VALIDATOR_WEIGHTS_ENABLED:-false}"
-      VALIDATOR_WEIGHT_TEMPERATURE: "${WEIGHT_TEMPERATURE:-0.1}"
       VALIDATOR_WEIGHT_TEMPO: "${SUBNET_TEMPO:-360}"
       VALIDATOR_WEIGHT_EPOCH_OFFSET: "${WEIGHT_EPOCH_OFFSET:-0}"
       VALIDATOR_METRICS_PORT: "9101"
@@ -73,6 +76,7 @@ services:
       BITTENSOR_NETWORK: "${BITTENSOR_NETWORK:?}"
     volumes:
       - "${FACTORY_HORDE_DATA_ROOT:?}:${VALIDATOR_DATA_ROOT:-/var/lib/factory-horde}"
+      - "${TASK_DIRECTORY:-../../tasks}:/tasks:ro"
     read_only: true
     tmpfs:
       - /tmp
@@ -156,9 +160,9 @@ services:
     depends_on: [pylon, node-exporter]
 
   # Optional inference proxy, started only with COMPOSE_PROFILES=inference in .env. It holds the Claude
-  # credential and is the only service factories can reach on the internal network that the executor
-  # attaches them to (EXECUTOR_FACTORY_NETWORK). Factories on that network can also reach each other,
-  # and the proxy applies no per-factory quota.
+  # credential and is the only service factories and judges can reach on the internal network that the
+  # executor discovers it on (EXECUTOR_FACTORY_NETWORK). Each workload gets a separate isolated network
+  # connected only to this proxy. The proxy applies no per-workload quota.
   inference-proxy:
     # caddy:2.11.9
     image: docker.io/library/caddy@sha256:e40b94d0a43b5ff69cb20568d73f10c70703df7b0ffc2298eb3d723cdc9d0bd1
@@ -210,7 +214,50 @@ services:
       retries: 12
       start_period: 10s
 
+  registry-proxy:
+    # Forward proxy for judge dependency installation; tunnels only to approved package registries.
+    # ubuntu/squid:6.10-24.10_beta
+    image: docker.io/ubuntu/squid@sha256:c9f5212b147a766529c7b026e2bebed37b998d33d0066b658596af5eba7cc65c
+    platform: linux/amd64
+    profiles: [inference]
+    restart: unless-stopped
+    networks: [default, registry]
+    read_only: true
+    user: proxy
+    tmpfs:
+      - /tmp
+      - /var/spool/squid
+      - /var/log/squid
+      - /run
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        cat > /tmp/squid.conf <<'EOF'
+        http_port 3128
+        max_filedescriptors 4096
+        pinger_enable off
+        acl registries dstdomain pypi.org files.pythonhosted.org registry.npmjs.org
+        acl SSL_ports port 443
+        acl CONNECT method CONNECT
+        http_access deny !SSL_ports
+        http_access allow CONNECT registries
+        http_access deny all
+        cache deny all
+        access_log stdio:/proc/self/fd/1
+        cache_log stdio:/proc/self/fd/2
+        pid_filename none
+        EOF
+        exec squid -N -f /tmp/squid.conf
+
 networks:
+  registry:
+    name: "${EXECUTOR_REGISTRY_NETWORK:-factory-horde-registry}"
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
   inference:
     name: "${EXECUTOR_FACTORY_NETWORK:-factory-horde-inference}"
     internal: true

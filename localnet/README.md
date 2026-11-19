@@ -337,7 +337,7 @@ admission disabled, using the existing accepted scores. The Nexus opportunity no
 result gate and setter handle submission through Pylon. The checker itself uses
 the bootstrap SDK to read Subtensor directly: subnet 2, both mechanisms, the
 validator's UID/hotkey, current recipient mapping, constraints and integer weight
-vector at the same block. It independently recomputes softmax and accounts for
+vector at the same block. It independently recomputes the 90/10 allocation and accounts for
 u16 quantization, restarts the validator between two actual updates, verifies
 identical score-derived weights and unchanged mechanism 0, then restores the
 ordinary validator. Raw evidence is in `state/task12-weights.json` and
@@ -351,7 +351,7 @@ their normalized integer vectors differ from the requested softmax by at most
 
 For continuous writes, set `VALIDATOR_WEIGHTS_ENABLED=true` in `localnet/.env`
 and recreate the validator. It is independent of `VALIDATOR_DISPATCH_ENABLED`.
-`WEIGHT_TEMPERATURE` defaults to `0.1`; `SUBNET_TEMPO` and `WEIGHT_EPOCH_OFFSET`
+`SUBNET_TEMPO` and `WEIGHT_EPOCH_OFFSET`
 configure Nexus weight opportunities. No usable registered scores means no write.
 
 ## Adversarial application acceptance
@@ -455,3 +455,11 @@ per-epoch space allowance, with a minimum charge of 100 bytes per commitment.
 Rapid updates seven blocks apart succeeded. Unregistered writes and an atomic
 4,096-byte batch failed with the expected chain errors. These observations replace
 the older generic 100-block interval guidance for this selected local runtime.
+
+## Behavioral acceptance
+
+Use a fresh data root for behavioral experiments and the selected judge digest for compatible history. The development factory at `fixtures/behavioral` supplies working, partially implemented and broken CLIs or libraries, selected by public hotkey hash. Require all three controls in the cohort, one evaluation per output, retained execution/review evidence, and a working score above both defects. The production weight checker independently recomputes the 90/10 allocation and verifies mechanism-0 non-interference; earlier task-12 evidence remains the historical softmax experiment.
+
+With the inference proxy configured, a fresh isolated data root, all three control variants represented among the five registered miners, and `JUDGE_IMAGE` selecting the candidate digest, run `uv run --frozen --project validator python -m localnet.check_behavioral <control-image-digest>`. The checker uses production admission and evaluation, requires captured execution, full credit for working-library requirements and deletion credit for working CLIs, and writes `state/behavioral-round.json`. It pauses its validator after one round. With a factory image built from `fixtures/behavioral` using `--build-arg FIXTURE_SET=adversarial`, add `--adversarial`: it then requires that no deceptive control (fake persistence, prompt injection, misleading self-tests) scores 1.0 or gets credit for the behavior it fakes. Repeat that run, since judging is stochastic. Then run `uv run --frozen --project miner --group bootstrap python -m localnet.check_weights` for independent chain readback. Each command preserves the accepted records.
+
+To exercise multiple tasks, set `TASK_DIRECTORY` to an isolated directory containing the task JSON files. Every file runs for every miner in that round. Use `fixtures/behavioral/library-task.json` and a to-do task with the seven core criteria in their original order; additional CLI criteria may follow them. The library fixture has no CLI entry point and exercises judge-written Python harnesses. Its retained reports distinguish each miner–task pair, and the chain checker independently averages every task score before verifying the 90/10 vector.

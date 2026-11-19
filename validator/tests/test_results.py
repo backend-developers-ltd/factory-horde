@@ -101,7 +101,7 @@ def pair(tmp_path: Path) -> Pair:
     rounds.files.replace(f"control/statuses/{judge.job_id}.json", judge_status)
     rounds.files.write_bytes(f"{judge.report_dir}/report.json", (FIXTURES / "report.json").read_bytes(), immutable=True)
     target = Neuron.model_validate_json((FIXTURES.parent / "discovery-v1/neuron.json").read_bytes())
-    return Pair(ResultRepository(rounds), factory, judge, factory_status, judge_status, target)
+    return Pair(ResultRepository(rounds, "fixture"), factory, judge, factory_status, judge_status, target)
 
 
 def test_zero_score_and_replay_keep_original_metadata(pair: Pair) -> None:
@@ -109,7 +109,7 @@ def test_zero_score_and_replay_keep_original_metadata(pair: Pair) -> None:
     assert result.accepted is not None and result.accepted.score == 0
     original = pair.repo.files.read_bytes(pair.repo.result_path(pair.judge))
     (pair.repo.files.root / f"{pair.judge.report_dir}/report.json").unlink()
-    resumed = ResultRepository(RoundRepository(pair.repo.files.root))
+    resumed = ResultRepository(RoundRepository(pair.repo.files.root), "fixture")
     assert resumed.finalize(pair.judge, LATER) == result
     assert resumed.files.read_bytes(resumed.result_path(pair.judge)) == original
     assert result.processing_started == pair.judge_status.started_at
@@ -142,7 +142,7 @@ def test_malformed_report_is_permanent_failure(pair: Pair, raw: bytes) -> None:
     pair.repo.files.write_bytes(
         f"{pair.judge.report_dir}/report.json", (FIXTURES / "report.json").read_bytes(), immutable=False
     )
-    assert ResultRepository(RoundRepository(pair.repo.files.root)).finalize(pair.judge, LATER) == result
+    assert ResultRepository(RoundRepository(pair.repo.files.root), "fixture").finalize(pair.judge, LATER) == result
 
 
 @pytest.mark.parametrize("kind", ["factory", "judge"])
@@ -221,7 +221,7 @@ def test_nexus_success_projection_rebuilds_and_ignores_new_context_times(pair: P
         assert (
             store.add_successful_task_result(ctx, EVALUATION_TASK, pair.successful(pair.judge, later=True)) == original
         )
-    recovered = FileTaskResultStore(ResultRepository(RoundRepository(pair.repo.files.root)))
+    recovered = FileTaskResultStore(ResultRepository(RoundRepository(pair.repo.files.root), "fixture"))
     assert recovered.get_task_result(EVALUATION_TASK, original.id) == original
     epoch = Epoch(BlockNumber(500), BlockNumber(500))
     assert recovered.get_successful_tasks_for_epoch(EVALUATION_TASK, epoch) == (original,)
@@ -242,7 +242,7 @@ def test_failure_projection_is_canonical_and_persistent(pair: Pair) -> None:
     with builder.context_store.create_context() as ctx:
         failure = store.add_executor_failure(ctx, EVALUATION_TASK, pair.failure(pair.judge))
     assert "report rejected" in str(failure.executor_failure.executor_error)
-    recovered = FileTaskResultStore(ResultRepository(RoundRepository(pair.repo.files.root)))
+    recovered = FileTaskResultStore(ResultRepository(RoundRepository(pair.repo.files.root), "fixture"))
     values = recovered.get_executor_failures_for_epoch(EVALUATION_TASK, Epoch(BlockNumber(0), BlockNumber(600)))
     assert len(values) == 1 and values[0].id == failure.id
     with builder.context_store.create_context() as ctx, pytest.raises(ResultRejected):
@@ -289,7 +289,7 @@ def test_write_failure_recovery_uses_existing_execution(
         store.add_successful_task_result(ctx, EVALUATION_TASK, pair.successful(pair.judge))
     retained = pair.repo.read(pair.judge)
     monkeypatch.setattr(pair.repo.files, "write_bytes", original_write)
-    recovered_repo = ResultRepository(RoundRepository(pair.repo.files.root))
+    recovered_repo = ResultRepository(RoundRepository(pair.repo.files.root), "fixture")
     recovered = FileTaskResultStore(recovered_repo)
     with builder.context_store.create_context() as ctx:
         result = recovered.add_successful_task_result(ctx, EVALUATION_TASK, pair.successful(pair.judge, later=True))
@@ -315,7 +315,7 @@ def test_thread_safe_duplicate_save_and_epoch_index(pair: Pair) -> None:
     assert len(store.get_successful_tasks_for_epoch(EVALUATION_TASK, Epoch(BlockNumber(0), BlockNumber(500)))) == 1
 
 
-def test_completed_round_fallback_is_independent_of_epoch_and_unresolved_jobs(pair: Pair) -> None:
+def test_newest_completed_round_is_never_replaced_by_older_history(pair: Pair) -> None:
     result = pair.repo.finalize(pair.judge, BEAT)
     assert pair.repo.latest_usable_round() is None
     (record,) = pair.repo.rounds.rounds()
@@ -343,7 +343,8 @@ def test_completed_round_fallback_is_independent_of_epoch_and_unresolved_jobs(pa
     pair.repo.rounds.save_round(
         empty.model_copy(update={"stage": "complete", "completed_at": plan.deadlines.round_end})
     )
-    assert pair.repo.latest_usable_round() == (record.plan, (result.accepted,))
+    assert pair.repo.rounds.rounds()[0].plan == record.plan and result.accepted is not None
+    assert pair.repo.latest_usable_round() is None
 
 
 def test_returned_routing_target_cannot_mutate_cached_results(pair: Pair) -> None:
@@ -391,7 +392,7 @@ def test_factory_projection_epoch_ranges_are_inclusive_and_chronological(pair: P
             store.add_successful_task_result(ctx, FACTORY_TASK, frame)
     selected = store.get_successful_tasks_for_epoch(FACTORY_TASK, Epoch(BlockNumber(500), BlockNumber(700)))
     assert [r.block_at_finish.block_number for r in selected] == [500, 700]
-    recovered = FileTaskResultStore(ResultRepository(RoundRepository(pair.repo.files.root)))
+    recovered = FileTaskResultStore(ResultRepository(RoundRepository(pair.repo.files.root), "fixture"))
     assert recovered.get_successful_tasks_for_epoch(FACTORY_TASK, Epoch(BlockNumber(500), BlockNumber(700))) == selected
 
 

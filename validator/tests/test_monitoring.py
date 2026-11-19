@@ -60,7 +60,7 @@ def executor_health(sampler: HealthSampler, now: datetime, *, docker_ok: bool = 
 
 @pytest.fixture
 def sampler(tmp_path: Path) -> HealthSampler:
-    result = HealthSampler(ResultRepository(RoundRepository(tmp_path)), False, 30)
+    result = HealthSampler(ResultRepository(RoundRepository(tmp_path), "fixture"), False, 30)
     executor_health(result, START)
     result.chain_at = START
     return result
@@ -156,7 +156,7 @@ def test_latest_usable_round_includes_successful_zero_scores(sampler: HealthSamp
             membership_block=1,
             epoch_start=0,
             epoch_end=360,
-            temperature=0.1,
+            winner=member.miner_hotkey,
             uids={member.miner_hotkey: member.uid},
             weights={member.miner_hotkey: 1.0},
         ),

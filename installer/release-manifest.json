@@ -1,14 +1,14 @@
 {
   "files": {
     "envs/deployed/alloy/config.alloy": "a65c5249cb6c471d9808c3c27dc5354b5bc7cc4f32e7fdccddeefd3c02041089",
-    "envs/deployed/docker-compose.yml": "e74418698ffb429bcc2076e1bed17fa8f8c4f25b388bce16d2977400828257a7",
-    "executor/executor.py": "b687d91150d456f10ca529c0e39be1a2f66322f5def65205554c52aaee3420b6",
-    "executor/executor.sha256": "ce9cec0b79257a5f2daaa9cebcb83546af2dccc39a285f868198bcf2e71be37e",
+    "envs/deployed/docker-compose.yml": "7109362896438c81b3e1cc8f5cdedb7f3692664bc012048d3dadca9dc43b6d71",
+    "executor/executor.py": "01e7169207287571748312ae995f0111c9e3fa0d3319451f2e6e7615ed2e933b",
+    "executor/executor.sha256": "847a36bc35cc6815a4a319f8bb07168ff3d5f52a81af2fbce19a938d5821c52a",
     "installer/factory-horde-executor.service": "34c2f1705b9eb3694a8a048643f695b561366a66af058dd7724e6d9a5496c93d",
     "installer/install-executor.sh": "87f7de9bf302841ed276352610eb98e2aabecff83ef01fc00cf17c749fb8d37b",
     "installer/install.sh": "f3a543ceb1dd8d415d8cd871692b7c20a9c6b258511fb1b7bae5167374c12301",
     "installer/prepare-data-root.sh": "e974c61be9c36e09c3336e14049808ad098caa1eec0ae8f59e67e34b4aa6aa8f",
-    "installer/release.py": "83900fa3af071c799549c1b796d9c9c503b95f10bb33965c45113a7a8e101688",
+    "installer/release.py": "140fff4b6660c6c81eb41f8a84bd876c409bdd15b89951861a881fb186f51e76",
     "installer/update_compose.sh": "f6760b52de8ec80c1e417ca61761a9900d6146fbd4ddea877740fcea372df78a",
     "localnet/compose.yml": "e009ba4de3363d4719a16233166e6dbc91df84ae020fe65d1dafddad109a21df",
     "miner/docker-compose.yml": "785bcecd54f93e0ec03fc13670a73b7d629370ffe487d3ddafd445add6436260"

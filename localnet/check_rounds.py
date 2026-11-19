@@ -10,6 +10,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from nexus.v1 import TaskResultId
+
 from validator.records import RoundPlan, RoundRecord, request_for
 from validator.result_records import JobResult
 from validator.result_repository import ResultRepository
@@ -55,7 +56,7 @@ def main() -> None:
     subprocess.run(["systemctl", "is-active", "--quiet", runtime.service], check=True)
     root = Path(config["FACTORY_HORDE_DATA_ROOT"] or "")
     rounds = RoundRepository(root)
-    results = ResultRepository(rounds)
+    results = ResultRepository(rounds, "fixture")
     existing = rounds.rounds()
     if any(
         r.unresolved_jobs or r.stage != "complete" and datetime.now(UTC) < r.plan.deadlines.round_end for r in existing
@@ -71,6 +72,7 @@ def main() -> None:
     command = [*compose, "run", "--detach", "--no-deps", "--name", name]
     for key, value in {
         "VALIDATOR_DISPATCH_ENABLED": "true",
+        "VALIDATOR_JUDGE_MODE": "fixture",
         "VALIDATOR_HOTKEY": own,
         "VALIDATOR_JUDGE_IMAGE": images["GHCR_JUDGE_IMAGE"] or "",
         "VALIDATOR_GENERATION_WINDOW": "100",

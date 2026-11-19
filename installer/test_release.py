@@ -187,9 +187,16 @@ def test_clean_localnet_configuration_generates_isolated_paths_and_distinct_toke
     tokens = [value for key, value in config.items() if "TOKEN" in key]
     assert len(tokens) == len(set(tokens)) == 8
     assert all(len(value) == 48 for value in tokens)
-    workload = ("EXECUTOR_TMP_SIZE", "EXECUTOR_FACTORY_NETWORK", "EXECUTOR_INFERENCE_URL")
+    workload = (
+        "EXECUTOR_TMP_SIZE",
+        "EXECUTOR_FACTORY_NETWORK",
+        "EXECUTOR_INFERENCE_URL",
+        "EXECUTOR_JUDGE_RESERVE_SECONDS",
+        "EXECUTOR_MAX_RUNNING_JOBS",
+        "EXECUTOR_REGISTRY_NETWORK",
+    )
     assert set(workload) < set(release.EXECUTOR_KEYS)
-    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080"]
+    assert [config[key] for key in workload] == ["64m", "", "http://inference-proxy:8080", "180", "4", ""]
     path.write_bytes(release.environment(config))
     assert release.configuration(path, tmp_path / "installation", application=True, localnet=True) == config
     config["HOST_WALLET_DIR"] = str(tmp_path / "outside-wallets")
@@ -218,8 +225,8 @@ def test_retry_finishes_pending_activation(
     unit = tmp_path / "unit.service"
     unit.write_bytes(release.unit_content(source, destination, config))
 
-    def path(value: str) -> Path:
-        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+    def path(value: str | Path) -> Path:
+        return unit if str(value).startswith("/etc/systemd/system/") else Path(value)
 
     def prepare(*args: object) -> None:
         pass
@@ -322,8 +329,8 @@ def test_retry_activates_application_after_assets_already_match(
     unit = tmp_path / "unit.service"
     unit.write_bytes(release.unit_content(source, destination, config))
 
-    def path(value: str) -> Path:
-        return unit if value.startswith("/etc/systemd/system/") else Path(value)
+    def path(value: str | Path) -> Path:
+        return unit if str(value).startswith("/etc/systemd/system/") else Path(value)
 
     def prepare(*args: object) -> None:
         pass

@@ -194,15 +194,33 @@ ownership/permissions preparation command.
 
 `TASK_SPECIFICATION` in `.env` is the task text given to every factory in new rounds. Write it on one line in single quotes, without `$` or backticks. Unset or empty keeps the built-in greeting task, and a round that is already admitted keeps the text it started with.
 
+Set `TASK_REQUIREMENTS` to a single-quoted JSON array of distinct criteria, for example `'["Add a task.","Persist tasks across invocations."]'`. An empty list uses the whole specification as a single criterion. The validator freezes the list, `JUDGE_MODE` and the optional `JUDGE_MODEL` (a Claude Code alias or full model ID; empty uses the judge image's default) at admission, so changing the model affects only new rounds. Review is the default. Use `JUDGE_MODE=fixture` explicitly for offline localnet checks.
+
 Workloads run without a network by default. Factories that call Claude need the inference proxy, which three settings enable together:
 
 - `COMPOSE_PROFILES=inference` (or `alloy,inference`) starts the `inference-proxy` service and creates the internal Docker network `factory-horde-inference`. This profile requires Docker Engine 28 or newer.
 - `CLAUDE_CODE_OAUTH_TOKEN` is a Claude subscription token created with `claude setup-token`. It stays in `.env` on the validator host, readable only by the operator, and reaches only the proxy container. It is never written to `executor.env` or given to a factory.
-- `EXECUTOR_FACTORY_NETWORK=factory-horde-inference` makes the executor attach factory containers to that network and give them `ANTHROPIC_BASE_URL` (`EXECUTOR_INFERENCE_URL`, default `http://inference-proxy:8080`) and the placeholder `CLAUDE_CODE_OAUTH_TOKEN=inference-proxy`. Judges stay without a network. The same variable names the network in Compose, so one value keeps both sides in step.
+- `EXECUTOR_FACTORY_NETWORK=factory-horde-inference` makes the executor attach each factory and judge to its own internal network connected only to that configured network's inference proxy and give them `ANTHROPIC_BASE_URL` (`EXECUTOR_INFERENCE_URL`, default `http://inference-proxy:8080`) and the placeholder `CLAUDE_CODE_OAUTH_TOKEN=inference-proxy`. Review mode uses this proxy. A missing proxy setting makes the round ineligible for review weights. The same variable names the network in Compose, so one value keeps both sides in step.
 
-The network has no route to the internet or to the host. The proxy forwards only `/v1/messages*` to `https://api.anthropic.com`, replaces the `Authorization` header with the real token and answers 404 for any other path. Factories that run at the same time share the network and can reach each other, and the proxy applies no per-factory quota, so every factory in a round draws on the same subscription.
+`EXECUTOR_REGISTRY_NETWORK=factory-horde-registry` lets judges install a project's declared dependencies. The same profile starts `registry-proxy`, a Squid forward proxy that tunnels only to `pypi.org`, `files.pythonhosted.org` and `registry.npmjs.org`. For one fixed install command, the executor moves the judge's application sandbox from `--network none` onto a job-owned internal network whose only peer is that proxy. Every other sandbox process is killed first, pip runs isolated from the project and installs prebuilt wheels for plain index requirements only, and npm runs without lifecycle scripts or a configurable Git executable, so no project code runs while the network is attached. The executor verifies that the sandbox is back on `none` before any other command. Without this setting, install requests are answered as unavailable.
 
-Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory containers and those factories fail without a score.
+The network has no route to the internet or to the host. The proxy forwards only `/v1/messages*` to `https://api.anthropic.com`, replaces the `Authorization` header with the real token and answers 404 for any other path. Peer workloads are isolated on separate networks. The proxy applies no per-workload quota, so every factory and judge in a round draws on the same subscription. Application checks run in separate networkless containers with 256 MiB each for `/app` and `/tmp`; the executor must confirm their termination before accepting a judge exit.
+
+Real factories usually also need more than the default resources: `EXECUTOR_MEMORY`, `EXECUTOR_PIDS_LIMIT` and `EXECUTOR_TMP_SIZE` (a size such as `64m` or `1g`) apply to factories and judges alike. `EXECUTOR_JUDGE_RESERVE_SECONDS` (default 180) ends each judge's shared sandbox time budget that long before the judge deadline, leaving time for its final assessment.
+
+`EXECUTOR_MAX_RUNNING_JOBS` (default 4) caps how many factory or judge containers exist at once; a judge's application sandbox shares its slot. Round deadlines never stretch, so set it high enough for every job of a stage (miners × tasks) to run together, within the host's memory and CPU. A job waiting for a slot reports `Waiting for a workload slot` and logs `workload_slot_wait` at error level; one whose window ends before it starts logs `job_never_created`, and its miner is excluded from the round as a validator-side gap (`miner_excluded` at error level), not as a rejected submission. Terminal jobs whose containers Docker left in the created state do not hold a slot.
+
+Each networked workload gets its own small internal network. Docker's default address pools allow only about 31 networks per host, so give it a dedicated pool before raising the limit, for example in `/etc/docker/daemon.json`:
+
+```json
+{
+  "bip": "172.17.0.1/16",
+  "default-address-pools": [{"base": "10.200.0.0/16", "size": 24}],
+  "live-restore": true
+}
+```
+
+That allows 256 new networks of 254 hosts each; existing networks keep their subnets and `bip` pins the default bridge. Choose a base that overlaps no existing network or host route (`ip -4 route`). `live-restore` keeps containers running across later daemon restarts, but the restart that applies this file still stops all containers unless it was already enabled, so apply it when no factory or judge is running (`docker ps --filter label=factory_horde.job_id` is empty). Validate first with `sudo dockerd --validate --config-file /etc/docker/daemon.json`, then `sudo systemctl restart docker`. Enable the profile and the token before or together with `EXECUTOR_FACTORY_NETWORK`: while the network does not exist, Docker refuses to start factory and judge containers and those jobs fail without a score.
 
 ## Monitoring and recovery
 
@@ -228,3 +246,11 @@ credentials. See [validator operations](../validator/README.md), the
 Keep unresolved requests, stops, ledgers, containers and results for diagnosis.
 Restoring Docker access and restarting the same service resumes reconciliation;
 missing expected executions are not permission to create replacements.
+
+### Server task files
+
+The installer creates its default `tasks/` directory as the operator without replacing its contents. Set `TASK_DIRECTORY` to an absolute operator-owned directory. The validator discovers every non-hidden `*.json` file directly in that directory at each new admission; no `TASK_FILE` selector is needed. Filenames are descriptive operator choices, such as `todo.json` or `calculator.json`; `current.json` has no special meaning. Each file contains one JSON object with `specification` and an optional ordered `requirements` list. The directory is mounted read-only at `/tasks` and passed to the validator as `VALIDATOR_TASK_DIRECTORY`.
+
+All discovered tasks run for every miner in every round, with separate factory and judge executions and isolated input/output directories per task. Admission freezes the complete task set before discovery and persists every execution identity before publishing work. Recovery uses that snapshot, including when source files are edited, added or removed. The round score is the equal-weight mean of a miner’s task scores. A miner must have an accepted score for every task to participate; any missing score, whether from a submission failure or unavailable judging, excludes only that miner, and the other miners are still weighted. Existing 90/10 allocation and tie handling apply to the mean scores.
+
+Write a complete replacement to a hidden or non-JSON temporary file, then rename it atomically to its final `.json` name. An empty configured directory or any invalid task blocks new admissions while existing work continues to reconcile. Omitted or empty requirements use the whole specification. Without `TASK_DIRECTORY`, the existing `TASK_SPECIFICATION` and `TASK_REQUIREMENTS` settings apply. Task files are operator data and are not release assets. When upgrading an installation that used `TASK_FILE`, retain `TASK_DIRECTORY` and remove the obsolete `TASK_FILE` setting.

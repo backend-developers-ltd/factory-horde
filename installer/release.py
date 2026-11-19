@@ -55,6 +55,9 @@ EXECUTOR_KEYS = (
     "EXECUTOR_TMP_SIZE",
     "EXECUTOR_FACTORY_NETWORK",
     "EXECUTOR_INFERENCE_URL",
+    "EXECUTOR_JUDGE_RESERVE_SECONDS",
+    "EXECUTOR_MAX_RUNNING_JOBS",
+    "EXECUTOR_REGISTRY_NETWORK",
 )
 IDENTITY_KEYS = ("FACTORY_HORDE_DATA_ROOT", "EXECUTOR_USER", "EXECUTOR_GROUP", "EXECUTOR_PYTHON")
 LIMIT = 4 * 1024 * 1024
@@ -365,6 +368,9 @@ def configuration(path: Path, directory: Path, *, application: bool, localnet: b
         "EXECUTOR_TMP_SIZE": "64m",
         "EXECUTOR_FACTORY_NETWORK": "",
         "EXECUTOR_INFERENCE_URL": "http://inference-proxy:8080",
+        "EXECUTOR_JUDGE_RESERVE_SECONDS": "180",
+        "EXECUTOR_MAX_RUNNING_JOBS": "4",
+        "EXECUTOR_REGISTRY_NETWORK": "",
         "VALIDATOR_DATA_ROOT": "/var/lib/factory-horde",
         "MECHANISM_ID": "0",
         "VALIDATOR_DISPATCH_ENABLED": "false",
@@ -591,6 +597,7 @@ def apply_release(
         ):
             raise ReleaseError("Candidate executor does not execute with the advertised protocol")
         if application:
+            owned_directory(Path(config.get("TASK_DIRECTORY") or directory / "tasks"))
             run(compose(directory, installation, "config", "--quiet", source=stage), quiet=True)
         expected_unit = unit_content(stage, directory, config)
         installed_unit = Path(f"/etc/systemd/system/{installation.service}.service")
