@@ -613,10 +613,12 @@ class Docker:
             self.require("network", "disconnect", name, identifier)
         self.require("network", "rm", name)
 
-    def create(self, request: Request) -> str:
-        """Create a detached, non-restarting workload with only its fixed job mounts.
+    def prepare(self, request: Request) -> tuple[str, ...]:
+        """Resolve mounts and the proxy-only network before any create intent is persisted.
 
-        Each workload gets a separate proxy-only network when inference is enabled.
+        Raises:
+            DockerError: The inference network or proxy cannot be verified yet.
+            OSError: A job directory cannot be resolved.
         """
         destination = "/output" if request.kind == "factory" else "/submission,readonly"
         mounts = [
@@ -680,7 +682,14 @@ class Docker:
                 f"CLAUDE_CODE_OAUTH_TOKEN={INFERENCE_TOKEN_PLACEHOLDER}",
             ):
                 args.extend(("--env", variable))
-        return self.require(*args, request.image)
+        return (*args, request.image)
+
+    def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
+        """Create a detached, non-restarting workload from prepared arguments.
+
+        Each workload gets a separate proxy-only network when inference is enabled.
+        """
+        return self.require(*(arguments or self.prepare(request)))
 
 
 @contextmanager
@@ -761,7 +770,11 @@ class ApplicationRunner:
         self.save()
         container = self.inspect()
         if container is None:
-            raise DockerError("Application container missing after persisted intent")
+            if self.ledger.get("app_phase") != "create_rejected":
+                raise DockerError("Application container missing after persisted intent")
+            self.ledger["app_stopped"] = True
+            self.save()
+            return
         state = object_value(container["State"])
         if state["Running"] is True:
             self.docker.require("kill", "--signal", "KILL", self.name)
@@ -783,6 +796,7 @@ class ApplicationRunner:
 
         Raises:
             DockerError: An ambiguous prior start may not be replayed.
+            DockerRejected: Docker definitively rejected creation; startup stays closed.
         """
         if self.ledger.get("app_closed"):
             raise DockerError("Application startup permanently closed")
@@ -790,55 +804,72 @@ class ApplicationRunner:
         if container is None:
             if "app_phase" in self.ledger:
                 raise DockerError("Application missing after create intent")
+            submission = self.files.mount(self.request.output_dir)
             self.ledger["app_phase"] = "creating"
             self.save()
-            settings = self.executor.settings
-            identifier = self.docker.require(
-                "create",
-                "--name",
-                self.name,
-                "--network",
-                "none",
-                "--read-only",
-                "--cap-drop",
-                "ALL",
-                "--security-opt",
-                "no-new-privileges",
-                "--user",
-                f"{settings.uid}:{settings.gid}",
-                "--memory",
-                settings.memory,
-                "--cpus",
-                str(settings.cpus),
-                "--pids-limit",
-                str(settings.pids),
-                "--tmpfs",
-                "/tmp:rw,nosuid,nodev,size=256m",
-                "--tmpfs",
-                f"/app:rw,nosuid,nodev,size=256m,uid={settings.uid},gid={settings.gid}",
-                "--mount",
-                f"type=bind,src={self.files.mount(self.request.output_dir)},dst=/submission,readonly",
-                "--workdir",
-                "/app",
-                "--env",
-                "HOME=/app",
-                "--label",
-                f"factory_horde.runner={self.request.digest}",
-                "--log-driver",
-                "none",
-                "--entrypoint",
-                "/usr/local/bin/python3",
-                self.request.image,
-                "-I",
-                "-c",
-                "import shutil,time,pathlib; shutil.copytree('/submission','/app',dirs_exist_ok=True,symlinks=True); "
-                "pathlib.Path('/tmp/factory-horde-ready').touch(); time.sleep(86400)",
-            )
+            try:
+                identifier = self.create(self.executor.settings, submission)
+            except DockerRejected:
+                self.ledger.update(app_phase="create_rejected", app_closed=True)
+                self.save()
+                raise
             self.ledger.update(app_id=identifier, app_phase="created")
             self.save()
             container = self.inspect()
         if container is None:
             raise DockerError("Application creation not observable")
+        self.run(container)
+
+    def create(self, settings: Settings, submission: str) -> str:
+        """Request the application container; a CLI failure is a definitive rejection."""
+        return self.docker.require(
+            "create",
+            "--name",
+            self.name,
+            "--network",
+            "none",
+            "--read-only",
+            "--cap-drop",
+            "ALL",
+            "--security-opt",
+            "no-new-privileges",
+            "--user",
+            f"{settings.uid}:{settings.gid}",
+            "--memory",
+            settings.memory,
+            "--cpus",
+            str(settings.cpus),
+            "--pids-limit",
+            str(settings.pids),
+            "--tmpfs",
+            "/tmp:rw,nosuid,nodev,size=256m",
+            "--tmpfs",
+            f"/app:rw,nosuid,nodev,size=256m,uid={settings.uid},gid={settings.gid}",
+            "--mount",
+            f"type=bind,src={submission},dst=/submission,readonly",
+            "--workdir",
+            "/app",
+            "--env",
+            "HOME=/app",
+            "--label",
+            f"factory_horde.runner={self.request.digest}",
+            "--log-driver",
+            "none",
+            "--entrypoint",
+            "/usr/local/bin/python3",
+            self.request.image,
+            "-I",
+            "-c",
+            "import shutil,time,pathlib; shutil.copytree('/submission','/app',dirs_exist_ok=True,symlinks=True); "
+            "pathlib.Path('/tmp/factory-horde-ready').touch(); time.sleep(86400)",
+        )
+
+    def run(self, container: dict[str, object]) -> None:
+        """Start the created workspace once and confirm its image-owned readiness marker.
+
+        Raises:
+            DockerError: Startup is ambiguous or the workspace did not become ready.
+        """
         state = object_value(container["State"])
         if state["Status"] == "created" and self.ledger.get("app_phase") == "created":
             self.ledger["app_phase"] = "starting"
@@ -1376,10 +1407,12 @@ class Executor:
                     reason="Startup closed after pull",
                 )
                 return
+            # Preparation failures leave the job reserved, so a transient proxy or network problem retries.
+            arguments = self.docker.prepare(request)
             ledger["phase"] = "create_attempted"
             self.save_ledger(request, ledger)
             try:
-                identifier = self.docker.create(request)
+                identifier = self.docker.create(request, arguments)
             except DockerRejected:
                 ledger.update(phase="create_rejected", closed=True)
                 self.save_ledger(request, ledger)

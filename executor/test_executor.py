@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import override
@@ -67,7 +68,7 @@ class FakeDocker(Docker):
         )
 
     @override
-    def create(self, request: Request) -> str:
+    def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
         self.created += 1
         self.container = {"Id": "a" * 64, "State": {"Status": "created", "Running": False}}
         return "a" * 64
@@ -487,8 +488,8 @@ class SlowCreateDocker(FakeDocker):
         self.release = threading.Event()
 
     @override
-    def create(self, request: Request) -> str:
-        identifier = super().create(request)
+    def create(self, request: Request, arguments: tuple[str, ...] | None = None) -> str:
+        identifier = super().create(request, arguments)
         self.creating.set()
         if not self.release.wait(10):
             raise TimeoutError("Fixture create was not released")
@@ -813,3 +814,72 @@ def test_invalid_workload_settings_are_rejected_at_startup(
     with pytest.raises(SystemExit) as error:
         run_main(tmp_path, monkeypatch, {key: value})
     assert error.value.code == 2 and not list(tmp_path.iterdir())
+
+
+class RejectedApplicationDocker(FakeDocker):
+    """A running judge whose application container creation the daemon definitively rejects."""
+
+    def __init__(self, executor: Executor):
+        super().__init__(executor)
+        self.app_creates = 0
+
+    @override
+    def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ("container", "inspect"):
+            return subprocess.CompletedProcess(args, 1, "", f"Error: No such container: {args[2]}")
+        if args[0] == "create":
+            self.app_creates += 1
+            return subprocess.CompletedProcess(args, 1, "", "Error response from daemon: no space left on device")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    @override
+    def require(self, *args: str, timeout: float = 30) -> str:
+        return Docker.require(self, *args, timeout=timeout)
+
+
+def test_rejected_application_create_answers_judge_and_allows_terminal_status(
+    executor: Executor, judge_request: Request
+) -> None:
+    daemon = RejectedApplicationDocker(executor)
+    executor.docker = daemon
+    executor.save_ledger(judge_request, {"phase": "start_attempted", "closed": False, "container_id": "a" * 64})
+    daemon.container = {"Id": "a" * 64, "State": {"Status": "running", "Running": True, "StartedAt": now()}}
+    channel = f"control/runners/{judge_request.job_id}"
+    executor.files.write(f"{channel}/1.request.json", {"id": "step-1", "argv": ["ls"], "stdin": "", "observation": "x"})
+    executor.step(judge_request)
+    response = executor.files.read(f"{channel}/1.response.json")
+    assert "no space left on device" in str(object_value(response["result"])["failure"])
+    executor.step(judge_request)
+    assert executor.files.read(f"{channel}/1.response.json") == response and daemon.app_creates == 1
+    daemon.finish()
+    executor.step(judge_request)
+    terminal = status(executor, judge_request)
+    assert terminal.execution == "exited" and terminal.confirmed_stopped
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [DockerError("Expected one inference proxy on the configured network"), DockerRejected("address pools exhausted")],
+)
+def test_network_preparation_failure_stays_retryable(
+    executor: Executor, job_request: Request, monkeypatch: pytest.MonkeyPatch, failure: DockerError
+) -> None:
+    executor.settings = replace(executor.settings, factory_network="factory-horde-inference")
+    daemon = FakeDocker(executor)
+    executor.docker = daemon
+    outcomes: list[DockerError | None] = [failure, None]
+
+    def network(_self: Docker, request: Request) -> str:
+        outcome = outcomes.pop(0)
+        if outcome is not None:
+            raise outcome
+        return request.name + "-inference"
+
+    monkeypatch.setattr(Docker, "inference_network", network)
+    executor.step(job_request)
+    ledger = executor.files.read(f"control/executor/{job_request.job_id}.json")
+    assert ledger["phase"] == "reserved" and ledger["closed"] is False
+    assert status(executor, job_request).execution == "unresolved" and daemon.created == 0
+    executor.step(job_request)
+    assert daemon.created == 1
+    assert executor.files.read(f"control/executor/{job_request.job_id}.json")["phase"] == "created"
