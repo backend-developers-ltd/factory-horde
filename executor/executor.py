@@ -56,6 +56,9 @@ DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 INFERENCE_TOKEN_PLACEHOLDER = "inference-proxy"
 # Docker's own network modes would bypass the inference proxy or share the host's network.
 RESERVED_NETWORKS = ("none", "host", "bridge", "default")
+# Stopped workload containers keep their logs this long for failure investigation.
+CONTAINER_RETENTION = "168h"
+PRUNE_INTERVAL_SECONDS = 3600
 
 
 class ProtocolError(ValueError):
@@ -1352,6 +1355,7 @@ class Executor:
         self.completed_jobs: set[str] = set()
         self.slot_lock = threading.Lock()
         self.waiting_jobs: set[str] = set()
+        self.pruned_at: float | None = None
 
     def cancelled(self, request: Request) -> bool:
         """A valid permanent stop or elapsed deadline closes startup.
@@ -1797,10 +1801,39 @@ class Executor:
                     ),
                     flush=True,
                 )
+        self.prune()
         snapshot = self.metrics.snapshot()
         snapshot["active_workers"] = sum(not future.done() for future in self.active.values())
         self.files.write("control/executor-metrics.json", snapshot)
         self.health(requested, rejected)
+
+    def prune(self) -> None:
+        """Hourly remove stopped workload and application containers older than the retention period.
+
+        Terminal jobs never consult Docker again, so only their logs are lost.
+        """
+        if self.pruned_at is not None and time.monotonic() - self.pruned_at < PRUNE_INTERVAL_SECONDS:
+            return
+        self.pruned_at = time.monotonic()
+        for label in ("factory_horde.job_id", "factory_horde.runner"):
+            try:
+                result = self.docker.call(
+                    "container",
+                    "prune",
+                    "--force",
+                    "--filter",
+                    f"label={label}",
+                    "--filter",
+                    f"until={CONTAINER_RETENTION}",
+                    timeout=120,
+                )
+                error = result.stderr.strip()[:512] if result.returncode else None
+            except (OSError, DockerError, subprocess.SubprocessError) as exception:
+                error = str(exception)[:512] or type(exception).__name__
+            event = {"event": "containers_pruned", "label": label}
+            if error is not None:
+                event.update(event="container_prune_failed", level="error", reason=error)
+            print(json.dumps(event), flush=True)
 
     def health(self, requested: set[str], rejected: int) -> None:
         """Publish bounded daemon evidence even when there are no jobs to inspect.
