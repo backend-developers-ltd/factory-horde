@@ -254,11 +254,16 @@ services:
         LOG = "/var/log/inference/access.json"
         HEADER = "Anthropic-Ratelimit-Unified-{}-{}"
         WINDOWS = ("5h", "7d")
-        latest = {"ts": 0.0}
+        # Per window: (observed timestamp, utilization, reset). Anthropic omits windows from some
+        # responses, so each keeps the newest response that reported it.
+        latest = {}
+        # Windows present in the newest response that carried any budget headers. A window missing
+        # there is one the subscription does not report, as opposed to no data at all.
+        newest = {"ts": 0.0, "windows": set()}
 
 
         def refresh():
-            """Keep the newest logged response that carried budget headers."""
+            """Update each window from the newest logged responses that reported it."""
             try:
                 with open(LOG, "rb") as log:
                     log.seek(0, 2)
@@ -266,43 +271,49 @@ services:
                     lines = log.read().splitlines()
             except FileNotFoundError:
                 return
-            for line in reversed(lines):
+            for line in lines:
                 try:
                     entry = json.loads(line)
+                    ts = float(entry["ts"])
                     headers = entry["resp_headers"]
-                    windows = {
-                        window: (
-                            float(headers[HEADER.format(window, "Utilization")][0]),
-                            float(headers[HEADER.format(window, "Reset")][0]),
-                        )
-                        for window in WINDOWS
-                    }
-                except (ValueError, KeyError, TypeError, IndexError):
+                except (ValueError, KeyError, TypeError):
                     continue
-                if entry["ts"] > latest["ts"]:
-                    latest.update(ts=entry["ts"], windows=windows)
-                return
+                if isinstance(headers, dict) and "Anthropic-Ratelimit-Unified-Status" in headers and ts > newest["ts"]:
+                    newest.update(ts=ts, windows={w for w in WINDOWS if HEADER.format(w, "Utilization") in headers})
+                for window in WINDOWS:
+                    try:
+                        utilization = float(headers[HEADER.format(window, "Utilization")][0])
+                        reset = float(headers[HEADER.format(window, "Reset")][0])
+                    except (ValueError, KeyError, TypeError, IndexError):
+                        continue
+                    if ts > latest.get(window, (0.0,))[0]:
+                        latest[window] = (ts, utilization, reset)
+
+
+        def family(name, help_text, index):
+            return [
+                "# HELP %s %s" % (name, help_text),
+                "# TYPE %s gauge" % name,
+                *('%s{window="%s"} %s' % (name, window, values[index]) for window, values in sorted(latest.items())),
+            ]
 
 
         def metrics():
             refresh()
-            if "windows" not in latest:
+            if not newest["ts"]:
                 return ""
             lines = [
-                "# HELP claude_subscription_utilization_ratio Share of the subscription budget used in the window.",
-                "# TYPE claude_subscription_utilization_ratio gauge",
+                "# HELP claude_subscription_window_reported Whether the newest budget response reported the window.",
+                "# TYPE claude_subscription_window_reported gauge",
+                *('claude_subscription_window_reported{window="%s"} %d' % (w, w in newest["windows"]) for w in WINDOWS),
             ]
-            lines += ['claude_subscription_utilization_ratio{window="%s"} %s' % (w, v[0]) for w, v in latest["windows"].items()]
-            lines += [
-                "# HELP claude_subscription_reset_timestamp_seconds When the window's budget resets.",
-                "# TYPE claude_subscription_reset_timestamp_seconds gauge",
-            ]
-            lines += ['claude_subscription_reset_timestamp_seconds{window="%s"} %s' % (w, v[1]) for w, v in latest["windows"].items()]
-            lines += [
-                "# HELP claude_subscription_observed_timestamp_seconds When the values were last returned by Anthropic.",
-                "# TYPE claude_subscription_observed_timestamp_seconds gauge",
-                "claude_subscription_observed_timestamp_seconds %s" % latest["ts"],
-            ]
+            lines += family(
+                "claude_subscription_utilization_ratio", "Share of the subscription budget used in the window.", 1
+            )
+            lines += family("claude_subscription_reset_timestamp_seconds", "When the window's budget resets.", 2)
+            lines += family(
+                "claude_subscription_observed_timestamp_seconds", "When Anthropic last reported the window.", 0
+            )
             return "\n".join(lines) + "\n"
 
 
