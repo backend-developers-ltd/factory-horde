@@ -137,9 +137,12 @@ services:
           - job_name: validator
             static_configs:
               - targets: ['validator:9101']
+          - job_name: claude-usage
+            static_configs:
+              - targets: ['claude-usage-exporter:9102']
         EOF
         exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.size=1GB
-    depends_on: [pylon, node-exporter]
+    depends_on: [pylon, node-exporter, claude-usage-exporter]
 
   # Optional push to the company monitoring stack, started only with COMPOSE_PROFILES=alloy in .env;
   # that profile also needs METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD.
@@ -157,7 +160,7 @@ services:
     volumes:
       - ./alloy:/etc/alloy:ro
     command: [run, --storage.path=/var/lib/alloy/data, /etc/alloy/config.alloy]
-    depends_on: [pylon, node-exporter]
+    depends_on: [pylon, node-exporter, claude-usage-exporter]
 
   # Optional inference proxy, started only with COMPOSE_PROFILES=inference in .env. It holds the Claude
   # credential and is the only service factories and judges can reach on the internal network that the
@@ -174,6 +177,8 @@ services:
       CLAUDE_CODE_OAUTH_TOKEN: "${CLAUDE_CODE_OAUTH_TOKEN:-}"
     networks: [default, inference]
     read_only: true
+    volumes:
+      - inference-log:/var/log/inference
     tmpfs:
       - /tmp
       - /data
@@ -191,7 +196,17 @@ services:
           admin off
         }
         :8080 {
+          # Read by claude-usage-exporter for the subscription budget headers. Caddy redacts
+          # Authorization, and the request only carries the workload's placeholder token anyway.
+          log {
+            output file /var/log/inference/access.json {
+              roll_size 10MiB
+              roll_keep 1
+            }
+            format json
+          }
           handle /healthz {
+            log_skip
             respond 200
           }
           handle /v1/messages* {
@@ -213,6 +228,101 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
+
+  # Claude subscription budget for the dashboard, read from the rate-limit headers that Anthropic
+  # returns on the inference proxy's responses. Values only change while workloads call Claude, and
+  # none are exported without the inference profile. Separate from the validator so it can be
+  # removed with the subscription: delete this service, the proxy's log block and volume, and the
+  # claude-usage scrape jobs.
+  claude-usage-exporter:
+    # python:3.13-alpine
+    image: docker.io/library/python@sha256:9ef1a599f863231c3d91e941389bfdc4a2d6070557243d54df1a4e57015b960e
+    platform: linux/amd64
+    restart: unless-stopped
+    read_only: true
+    volumes:
+      - inference-log:/var/log/inference:ro
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint:
+      - python
+      - -c
+      - |
+        import json
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        LOG = "/var/log/inference/access.json"
+        HEADER = "Anthropic-Ratelimit-Unified-{}-{}"
+        WINDOWS = ("5h", "7d")
+        latest = {"ts": 0.0}
+
+
+        def refresh():
+            """Keep the newest logged response that carried budget headers."""
+            try:
+                with open(LOG, "rb") as log:
+                    log.seek(0, 2)
+                    log.seek(max(0, log.tell() - 1048576))
+                    lines = log.read().splitlines()
+            except FileNotFoundError:
+                return
+            for line in reversed(lines):
+                try:
+                    entry = json.loads(line)
+                    headers = entry["resp_headers"]
+                    windows = {
+                        window: (
+                            float(headers[HEADER.format(window, "Utilization")][0]),
+                            float(headers[HEADER.format(window, "Reset")][0]),
+                        )
+                        for window in WINDOWS
+                    }
+                except (ValueError, KeyError, TypeError, IndexError):
+                    continue
+                if entry["ts"] > latest["ts"]:
+                    latest.update(ts=entry["ts"], windows=windows)
+                return
+
+
+        def metrics():
+            refresh()
+            if "windows" not in latest:
+                return ""
+            lines = [
+                "# HELP claude_subscription_utilization_ratio Share of the subscription budget used in the window.",
+                "# TYPE claude_subscription_utilization_ratio gauge",
+            ]
+            lines += ['claude_subscription_utilization_ratio{window="%s"} %s' % (w, v[0]) for w, v in latest["windows"].items()]
+            lines += [
+                "# HELP claude_subscription_reset_timestamp_seconds When the window's budget resets.",
+                "# TYPE claude_subscription_reset_timestamp_seconds gauge",
+            ]
+            lines += ['claude_subscription_reset_timestamp_seconds{window="%s"} %s' % (w, v[1]) for w, v in latest["windows"].items()]
+            lines += [
+                "# HELP claude_subscription_observed_timestamp_seconds When the values were last returned by Anthropic.",
+                "# TYPE claude_subscription_observed_timestamp_seconds gauge",
+                "claude_subscription_observed_timestamp_seconds %s" % latest["ts"],
+            ]
+            return "\n".join(lines) + "\n"
+
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path != "/metrics":
+                    self.send_error(404)
+                    return
+                body = metrics().encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+
+        ThreadingHTTPServer(("", 9102), Handler).serve_forever()
 
   registry-proxy:
     # Forward proxy for judge dependency installation; tunnels only to approved package registries.
@@ -269,5 +379,6 @@ networks:
 volumes:
   pylon-data:
   prometheus-data:
+  inference-log:
 
 # Tracing is deliberately disabled. Only the opt-in alloy profile needs upstream credentials.

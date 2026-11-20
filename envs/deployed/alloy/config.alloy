@@ -29,6 +29,13 @@ prometheus.scrape "validator" {
 	forward_to = [otelcol.receiver.prometheus.default.receiver]
 }
 
+// Claude subscription budget read from the inference proxy's responses.
+prometheus.scrape "claude_usage" {
+	targets    = [{__address__ = "claude-usage-exporter:9102"}]
+	job_name   = "claude-usage"
+	forward_to = [otelcol.receiver.prometheus.default.receiver]
+}
+
 // The converter carries no HELP or TYPE, so every family arrives as a gauge. Values, rate() and
 // histogram_quantile() are unaffected.
 otelcol.receiver.prometheus "default" {
