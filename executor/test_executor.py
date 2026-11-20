@@ -820,6 +820,9 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
     assert limited.max_running_jobs == 6
     (reserved,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_JUDGE_RESERVE_SECONDS": "300"})
     assert reserved.judge_reserve_seconds == 300
+    assert default.container_retention_hours == 168
+    (retained,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_CONTAINER_RETENTION_HOURS": "48"})
+    assert retained.container_retention_hours == 48
 
 
 @pytest.mark.parametrize(
@@ -841,6 +844,7 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
         ("EXECUTOR_TMP_SIZE", "64m,exec"),
         ("EXECUTOR_JUDGE_RESERVE_SECONDS", "-1"),
         ("EXECUTOR_MAX_RUNNING_JOBS", "0"),
+        ("EXECUTOR_CONTAINER_RETENTION_HOURS", "0"),
         ("EXECUTOR_REGISTRY_NETWORK", "host"),
         ("EXECUTOR_REGISTRY_NETWORK", "two words"),
     ],
@@ -1081,7 +1085,8 @@ class PruneRecordingDocker(FakeDocker):
         return super().call(*args, timeout=timeout)
 
 
-def test_stopped_containers_are_pruned_hourly_after_a_week(executor: Executor) -> None:
+def test_stopped_containers_are_pruned_hourly_after_the_retention(executor: Executor) -> None:
+    executor.settings = replace(executor.settings, container_retention_hours=48)
     daemon = PruneRecordingDocker(executor)
     executor.docker = daemon
     with ThreadPoolExecutor(max_workers=1) as pool:
@@ -1091,7 +1096,7 @@ def test_stopped_containers_are_pruned_hourly_after_a_week(executor: Executor) -
             "label=factory_horde.job_id",
             "label=factory_horde.runner",
         ]
-        assert all(args[-1] == "until=168h" for args in daemon.prunes)
+        assert all(args[-1] == "until=48h" for args in daemon.prunes)
         executor.pruned_at = time.monotonic() - 3601
         executor.poll(pool)
     assert len(daemon.prunes) == 4

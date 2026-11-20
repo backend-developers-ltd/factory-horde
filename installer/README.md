@@ -210,7 +210,7 @@ Real factories usually also need more than the default resources: `EXECUTOR_MEMO
 
 `EXECUTOR_MAX_RUNNING_JOBS` (default 4) caps how many factory or judge containers exist at once; a judge's application sandbox shares its slot. Round deadlines never stretch, so set it high enough for every job of a stage (miners × tasks) to run together, within the host's memory and CPU. A job waiting for a slot reports `Waiting for a workload slot` and logs `workload_slot_wait` at error level; one whose window ends before it starts logs `job_never_created`, and its miner is excluded from the round as a validator-side gap (`miner_excluded` at error level), not as a rejected submission. Terminal jobs whose containers Docker left in the created state do not hold a slot.
 
-Stopped factory, judge and judge-application containers are kept for a week so their `docker logs` remain available when a job needs investigating. The executor prunes older ones hourly (`containers_pruned`, or `container_prune_failed` at error level).
+Stopped factory, judge and judge-application containers are kept for `EXECUTOR_CONTAINER_RETENTION_HOURS` (default 168, one week) so their `docker logs` remain available when a job needs investigating. The executor prunes older ones hourly (`containers_pruned`, or `container_prune_failed` at error level).
 
 Each networked workload gets its own small internal network. Docker's default address pools allow only about 31 networks per host, so give it a dedicated pool before raising the limit, for example in `/etc/docker/daemon.json`:
 
