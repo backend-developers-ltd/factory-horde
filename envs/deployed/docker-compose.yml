@@ -257,6 +257,9 @@ services:
         # Per window: (observed timestamp, utilization, reset). Anthropic omits windows from some
         # responses, so each keeps the newest response that reported it.
         latest = {}
+        # Windows present in the newest response that carried any budget headers. A window missing
+        # there is one the subscription does not report, as opposed to no data at all.
+        newest = {"ts": 0.0, "windows": set()}
 
 
         def refresh():
@@ -275,6 +278,8 @@ services:
                     headers = entry["resp_headers"]
                 except (ValueError, KeyError, TypeError):
                     continue
+                if isinstance(headers, dict) and "Anthropic-Ratelimit-Unified-Status" in headers and ts > newest["ts"]:
+                    newest.update(ts=ts, windows={w for w in WINDOWS if HEADER.format(w, "Utilization") in headers})
                 for window in WINDOWS:
                     try:
                         utilization = float(headers[HEADER.format(window, "Utilization")][0])
@@ -295,9 +300,14 @@ services:
 
         def metrics():
             refresh()
-            if not latest:
+            if not newest["ts"]:
                 return ""
-            lines = family(
+            lines = [
+                "# HELP claude_subscription_window_reported Whether the newest budget response reported the window.",
+                "# TYPE claude_subscription_window_reported gauge",
+                *('claude_subscription_window_reported{window="%s"} %d' % (w, w in newest["windows"]) for w in WINDOWS),
+            ]
+            lines += family(
                 "claude_subscription_utilization_ratio", "Share of the subscription budget used in the window.", 1
             )
             lines += family("claude_subscription_reset_timestamp_seconds", "When the window's budget resets.", 2)
