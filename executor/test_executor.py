@@ -820,6 +820,9 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
     assert limited.max_running_jobs == 6
     (reserved,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_JUDGE_RESERVE_SECONDS": "300"})
     assert reserved.judge_reserve_seconds == 300
+    assert default.container_retention_hours == 168
+    (retained,) = run_main(tmp_path, monkeypatch, {"EXECUTOR_CONTAINER_RETENTION_HOURS": "48"})
+    assert retained.container_retention_hours == 48
 
 
 @pytest.mark.parametrize(
@@ -841,6 +844,7 @@ def test_environment_selects_workload_network_and_tmp_size(tmp_path: Path, monke
         ("EXECUTOR_TMP_SIZE", "64m,exec"),
         ("EXECUTOR_JUDGE_RESERVE_SECONDS", "-1"),
         ("EXECUTOR_MAX_RUNNING_JOBS", "0"),
+        ("EXECUTOR_CONTAINER_RETENTION_HOURS", "0"),
         ("EXECUTOR_REGISTRY_NETWORK", "host"),
         ("EXECUTOR_REGISTRY_NETWORK", "two words"),
     ],
@@ -1063,3 +1067,45 @@ def test_options_paths_and_urls_are_not_requirements(line: str) -> None:
 def test_invalid_install_requests_are_rejected(executor: Executor, judge_request: Request, install: object) -> None:
     with pytest.raises(ProtocolError):
         ApplicationRunner(executor, judge_request, {}).execute({"id": "step-1", "install": install, "observation": "x"})
+
+
+class PruneRecordingDocker(FakeDocker):
+    """Records prune commands and optionally rejects them."""
+
+    def __init__(self, executor: Executor, failing: bool = False):
+        super().__init__(executor)
+        self.prunes: list[tuple[str, ...]] = []
+        self.failing = failing
+
+    @override
+    def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ("container", "prune"):
+            self.prunes.append(args)
+            return subprocess.CompletedProcess(args, int(self.failing), "", "daemon error" if self.failing else "")
+        return super().call(*args, timeout=timeout)
+
+
+def test_stopped_containers_are_pruned_hourly_after_the_retention(executor: Executor) -> None:
+    executor.settings = replace(executor.settings, container_retention_hours=48)
+    daemon = PruneRecordingDocker(executor)
+    executor.docker = daemon
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        executor.poll(pool)
+        executor.poll(pool)
+        assert [args[-3] for args in daemon.prunes] == [
+            "label=factory_horde.job_id",
+            "label=factory_horde.runner",
+        ]
+        assert all(args[-1] == "until=48h" for args in daemon.prunes)
+        executor.pruned_at = time.monotonic() - 3601
+        executor.poll(pool)
+    assert len(daemon.prunes) == 4
+
+
+def test_prune_failure_never_stops_polling(executor: Executor, capsys: pytest.CaptureFixture[str]) -> None:
+    executor.docker = PruneRecordingDocker(executor, failing=True)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        executor.poll(pool)
+    events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if "prune" in line]
+    assert [event["event"] for event in events] == ["container_prune_failed"] * 2
+    assert ExecutorHealth.model_validate_json(executor.files.read_bytes("control/executor-health.json")).reconciled
