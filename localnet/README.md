@@ -150,7 +150,7 @@ state are gitignored. Bootstrap logs omit generated recovery phrases.
 `state/registrations.json` records UID/hotkey/coldkey mappings read directly from
 Subtensor at one block, independently of Pylon. `check.py` compares Pylon's view,
 checks that a miner token cannot access a different identity, verifies a fresh
-validator observation and all three monitoring scrape targets, then writes public
+validator observation and all four monitoring scrape targets, then writes public
 check results to `state/compose-check.json`.
 
 Named volumes retain chain, Pylon database and Prometheus state. Subtensor starts
@@ -406,6 +406,8 @@ network namespace. Both monitoring images are pinned. No remote-write, Alloy or
 upstream credentials are required. Prometheus also scrapes the validator at
 `validator:9101/metrics`. A Nexus actor owns this server; executor metrics come
 from atomic files through the same scrape path. Host metrics remain host metrics.
+It also scrapes `claude-usage-exporter:9102`, which exports Claude subscription
+budget use only when the inference proxy runs.
 The validator readiness health check requires the host executor to be installed
 and running, even with dispatch disabled.
 

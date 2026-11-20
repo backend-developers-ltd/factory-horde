@@ -227,18 +227,21 @@ That allows 256 new networks of 254 hosts each; existing networks keep their sub
 ## Monitoring and recovery
 
 Common Compose uses pinned Prometheus and node-exporter images. Prometheus scrapes
-host metrics, validator port 9101 and authenticated Pylon metrics. Its UI binds only
+host metrics, validator port 9101, authenticated Pylon metrics and the Claude usage
+exporter. Its UI binds only
 to host loopback. The validator owns `/metrics`, `/livez` and `/readyz` through Nexus;
 the executor stays file-only. Readiness distinguishes missing/stale chain, executor
 or Docker observations, unreconciled work, incompatible records and unwritable
 control/result paths. Pylon acknowledgement is not independent chain proof.
 
-`COMPOSE_PROFILES=alloy` in `.env` adds Grafana Alloy, which scrapes the same three targets and pushes them as OTLP to the company monitoring stack, where they are read in the central Grafana. Without the profile Alloy does not start and nothing leaves the host. The profile needs these `.env` values:
+`COMPOSE_PROFILES=alloy` in `.env` adds Grafana Alloy, which scrapes the same four targets and pushes them as OTLP to the company monitoring stack, where they are read in the central Grafana. Without the profile Alloy does not start and nothing leaves the host. The profile needs these `.env` values:
 
 - `METRICS_UPSTREAM_USER` and `METRICS_UPSTREAM_PASSWORD`: the deployment's login on the monitoring server, created there with `./scripts/add_loki_target.sh <server_group> <env>` from `prometheus-grafana-monitoring`.
 - `METRICS_UPSTREAM_URL`: the OTLP gateway, `https://alloy.reef.pl` by default.
 
-The login also needs an entry in that repository's `scripts/otel_inventory.yml`; the gateway refuses logins without one. The gateway stamps `client_server_group`, `environment`, `host` and the other identity labels from the inventory, so this repository sets none of them. Series arrive in Mimir as `job="factory-horde/<job>"` (`node-exporter`, `pylon`, `validator`) with the scrape address as `instance`; filter on `host` to select the machine. Alloy's scrape converter carries no HELP or TYPE, so every family arrives as a gauge; values, `rate()` and `histogram_quantile()` are unaffected. The Alloy configuration is the release asset [`envs/deployed/alloy/config.alloy`](../envs/deployed/alloy/config.alloy).
+The login also needs an entry in that repository's `scripts/otel_inventory.yml`; the gateway refuses logins without one. The gateway stamps `client_server_group`, `environment`, `host` and the other identity labels from the inventory, so this repository sets none of them. Series arrive in Mimir as `job="factory-horde/<job>"` (`node-exporter`, `pylon`, `validator`, `claude-usage`) with the scrape address as `instance`; filter on `host` to select the machine. Alloy's scrape converter carries no HELP or TYPE, so every family arrives as a gauge; values, `rate()` and `histogram_quantile()` are unaffected. The Alloy configuration is the release asset [`envs/deployed/alloy/config.alloy`](../envs/deployed/alloy/config.alloy).
+
+The `claude-usage-exporter` service reports how much of the Claude subscription budget is used. With the `inference` profile, `inference-proxy` writes a JSON access log to the `inference-log` volume (without credentials, rolled at 10 MiB) and the exporter reads the newest `anthropic-ratelimit-unified-*` response headers from it: `claude_subscription_utilization_ratio{window="5h"|"7d"}` (0 to 1), `claude_subscription_reset_timestamp_seconds{window}` and `claude_subscription_observed_timestamp_seconds`. Anthropic returns these headers only on model responses, so the values change only while factories or judges call Claude, and the exporter has none until the first such response after it starts. Without the profile it runs but exports nothing. It is independent of the validator so it can be removed when the subscription is replaced.
 
 Per-miner validator series are labelled with the miner hotkey. The permit, last weight update and incentive come from one Pylon neuron read a minute; Pylon does not expose the weights stored on chain or pending commit-reveal commits, so the validator exports calculated weights and the resulting incentive instead. Evaluated image digests stay in the records. The local Prometheus keeps up to 1 GB of samples. node-exporter runs in the application's bridge network, so it reports no host network traffic.
 

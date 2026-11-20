@@ -121,8 +121,13 @@ def main() -> None:
     )
     metrics.raise_for_status()
     targets = Targets.model_validate_json(metrics.content).data.activeTargets
-    if {target.labels["job"]: target.health for target in targets} != {"host": "up", "pylon": "up", "validator": "up"}:
-        raise RuntimeError("Expected healthy host, Pylon and validator Prometheus targets")
+    if {target.labels["job"]: target.health for target in targets} != {
+        "host": "up",
+        "pylon": "up",
+        "validator": "up",
+        "claude-usage": "up",
+    }:
+        raise RuntimeError("Expected healthy host, Pylon, validator and Claude usage Prometheus targets")
     evidence = {
         "checked_at": datetime.now(UTC).isoformat(),
         "validator_observation": observation.model_dump(mode="json"),
@@ -131,7 +136,7 @@ def main() -> None:
         "scrapes": {target.labels["job"]: target.health for target in targets},
     }
     (config_path.parent / "state/compose-check.json").write_text(json.dumps(evidence, indent=2) + "\n")
-    print("PASS: fresh containerized validator, six Pylon identities, token isolation, all three Prometheus targets")
+    print("PASS: fresh containerized validator, six Pylon identities, token isolation, all four Prometheus targets")
 
 
 if __name__ == "__main__":

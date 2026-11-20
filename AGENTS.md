@@ -163,7 +163,10 @@ Skip for higher level tasks that do not touch the code.
 ### Observability
 
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
-Prometheus scrapes node-exporter, the validator on port 9101 and Pylon's `/metrics` with `PYLON_METRICS_TOKEN`.
+Prometheus scrapes node-exporter, the validator on port 9101, Pylon's `/metrics` with `PYLON_METRICS_TOKEN`
+and `claude-usage-exporter` on port 9102. That standalone sidecar exports the Claude subscription's 5h/7d budget
+use from the rate-limit response headers in `inference-proxy`'s access log; it is deliberately outside the
+validator so it can be dropped when the subscription is replaced.
 Local configuration generates separate identity/open-access/metrics tokens. `COMPOSE_PROFILES=alloy` adds
 pinned Grafana Alloy, which scrapes the same targets and pushes OTLP to the company monitoring stack's
 gateway (`METRICS_UPSTREAM_URL`, default `https://alloy.reef.pl`) with `METRICS_UPSTREAM_USER`/`_PASSWORD`;
