@@ -257,7 +257,8 @@ create/start/pull responses or simulates unavailable observation. The production
 executor contains no fault hooks. All workload containers are real; statuses are
 written by the service, never injected by the test.
 
-It runs five TERM-resistant factories concurrently, restarts during stop grace,
+It runs TERM-resistant factories concurrently, as many as the acceptance executor's
+`EXECUTOR_MAX_RUNNING_JOBS` allows up to five, restarts during stop grace,
 crashes after create/start, replays finalized work, deletes finalized containers,
 cancels a delayed pull while another job finishes, and deletes an expected
 container before final observation. The last scenario deliberately retains an
