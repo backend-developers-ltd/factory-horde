@@ -4,7 +4,7 @@ The installer and updater use the common Compose application and one host system
 executor. Historical localnet acceptance used the [immutable candidate](../envs/candidate/README.md). Refinery uses the same operator release path with its own chain settings and current published images. [End-to-end acceptance](../spec/evidence/task17-acceptance.json)
 passed in a separate installation on the existing user-selected VM. Follow the
 [packaged reproduction sequence](../localnet/README.md#packaged-candidate-acceptance-on-this-vm).
-No subnet-12 or production configuration is promoted by these instructions.
+Mainnet subnet 12 uses [`production/`](../production/README.md).
 
 ## Published operator installation
 

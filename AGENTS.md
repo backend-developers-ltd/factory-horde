@@ -25,8 +25,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
 - `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with the opt-in
   `alloy` Compose profile and its `alloy/config.alloy`, which push metrics to the company monitoring stack;
-  operator promotion would use `deploy-config-production`, with this compose file and the installer
-  scripts as the operator-critical files; no production configuration branch has been promoted
+  operator promotion uses `deploy-config-production` (mainnet subnet 12, mechanism 1) and
+  `deploy-config-refinery`, with this compose file and the installer scripts as the operator-critical files
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
@@ -35,6 +35,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
   path: the validator through `installer/` (on Refinery the `ubuntu` operator installs into `~/factory-horde` from
   `deploy-config-refinery`, following builds on `deploy-build-refinery`), a miner through
   `miner/docker-compose.yml`. Do not add Refinery-specific deployment or operation scripts
+- `production/` — the same for mainnet subnet 12, where FactoryHorde is mechanism 1 beside ComputeHorde and
+  reuses its hotkeys: `.env` examples and a guide, no deployment scripts
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures
@@ -101,7 +103,7 @@ contains workflows for:
 - Generally bootstrapping the project
 
 Use those workflows within V2's sequential tasks. Build an immutable candidate and verify isolated localnet;
-do not promote configuration to active operators, deploy to subnet 12 or change emissions for this prototype.
+do not change emissions. Since 23 November 2026 the user has deployed FactoryHorde as mechanism 1 of subnet 12 (`production/`).
 For task 17, the user explicitly selected this existing VM on 2 October 2026: do not create or prepare another
 VM. Use a separate localnet installation here and report that environment scope accurately.
 

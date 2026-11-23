@@ -30,6 +30,7 @@ beside it (never committed):
 | Setting | Meaning |
 | --- | --- |
 | `ENVIRONMENT`, `BITTENSOR_NETWORK`, `NETUID`, `BLOCK_DURATION_SECONDS` | Chain and subnet |
+| `BITTENSOR_ARCHIVE_NETWORK` | Optional node for historical reads, default `BITTENSOR_NETWORK`; `archive` on mainnet |
 | `BITTENSOR_WALLET_NAME`, `BITTENSOR_WALLET_HOTKEY_NAME`, `HOST_WALLET_DIR` | Registered miner wallet, mounted read-only into Pylon |
 | `MINER_PYLON_TOKEN`, `PYLON_OPEN_ACCESS_TOKEN`, `PYLON_METRICS_TOKEN` | Three distinct secrets, e.g. `openssl rand -hex 24` |
 | `FACTORY_IMAGE` | Default image to commit |
