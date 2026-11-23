@@ -34,12 +34,10 @@ constraint-dependencies = ["certifi>=2026.10.19", "botocore>=1.43.117"]
 # This is intended to help avoid pulling in freshly published compromised dependencies.
 exclude-newer = "11 days"
 exclude-newer-package = { certifi = "P1D", botocore = "P1D", boto3 = "P1D", bittensor-pylon-client = false } # We control Pylon releases.
-# Nexus d54e268 pins bittensor-pylon-client==2.3.1; 2.4.0 is additive (mechanism-aware neuron reads).
-override-dependencies = ["bittensor-pylon-client==2.4.0"]
 
 [tool.uv.sources]
-# master: mechanism-aware status/writes and idle-context expiry (context_ttl).
-bittensor-nexus-library = { git = "https://github.com/bittensor-church/bittensor-nexus-library.git", rev = "d54e268af8529f3329ae67562e926c74cd685b71" }
+# master: mechanism-aware status/writes, idle-context expiry (context_ttl) and Pylon 2.x clients.
+bittensor-nexus-library = { git = "https://github.com/bittensor-church/bittensor-nexus-library.git", rev = "3b630dd09f209cb633647236a00cfcf5673bc730" }
 
 [dependency-groups]
 dev = [

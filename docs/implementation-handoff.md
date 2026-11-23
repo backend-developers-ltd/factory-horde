@@ -197,8 +197,8 @@ locks retain the existing seven-day `UV_EXCLUDE_NEWER` setting from this environ
 unsetting that override applies the validator's stricter eleven-day project policy.
 Boto3/botocore 1.43.119 was still inside the one-day cooldown when resolving.
 
-The selected Nexus revision pins Pylon client 2.3.1; the validator overrides that
-pin with 2.4.0, which only adds mechanism-aware neuron reads. There is no newer published `nodejs-wheel-binaries` than the locked
+The selected Nexus revision accepts any Pylon 2.x client from 2.3.1; the validator
+selects 2.4.0. There is no newer published `nodejs-wheel-binaries` than the locked
 24.19.0. Drand was excluded from this refresh at the user's request.
 
 Version updates alone do not finish the audit: node-exporter 1.12.1 and BuildKit

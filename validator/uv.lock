@@ -17,7 +17,6 @@ constraints = [
     { name = "botocore", specifier = ">=1.43.117" },
     { name = "certifi", specifier = ">=2026.10.19" },
 ]
-overrides = [{ name = "bittensor-pylon-client", specifier = "==2.4.0" }]
 
 [[package]]
 name = "annotated-types"
@@ -76,8 +75,8 @@ wheels = [
 
 [[package]]
 name = "bittensor-nexus-library"
-version = "0.0.1.dev184+gd54e268af"
-source = { git = "https://github.com/bittensor-church/bittensor-nexus-library.git?rev=d54e268af8529f3329ae67562e926c74cd685b71#d54e268af8529f3329ae67562e926c74cd685b71" }
+version = "0.0.1.dev186+g3b630dd09"
+source = { git = "https://github.com/bittensor-church/bittensor-nexus-library.git?rev=3b630dd09f209cb633647236a00cfcf5673bc730#3b630dd09f209cb633647236a00cfcf5673bc730" }
 dependencies = [
     { name = "bittensor-pylon-client" },
     { name = "boto3" },
@@ -1612,7 +1611,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "attrs", specifier = ">=26.1.0" },
-    { name = "bittensor-nexus-library", git = "https://github.com/bittensor-church/bittensor-nexus-library.git?rev=d54e268af8529f3329ae67562e926c74cd685b71" },
+    { name = "bittensor-nexus-library", git = "https://github.com/bittensor-church/bittensor-nexus-library.git?rev=3b630dd09f209cb633647236a00cfcf5673bc730" },
     { name = "bittensor-pylon-client", specifier = "==2.4.0" },
     { name = "click", specifier = ">=8.3.2" },
     { name = "opentelemetry-api", specifier = "~=1.41" },
