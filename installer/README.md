@@ -11,7 +11,7 @@ Mainnet subnet 12 uses [`production/`](../production/README.md).
 Build and promote images through [the deployment procedures](../knowledge/validator.deploy.md). On the operator host, select the configuration branch explicitly and resolve it once before downloading the installer. The installation directory is runtime state, not a Git checkout.
 
 ```sh
-RELEASE_REF=deploy-config-production # use deploy-config-refinery for Refinery
+RELEASE_REF=deploy-config-production # Refinery too
 RELEASE_SHA=$(git ls-remote https://github.com/backend-developers-ltd/factory-horde.git "refs/heads/$RELEASE_REF" | cut -f1)
 test "${#RELEASE_SHA}" -eq 40
 RELEASE_URL="https://raw.githubusercontent.com/backend-developers-ltd/factory-horde/$RELEASE_SHA"

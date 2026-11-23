@@ -15,7 +15,7 @@ The current deployment has one validator server and one miner server, both Ubunt
 Refinery wallets are created on the server that uses them and funded from `//Alice` with `fund-from-alice.sh`, downloaded from the selected configuration release; the helper is not part of the runtime installation. This needs uv, jq and btcli (`uv tool install --python /usr/bin/python3.14 'bittensor==11.3.0'`). For the validator wallet:
 
 ```bash
-RELEASE_REF=deploy-config-refinery
+RELEASE_REF=deploy-config-production
 RELEASE_SHA=$(git ls-remote https://github.com/backend-developers-ltd/factory-horde.git "refs/heads/$RELEASE_REF" | cut -f1)
 test "${#RELEASE_SHA}" -eq 40
 RELEASE_URL="https://raw.githubusercontent.com/backend-developers-ltd/factory-horde/$RELEASE_SHA"
@@ -36,7 +36,7 @@ The miner wallet (`miner1`) takes the same steps without the stake. btcli 11.3.0
 
 ## Validator
 
-Follow [published operator installation](../installer/README.md#published-operator-installation), selecting `RELEASE_REF=deploy-config-refinery`. After resolving `RELEASE_SHA` and downloading the bootstrap installer, prepare the Refinery environment:
+Follow [published operator installation](../installer/README.md#published-operator-installation), selecting `RELEASE_REF=deploy-config-production`. After resolving `RELEASE_SHA` and downloading the bootstrap installer, prepare the Refinery environment:
 
 ```bash
 umask 077
@@ -46,7 +46,7 @@ curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
-**Upgrading to envelope commitments.** An existing installation must have `SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd` in `~/factory-horde/.env` before `deploy-config-refinery` moves to a release with envelope commitments: once dispatch is enabled, the validator refuses to start without it, and the updater does not roll back. The miners' `.env` needs the same line before they run the new submitter.
+**Upgrading to envelope commitments.** An existing installation must have `SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd` in `~/factory-horde/.env` before it follows a release with envelope commitments: once dispatch is enabled, the validator refuses to start without it, and the updater does not roll back. The miners' `.env` needs the same line before they run the new submitter.
 
 The metrics login comes from the company monitoring stack: see [monitoring](../installer/README.md#monitoring-and-recovery) for how it is created and registered. Metrics then appear in the central Grafana under the deployment's `client_server_group` and `host`.
 
@@ -63,7 +63,7 @@ Follow [the miner instructions](../miner/README.md#submitting-from-a-server):
 ```bash
 mkdir -p ~/factory-horde/miner
 cd ~/factory-horde/miner
-# Use the miner instructions to download the verified Compose file from deploy-config-refinery.
+# Use the miner instructions to download the verified Compose file from deploy-config-production.
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/miner.env.example" -o .env
 # Fill in HOST_WALLET_DIR and the three tokens in .env; check SUBMISSION_NAMESPACE.
@@ -85,8 +85,8 @@ The deployment changes no subnet setting. It expects subnet 11 to allow registra
 ## Differences from a real deployment
 
 - **Development chain and keys.** Refinery is a private development chain. Wallets are funded from the public `//Alice` key, and coldkeys are stored unencrypted in the wallet directory that Pylon mounts read-only. A real deployment uses funded, encrypted coldkeys kept off the servers, with only hotkeys on the hosts.
-- **Release selection.** The same build/promotion process uses the `refinery` branch suffix instead of `production`. The validator follows `deploy-config-refinery`; the miner downloads its checksummed Compose file from that branch. Neither server deploys source checkouts.
-- **Images.** Validator and submitter images are built through `deploy-build-refinery` and pinned by digest in the configuration release. The behavioral judge is pinned by digest, and the miners commit demo factories from [factory-horde-demo-miners](https://github.com/backend-developers-ltd/factory-horde-demo-miners) rather than the baseline factory; the earlier localnet candidate is historical acceptance evidence, not the active application release.
+- **Release selection.** Refinery is a production deployment on another chain, so `ENVIRONMENT=production`: the validator follows `deploy-config-production` and the miner downloads its checksummed Compose file from that branch. Neither server deploys source checkouts.
+- **Images.** Refinery runs the production validator and submitter images pinned by digest in the configuration release. The behavioral judge is pinned by digest, and the miners commit demo factories from [factory-horde-demo-miners](https://github.com/backend-developers-ltd/factory-horde-demo-miners) rather than the baseline factory; the earlier localnet candidate is historical acceptance evidence, not the active application release.
 - **Mining.** Three demo miners on one server commit factories that write the requested program with Claude. The historical fixture judge draws random scores. Review scoring requires the updated validator, executor and matching judge digest. The example selects `JUDGE_MODE=review` and provides one list of criteria for all miners. Review weights start with the first eligible review round.
 - **Inference.** All factories and judges use one Claude subscription through the validator's proxy, without a per-workload quota; peer workloads use separate isolated networks.
 - **Round length.** Rounds last 60 minutes (30/5/25 minutes) instead of the default two hours (60/5/55 minutes).

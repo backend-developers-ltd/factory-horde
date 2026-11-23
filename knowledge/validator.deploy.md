@@ -60,7 +60,7 @@ system unit. The operator's cron has only that restart sudo grant. A changed sys
 unit requires installation privileges; unhealthy replacement requires ordinary
 repair and is not rolled back automatically. See [installer instructions](../installer/README.md).
 
-Refinery uses `deploy-build-refinery` for image builds and `deploy-config-refinery` for operator releases. Its servers consume published assets without a source checkout, using the same installer, configuration and promotion flow as production; see [the Refinery guide](../refinery/README.md).
+Refinery is a production deployment on another chain: it follows `deploy-config-production`, runs the `production` images and sets only its chain, subnet and mechanism differently in `.env`. Its servers consume published assets without a source checkout, using the same installer, configuration and promotion flow as production; see [the Refinery guide](../refinery/README.md).
 
 [Task 16's candidate](../envs/candidate/README.md) uses this build/promotion structure. Production
 configuration promotion, subnet-12 deployment and emissions changes remain outside
@@ -149,6 +149,8 @@ stack.
    ```yaml
    image: <image_registry>/<github_org>/<image_basename>-${ENVIRONMENT:?}@sha256:<digest>
    ```
+
+   Deployed `.env` files must not set `VALIDATOR_IMAGE` or `SUBMITTER_IMAGE`: they override the pin and exist for localnet images.
 
    For a submitter release, pin the published submitter digest in `miner/docker-compose.yml` as part of the same configuration release. Miner operators download and verify that file from the selected revision, then run the new submitter on demand; see [miner installation](../miner/README.md#submitting-from-a-server).
 

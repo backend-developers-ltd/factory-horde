@@ -15,7 +15,7 @@ Nothing is registered or funded for this deployment. Each server gets only the e
 
 ## Validator
 
-Follow [published operator installation](../installer/README.md#published-operator-installation) with `RELEASE_REF=deploy-config-production`, using [`validator.env.example`](validator.env.example) as the operator environment file. Fill in the wallet names, `VALIDATOR_HOTKEY`, `VALIDATOR_IMAGE` and `JUDGE_IMAGE` (the digests of the release), `CLAUDE_CODE_OAUTH_TOKEN` and the metrics login. Images are built through `deploy-build-production`. Rounds, task, inference proxy and monitoring are the same as on Refinery.
+Follow [published operator installation](../installer/README.md#published-operator-installation) with `RELEASE_REF=deploy-config-production`, using [`validator.env.example`](validator.env.example) as the operator environment file. Fill in the wallet names, `VALIDATOR_HOTKEY`, `JUDGE_IMAGE`, `CLAUDE_CODE_OAUTH_TOKEN` and the metrics login. The validator image is the one the release pins. Rounds, task, inference proxy and monitoring are the same as on Refinery.
 
 ## Miners
 
