@@ -59,6 +59,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     dispatch_enabled: bool = False
     validator_hotkey: MinerHotkey | None = Field(default=None, validation_alias="VALIDATOR_HOTKEY")
     judge_image: ImageReference | None = None
+    submission_namespace: str | None = Field(default=None, pattern=r"^ghcr\.io(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+$")
     generation_window: timedelta = timedelta(hours=1)
     confirmation_window: timedelta = timedelta(minutes=5)
     evaluation_window: timedelta = timedelta(minutes=55)
@@ -76,7 +77,9 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     metrics_port: int = Field(default=9101, ge=1, le=65535)
     observation_max_age_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
 
-    @field_validator("validator_hotkey", "judge_image", "task_directory", "judge_model", mode="before")
+    @field_validator(
+        "validator_hotkey", "judge_image", "submission_namespace", "task_directory", "judge_model", mode="before"
+    )
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
@@ -110,9 +113,15 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     def _dispatch_configuration(self) -> Self:
         self.round_timing()
         if self.dispatch_enabled and not (
-            self.validator_hotkey and self.judge_image and self.pylon_identity_name and self.pylon_identity_token
+            self.validator_hotkey
+            and self.judge_image
+            and self.submission_namespace
+            and self.pylon_identity_name
+            and self.pylon_identity_token
         ):
-            raise ValueError("Dispatch requires validator hotkey, judge digest and Pylon identity credentials")
+            raise ValueError(
+                "Dispatch requires validator hotkey, judge digest, submission namespace and Pylon identity credentials"
+            )
         if self.weights_enabled and not (self.pylon_identity_name and self.pylon_identity_token):
             raise ValueError("Weight setting requires Pylon identity credentials")
         if self.weight_epoch_offset > self.weight_tempo:
@@ -156,7 +165,13 @@ class Validator(NexusValidator):
         )
         if settings.pylon_identity_name and settings.pylon_identity_token:
             chain_view = ChainViewNode(
-                partial(read_chain_view, settings.pylon_config(), settings.netuid, settings.validator_hotkey)
+                partial(
+                    read_chain_view,
+                    settings.pylon_config(),
+                    settings.netuid,
+                    settings.validator_hotkey,
+                    settings.mechanism_id,
+                )
             )
             self.connect(self.tasks.poll_clock.source, taps=(chain_view.sink,))
             self.connect(chain_view.ok, monitoring.chain_view)
@@ -165,13 +180,19 @@ class Validator(NexusValidator):
         self.connect(self.subnet_clock.source, taps=(monitoring.block,))
         self.connect(monitoring.error, errors.sink)
         self.connect(monitoring.ok, MessageLoggerNode[Readiness]("factory-horde-health").sink)
-        if settings.dispatch_enabled and settings.validator_hotkey is not None and settings.judge_image is not None:
+        if (
+            settings.dispatch_enabled
+            and settings.validator_hotkey is not None
+            and settings.judge_image is not None
+            and settings.submission_namespace is not None
+        ):
             discovery = partial(
                 freeze_via_pylon,
                 self.results.files,
                 settings.pylon_config(),
                 settings.netuid,
                 settings.validator_hotkey,
+                settings.submission_namespace,
             )
             coordinator = RoundCoordinatorNode(
                 RoundCoordinator(

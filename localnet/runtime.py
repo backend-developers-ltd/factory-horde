@@ -11,6 +11,12 @@ from installer.release import Installation, compose
 SOURCE = Path(__file__).resolve().parent
 
 
+def executor_slots(directory: Path) -> int:
+    """An installed executor's cap on running workload containers."""
+    executor = dotenv_values(directory / "executor/executor.env")
+    return int(executor["EXECUTOR_MAX_RUNNING_JOBS"] or "")
+
+
 @dataclass(frozen=True)
 class Runtime:
     """Explicit local configuration and maintained Compose command, without copying secrets."""
@@ -70,6 +76,11 @@ class Runtime:
     def data(self) -> Path:
         """The selected executor/validator shared host data tree."""
         return Path(self.config["FACTORY_HORDE_DATA_ROOT"])
+
+    @property
+    def executor_slots(self) -> int:
+        """The installed executor's cap on running workload containers."""
+        return executor_slots(self.data.parent)
 
     @property
     def pylon_address(self) -> str:

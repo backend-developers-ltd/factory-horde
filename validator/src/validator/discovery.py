@@ -1,5 +1,6 @@
-"""Freeze version-one commitment discovery at one chain block for actor-owned rounds."""
+"""Freeze version-two envelope discovery at one chain block for actor-owned rounds."""
 
+import base64
 import re
 from datetime import UTC, datetime
 from typing import Protocol
@@ -14,6 +15,9 @@ from validator.record_files import RecordConflictError, RecordFiles
 from validator.records import BlockHash, CohortMember, ImageReference, MinerHotkey, NonnegativeInt, Record, UtcTime
 
 COMMITMENT_MAX_BYTES = 128
+_SEGMENT = rb"[a-z0-9]+(?:[._-][a-z0-9]+)*"
+_OWN_ENVELOPE = re.compile(rb"<F:([^<>]*)>")
+_PAYLOAD = re.compile(rb"(" + _SEGMENT + rb"(?:/" + _SEGMENT + rb")*)@([A-Za-z0-9_-]{43})")
 _image = TypeAdapter[str](ImageReference)
 _events = Counter("factory_horde_discovery_total", "Commitment discovery outcomes", ("outcome",))
 _latency = Histogram("factory_horde_discovery_seconds", "Block-aligned commitment discovery duration")
@@ -49,24 +53,38 @@ class DiscoverySnapshot(Record):
     rejected: tuple[RejectedSubmission, ...]
 
 
-def decode_reference(value: str) -> str:
-    """Decode the selected v1 hex format and enforce GHCR plus the Raw128 limit.
+def decode_reference(value: str, namespace: str) -> str:
+    """Decode the single FactoryHorde envelope of a hex commitment into a namespaced GHCR reference.
+
+    Other mechanisms' envelopes in the same commitment are ignored.
 
     Raises:
-        ValueError: Bytes, text, registry, digest or payload length is invalid.
+        ValueError: Hex, length, envelope, digest or rebuilt reference is invalid.
     """
     if re.fullmatch(r"(?:0x)?(?:[0-9a-fA-F]{2})+", value) is None:
         raise ValueError("Malformed hexadecimal commitment")
-    raw = CommitmentDataBytes.fromhex(value)
+    raw = bytes(CommitmentDataBytes.fromhex(value.removeprefix("0x")))
     if len(raw) > COMMITMENT_MAX_BYTES:
         raise ValueError("Commitment exceeds the selected writer's 128-byte limit")
-    return _image.validate_python(raw.decode("utf-8"))
+    payloads = _OWN_ENVELOPE.findall(raw)
+    if not payloads:
+        raise ValueError("No FactoryHorde submission")
+    if len(payloads) > 1:
+        raise ValueError("Multiple FactoryHorde submissions")
+    match = _PAYLOAD.fullmatch(payloads[0])
+    if match is None:
+        raise ValueError("Malformed FactoryHorde submission")
+    digest = base64.urlsafe_b64decode(match[2] + b"=")
+    if base64.urlsafe_b64encode(digest).rstrip(b"=") != match[2]:
+        raise ValueError("Malformed FactoryHorde submission")
+    return _image.validate_python(f"{namespace}/{match[1].decode()}@sha256:{digest.hex()}")
 
 
 def discover(
     api: DiscoveryApi,
     netuid: int,
     validator_hotkey: str,
+    namespace: str,
     allowed_hotkeys: tuple[str, ...] | None = None,
 ) -> DiscoverySnapshot:
     """Read commitments first, then membership at exactly their returned block.
@@ -100,7 +118,7 @@ def discover(
                     reason = "not registered at the commitment snapshot block"
                 else:
                     try:
-                        image = decode_reference(value)
+                        image = decode_reference(value, namespace)
                     except ValueError as error:
                         reason = str(error)
                     else:
@@ -132,6 +150,7 @@ def freeze_discovery(
     api: DiscoveryApi,
     netuid: int,
     validator_hotkey: str,
+    namespace: str,
     allowed_hotkeys: tuple[str, ...] | None = None,
 ) -> DiscoverySnapshot:
     """Recover a committed snapshot before chain reads; later updates cannot rewrite it.
@@ -144,7 +163,7 @@ def freeze_discovery(
     try:
         result = files.read(relative, DiscoverySnapshot)
     except FileNotFoundError:
-        result = discover(api, netuid, validator_hotkey, allowed)
+        result = discover(api, netuid, validator_hotkey, namespace, allowed)
         files.publish(relative, result)
     if (result.netuid, result.validator_hotkey, result.allowed_hotkeys) != (netuid, validator_hotkey, allowed):
         raise RecordConflictError("Discovery identity already has a different subnet or role policy")
@@ -152,8 +171,8 @@ def freeze_discovery(
 
 
 def freeze_via_pylon(
-    files: RecordFiles, config: Config, netuid: int, validator_hotkey: str, snapshot_id: UUID
+    files: RecordFiles, config: Config, netuid: int, validator_hotkey: str, namespace: str, snapshot_id: UUID
 ) -> DiscoverySnapshot:
     """Actor callback using only public Pylon v1; the validator never loads a wallet."""
     with PylonClient(config) as client:
-        return freeze_discovery(files, snapshot_id, client.v1.identity, netuid, validator_hotkey)
+        return freeze_discovery(files, snapshot_id, client.v1.identity, netuid, validator_hotkey, namespace)

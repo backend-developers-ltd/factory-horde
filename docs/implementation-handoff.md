@@ -22,9 +22,10 @@ that host. It does not prove provisioning on a fresh operating system.
 digests, build revisions, dependency locks, Nexus/Pylon versions and the executor
 checksum. [Candidate instructions](../envs/candidate/README.md) use the exact
 configuration revision above. Later acceptance/documentation commits do not change
-the packaged application or executor bytes. No production configuration branch
-has been promoted; building/publishing artifacts is separate from operator release
-selection. Subnet 12 and public-chain emissions were not changed.
+the packaged application or executor bytes. This candidate was never promoted;
+building/publishing artifacts is separate from operator release selection. Since 23
+November 2026 `deploy-config-production` runs FactoryHorde as mechanism 1 of subnet 12
+(see [production](../production/README.md)); emissions were not changed.
 
 ## Reproduction and evidence
 
@@ -175,8 +176,8 @@ Current source selects these versions following the emSign/eMudhra audit:
 | Validator, submitter, judge and executor-fixture Python base | 3.14.9-slim-trixie (previous refresh) |
 | Validator and submitter uv image | 0.13.6 (previous refresh) |
 | Factory Node base | 24.22.1-bookworm-slim |
-| Pylon service | 2.3.4 |
-| Submitter Pylon client | 2.3.1 |
+| Pylon service | 2.4.0 |
+| Validator and submitter Pylon client | 2.4.0 |
 | Prometheus | 3.15.1 |
 | node-exporter | 1.12.1 |
 | Subtensor localnet | v486, under `ghcr.io/raofoundation/subtensor-localnet` |
@@ -190,14 +191,15 @@ base as the application Dockerfiles.
 
 Both uv projects now require uv >= 0.13.6 and constrain certifi >= 2026.10.19;
 certifi remains locked at 2026.10.23. The validator also constrains botocore >=
-1.43.117. The certificate packages, boto3 and the submitter Pylon client have a
-one-day package-specific cooldown. Other cooldown settings are unchanged. The
+1.43.117. The certificate packages and boto3 have a
+one-day package-specific cooldown; the Pylon client, which we release ourselves, is
+exempt from the cooldown in both projects. Other cooldown settings are unchanged. The
 locks retain the existing seven-day `UV_EXCLUDE_NEWER` setting from this environment;
 unsetting that override applies the validator's stricter eleven-day project policy.
 Boto3/botocore 1.43.119 was still inside the one-day cooldown when resolving.
 
-The selected Nexus revision requires Pylon client 2.3.0, so the validator retains
-that version. There is no newer published `nodejs-wheel-binaries` than the locked
+The selected Nexus revision accepts any Pylon 2.x client from 2.3.1; the validator
+selects 2.4.0. There is no newer published `nodejs-wheel-binaries` than the locked
 24.19.0. Drand was excluded from this refresh at the user's request.
 
 Version updates alone do not finish the audit: node-exporter 1.12.1 and BuildKit
@@ -260,3 +262,7 @@ Two further reviews were consolidated and each claim was reproduced before fixin
 ## Adversarial judge acceptance — 20 November 2026
 
 Live Claude runs on the isolated source-checkout localnet used images built from `51685ad`: validator `factory-horde-validator-refinery@sha256:3b54b8cf…`, judge `factory-horde-judge@sha256:f86f5ade…` and control `factory-horde-control@sha256:891d7cc8…`, plus the deceptive controls from `f24d5b8` (`factory-horde-deceptive@sha256:745e849c…`). The judge requested `sonnet` and Claude Code reported `claude-sonnet-5-5`. Every run used a fresh data root and the seven-criterion to-do task, admitted all five miners, scored all of them and excluded none. All jobs ended confirmed stopped. No run exhausted its sandbox budget or used the `install` action. The regression run with the standard controls passed: working controls 1.0, defects 0.29, 0.07 and 0.07 ([behavioral-regression.json](../spec/evidence/behavioral-regression.json)). All three adversarial runs passed ([1](../spec/evidence/adversarial-acceptance-1.json), [2](../spec/evidence/adversarial-acceptance-2.json), [3](../spec/evidence/adversarial-acceptance-3.json)). Fake persistence scored 0.50–0.64 and self-tests 0.64, with `done` and `remove` unmet in every run: the judge re-listed tasks in a fresh process and printed `tasks.json` after each change, and for self-tests read the no-op branches instead of trusting the bundled tests. The injected CLI scored 0.07–0.14: every behavioural criterion was unmet, its evaluator-directed text was called untrusted and ignored, and only the README criterion received credit. A first regression attempt ran the previous validator image because `localnet/state/validator-image.id` overrides `VALIDATOR_IMAGE`; it rejected every new judge report and is retained unchanged in `localnet/state/adversarial-old-validator-image-data`. The deceptive controls were first published as `factory-horde-control-adversarial`, whose reference exceeded the 128-byte miner commitment, and were renamed in PR #10. Evidence was scanned for the Claude token, Pylon tokens and wallet material.
+
+## Second-mechanism commitments — 23 November 2026
+
+To run beside ComputeHorde on the same hotkeys, commitments became a sequence of tagged envelopes. FactoryHorde commits `<F:package@digest>`, with the SHA-256 digest in unpadded base64url, and the validator rebuilds the image under `VALIDATOR_SUBMISSION_NAMESPACE`, which dispatch now requires; legacy bare references are no longer accepted. The submitter (`SUBMISSION_NAMESPACE`) changes only its own envelope, keeps every other byte and a 33-byte reserve for ComputeHorde's manifest, and refuses to overwrite an undecodable commitment. Because the chain has no compare-and-set, a stale write by either mechanism can drop the other's newest change, so miners schedule the submitter; a run that finds its envelope writes nothing. Shared examples live in `spec/fixtures/commitment-v2/envelopes.json`. With Pylon 2.4.0 the dashboard reads incentive and last update of the configured mechanism. `localnet/check_submissions.py` verifies coexistence with ComputeHorde-shaped content on localnet.

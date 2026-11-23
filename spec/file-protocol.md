@@ -70,7 +70,8 @@ JSON keys and non-finite JSON constants are rejected. Records and input text are
 limited to one MiB each. References require an explicit `ghcr.io` owner/repository
 and lowercase `sha256` digest; tag-only references fail. The 1,024-character parser
 bound accommodates operator image references. Miner submission and discovery apply
-the selected Pylon writer's verified 128-byte UTF-8 bound separately.
+the selected Pylon writer's verified 128-byte bound to the whole commitment, whose
+`<F:package@base64url-digest>` envelope is rebuilt under the configured submission namespace.
 Selected platform is `linux/amd64`, matching task 2's Pylon image.
 
 ## Fixed execution contracts

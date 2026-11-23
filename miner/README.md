@@ -1,8 +1,6 @@
 # FactoryHorde submitter
 
-The `miner` command publishes a public GHCR manifest reference through its configured
-Pylon identity and exits after exact read-back. It runs no HTTP server, inference,
-factory job or wallet registration. Pylon owns signing credentials.
+The `miner` command publishes a public GHCR manifest reference as this miner's FactoryHorde commitment envelope through its configured Pylon identity and exits after read-back. It runs no HTTP server, inference, factory job or wallet registration. Pylon owns signing credentials.
 
 ```sh
 localnet/build-submitter.sh
@@ -11,6 +9,7 @@ docker run --rm --read-only --tmpfs /tmp --cap-drop ALL \
   --security-opt no-new-privileges --network factory-horde-localnet_default \
   --env PYLON_IDENTITY_TOKEN \
   --env PYLON_ADDRESS=http://pylon:8000 --env PYLON_IDENTITY=miner1 --env NETUID=2 \
+  --env SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd \
   "$(cat localnet/state/submitter-image.id)" \
   'ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:8e38b2081f7628ca9dab545fb00ee756e23c1ed5d4d292db0e41c1012acbc8a3'
 ```
@@ -31,9 +30,11 @@ beside it (never committed):
 | Setting | Meaning |
 | --- | --- |
 | `ENVIRONMENT`, `BITTENSOR_NETWORK`, `NETUID`, `BLOCK_DURATION_SECONDS` | Chain and subnet |
+| `BITTENSOR_ARCHIVE_NETWORK` | Optional node for historical reads, default `BITTENSOR_NETWORK`; `archive` on mainnet |
 | `BITTENSOR_WALLET_NAME`, `BITTENSOR_WALLET_HOTKEY_NAME`, `HOST_WALLET_DIR` | Registered miner wallet, mounted read-only into Pylon |
 | `MINER_PYLON_TOKEN`, `PYLON_OPEN_ACCESS_TOKEN`, `PYLON_METRICS_TOKEN` | Three distinct secrets, e.g. `openssl rand -hex 24` |
 | `FACTORY_IMAGE` | Default image to commit |
+| `SUBMISSION_NAMESPACE` | Registry owner all submissions must be published under, for example `ghcr.io/backend-developers-ltd` |
 | `PYLON_HOST_PORT`, `SUBMITTER_IMAGE` | Optional overrides (8000, the published submitter) |
 
 For an operator installation, resolve the reviewed configuration branch once, download the Compose file and verify it against that release's manifest. Use `deploy-config-refinery` for the internal chain. Repeat this sequence for upgrades; retain `.env` and the Pylon volume.
@@ -59,30 +60,39 @@ docker compose run --rm submit          # commit FACTORY_IMAGE
 docker compose run --rm submit IMAGE    # commit another image once
 ```
 
-The commitment stays on chain, so nothing needs to keep submitting; Pylon is only
-needed while a submission runs. [Refinery](../refinery/README.md) supplies a filled-in
-example of these settings.
+The chain has no compare-and-set for commitments, so another writer of the same hotkey's commitment (ComputeHorde's miner) can drop the envelope from a stale read after the submitter has confirmed it. Schedule the submitter, for example with cron; a run that finds its envelope in place reports `unchanged` and writes nothing:
 
-Current source selects Pylon client 2.3.1 and service 2.3.4. The submitter uses the
-explicit v1 commitment API. References are encoded as UTF-8 bytes, not supplied as
-strings interpreted as hexadecimal.
-Only complete lowercase GHCR SHA-256 manifest references are accepted. The selected
-writer sends `RawN`, so references must fit 128 bytes; the baseline is 124 bytes.
-Tags, malformed hex/UTF-8, unsupported registries and overlong references fail.
-The chain also supports larger data variants, but this selected writer does not
-use them. No value is truncated or replaced with a tag.
+```cron
+*/5 * * * * cd $HOME/factory-horde/miner && docker compose run --rm -T submit >> submit.log 2>&1
+```
 
-The submitter reads before writing. An unchanged reference exits with `unchanged`
-and retains its original commitment block. Writes have no automatic HTTP retries.
-After an ambiguous timeout or upstream error, it polls read-back without submitting
-again; it reports `recovered` only when the exact value is confirmed for a registered
-hotkey at the returned block. Unconfirmed outcomes exit nonzero. A later invocation
-also reads first. JSON output contains the hotkey, image, commitment/observation
-blocks and elapsed time; tokens never appear in successful output.
+Commitment writes of one hotkey share a quota of about 31 per tempo across both mechanisms. A ComputeHorde miner on the same hotkey must therefore run a release that keeps `<F:…>` (ComputeHorde `ec106a6e` or newer) before the submitter is scheduled; an older one erases the envelope every 5 minutes, and the repeated repairs exhaust the quota. [Refinery](../refinery/README.md) supplies a filled-in example of these settings.
+
+## Commitment format
+
+A hotkey has one commitment per subnet, shared by all mechanisms. It is a sequence of tagged envelopes: ComputeHorde owns `<M:…>` (its manifest), legacy bt-ddos-shield values use `<D:…>`, and FactoryHorde owns `<F:package@digest>`. The digest is the image's SHA-256 manifest digest in unpadded base64url (43 characters). The registry and owner are not committed: every submission must be published under `SUBMISSION_NAMESPACE`, and the validator rebuilds `NAMESPACE/package@sha256:<hex>` from its own `VALIDATOR_SUBMISSION_NAMESPACE`. Images outside the namespace are rejected before any chain access.
+
+FactoryHorde rewrites only `<F:…>` and keeps every other byte, including `<D:…>`, `<M:…>` and unrecognized data; a new envelope goes before the first `<M:…>`, else at the end. ComputeHorde rewrites only `<M:…>` and keeps the other envelopes. If the current commitment cannot be decoded, the submitter refuses to write.
+
+The selected Pylon writer sends `RawN`, so the whole commitment is limited to 128 bytes:
+
+| Part | Bytes |
+|---|---|
+| ComputeHorde manifest reserve: `<M:` + six classes as `X999`, joined by `;` + `>` | 33 |
+| FactoryHorde envelope: `<F:` + package + `@` + 43-character base64url SHA-256 + `>` | 48 + package |
+| `factory-horde-deceptive` (longest current baseline package, 23 bytes) | 71 |
+| Remaining room for a legacy `<D:…>` shield envelope (worst current package) | 24 |
+
+The submitter keeps ComputeHorde's 33-byte reserve: it refuses to write if every byte except `<M:…>` plus 33 would exceed 128, or if the merged commitment itself would. A package name over 47 bytes can never fit and is rejected before any request. The reserve assumes at most 999 executors per ComputeHorde class.
+
+Current source selects Pylon client and service 2.4.0. The submitter uses the explicit v1 commitment API and writes bytes, not strings interpreted as hexadecimal. Only complete lowercase GHCR SHA-256 manifest references are accepted; tags, unsupported registries, foreign namespaces and overlong package names fail. No value is truncated or replaced with a tag.
+
+The submitter reads before writing. An unchanged envelope exits with `unchanged` and writes nothing. Writes have no automatic HTTP retries. After an ambiguous timeout or upstream error, it polls read-back without submitting again; it reports `recovered` only when its own envelope is confirmed for a registered hotkey at the returned block. Read-back compares only the `<F:…>` envelope, so a concurrent ComputeHorde manifest change does not prevent confirmation. Unconfirmed outcomes exit nonzero. A later invocation also reads first. JSON output contains the hotkey, image, commitment/observation blocks and elapsed time; the commitment block is the last write by either mechanism. Tokens never appear in successful output.
 
 The validator reads all commitments, then membership at that exact block/hash.
 Its immutable snapshot includes miner hotkeys, UIDs, references and reserved job
-IDs. It excludes its own identity, malformed references and unregistered hotkeys;
+IDs. It excludes its own identity, commitments without exactly one well-formed
+`<F:…>` envelope, legacy bare references and unregistered hotkeys;
 an optional allowlist limits fixtures. Validator permits alone do not disqualify
 miners. Recovery reads the saved snapshot before making new chain queries.
 

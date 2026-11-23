@@ -64,7 +64,7 @@ The independent chain checker runs as a module from the repository root using th
 miner bootstrap group; no Bittensor SDK enters the validator runtime.
 
 Checks run sequentially on the selected chain: submission checks temporarily change
-commitments, round checks use 100/15/65-second stages, and weight checks independently
+commitments, round checks use shortened stages, and weight checks independently
 read two actual updates across a validator restart. Adversarial checks also change
 commitments temporarily, retaining their deliberately unresolved workloads in a
 separate data root. The installer check creates another isolated Compose/local-chain
@@ -257,7 +257,8 @@ create/start/pull responses or simulates unavailable observation. The production
 executor contains no fault hooks. All workload containers are real; statuses are
 written by the service, never injected by the test.
 
-It runs five TERM-resistant factories concurrently, restarts during stop grace,
+It runs TERM-resistant factories concurrently, as many as the acceptance executor's
+`EXECUTOR_MAX_RUNNING_JOBS` allows up to five, restarts during stop grace,
 crashes after create/start, replays finalized work, deletes finalized containers,
 cancels a delayed pull while another job finishes, and deletes an expected
 container before final observation. The last scenario deliberately retains an
@@ -310,7 +311,13 @@ env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_roun
 This bounded check runs the production entrypoint and common Compose service with
 five existing baseline commitments. It verifies initial chain unavailability,
 then uses 100/15/65-second stages, a ten-second judge reserve and five-second stop
-grace. It restarts after request publication and at generation/evaluation boundaries,
+grace. The executor runs at most `EXECUTOR_MAX_RUNNING_JOBS` factories at once, read
+from the installation's `executor/executor.env`; when that cap is below five, each
+further batch of factories extends the generation window by 70 seconds (170 seconds
+at the default cap of four). A schedule persisted by an earlier run can make the
+coordinator admit an already started slot with its original deadlines; the check
+lets that round settle and verifies the next round, which can add up to one round
+interval. It restarts after request publication and at generation/evaluation boundaries,
 checks early factory completion does not start judges, and reconstructs all ten
 task outcomes and five scores. The same installed systemd executor handles every
 Docker job. It stops the probe after settled results, before the next slot, and
@@ -318,8 +325,8 @@ restores the ordinary validator. Raw artifacts remain in `state/task11-rounds.js
 and `state/task11-coordinator.log`.
 
 For continuous scheduling, set `VALIDATOR_DISPATCH_ENABLED=true`, `VALIDATOR_HOTKEY`
-to the registered validator's public hotkey and `JUDGE_IMAGE` to the published judge
-digest in `localnet/.env`, then recreate the validator. The example environment lists
+to the registered validator's public hotkey, `JUDGE_IMAGE` to the published judge
+digest and `SUBMISSION_NAMESPACE` to the registry owner of the miners' images in `localnet/.env`, then recreate the validator. The example environment lists
 the default two-hour timing. Only one coordinator may write a data root. Keep
 existing files across restart; unresolved old jobs hold future slots. Disabling
 dispatch pauses the coordinator; existing executor requests retain their deadlines.
@@ -451,8 +458,10 @@ Factory dispatch remains disabled, so this update does not execute a workload.
 Evidence is written under `state/`; public task evidence is in
 [task6-submissions.json](../spec/evidence/task6-submissions.json).
 
-The selected Pylon 2.3.3 writer supports at most 128 UTF-8 bytes through `RawN`;
-the baseline factory reference is 124 bytes. The local runtime uses a 3,100-byte
+Before the immutability check, it seeds miner1 with ComputeHorde-shaped content (`<D:https://example.com/s><M:A3;S2>`) and checks that the submitter inserts only its `<F:…>` envelope, that discovery still finds the image after a ComputeHorde manifest rewrite, and that the next submitter run restores an envelope dropped by a stale ComputeHorde write. Miner1 keeps that foreign content afterwards, so later checks also run beside it; the `coexistence` evidence entry records each chain value.
+
+The selected Pylon writer supports at most 128 UTF-8 bytes through `RawN`;
+the baseline factory's `<F:…>` envelope is 69 bytes. The local runtime uses a 3,100-byte
 per-epoch space allowance, with a minimum charge of 100 bytes per commitment.
 Rapid updates seven blocks apart succeeded. Unregistered writes and an atomic
 4,096-byte batch failed with the expected chain errors. These observations replace

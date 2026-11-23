@@ -29,7 +29,7 @@ from nexus.v1 import (
 )
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, Counter, Histogram, generate_latest
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily, HistogramMetricFamily, Metric
-from pylon_client.artanis import Config, PylonClient, PylonTimeout
+from pylon_client.artanis import Config, MechanismId, PylonClient, PylonTimeout
 from tenacity import Retrying, stop_after_attempt
 
 from validator.coordinator import RoundTick
@@ -71,8 +71,8 @@ class ChainView:
     incentives: Mapping[str, float]
 
 
-def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None) -> ChainView:
-    """Read current neurons with the public identity API.
+def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None, mechanism_id: MechanismId) -> ChainView:
+    """Read current neurons, with this mechanism's incentive and last update, through the identity API.
 
     Raises:
         ValueError: The configured identity no longer selects this subnet.
@@ -84,7 +84,7 @@ def read_chain_view(config: Config, netuid: int, validator_hotkey: str | None) -
         }
     )
     with PylonClient(config) as client:
-        response = client.v1.identity.get_latest_neurons()
+        response = client.v1.identity.get_latest_neurons(mechanism_id=mechanism_id)
         if client.v1.identity.netuid != netuid:
             raise ValueError("Pylon identity belongs to a different subnet")
     own = next((n for n in response.neurons.values() if n.hotkey == validator_hotkey), None)

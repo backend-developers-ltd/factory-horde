@@ -25,7 +25,7 @@ from validator.round_repository import RoundRepository
 
 from .check import Registrations
 from .check_executor import inspect, wait_status
-from .runtime import Runtime
+from .runtime import Runtime, executor_slots
 
 ROOT = Path(__file__).resolve().parent
 
@@ -265,17 +265,19 @@ class Check:
         return observed
 
     def concurrent_stops(self) -> None:
-        jobs = self.make("ignore-term", 5)
+        # TERM-resistant jobs never free their slot, so run only as many as the executor admits at once.
+        slots = min(executor_slots(self.base), 5)
+        jobs = self.make("ignore-term", slots)
         for job in jobs:
             self.publish(job)
         until(
             lambda: all(self.running(job) for job in jobs),
-            "Five factories did not run concurrently",
+            f"{slots} factories did not run concurrently",
         )
         starts = [datetime.fromisoformat(self.actual(job).State.StartedAt.replace("Z", "+00:00")) for job in jobs]
         spread = (max(starts) - min(starts)).total_seconds()
         if spread > 12:
-            raise RuntimeError("Five jobs were artificially batched")
+            raise RuntimeError("Concurrent jobs were artificially batched")
         stop_start = time.monotonic()
         for job in jobs:
             self.stop(job)
@@ -297,13 +299,14 @@ class Check:
         if elapsed > 20 or any(not s.forced or s.exit_code != 137 or s.application_succeeded for s in statuses):
             raise RuntimeError("Concurrent grace/force stop evidence failed")
         self.evidence["concurrent_stops"] = {
+            "executor_slots": slots,
             "start_spread_seconds": spread,
             "stop_seconds": elapsed,
             "pre_restart_ledgers": [json.loads(raw) for raw in before],
             "statuses": [s.model_dump(mode="json") for s in statuses],
         }
         print(
-            "PASS: five concurrent TERM-resistant jobs, durable grace across restart, inspected KILL exits",
+            f"PASS: {slots} concurrent TERM-resistant jobs, durable grace across restart, inspected KILL exits",
             flush=True,
         )
 

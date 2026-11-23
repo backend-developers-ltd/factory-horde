@@ -1,17 +1,18 @@
 # A miner's Pylon with a single "miner" identity, and the one-shot submitter that publishes
-# FACTORY_IMAGE through it. Settings come from the .env beside this file; see README.md.
+# FACTORY_IMAGE as its FactoryHorde envelope through it. Settings come from the .env beside this
+# file; see README.md.
 name: factory-horde-miner
 services:
   pylon:
-    # bittensor-pylon:2.3.4, same digest as envs/deployed/docker-compose.yml
-    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:2e7a3470b1ff6f4a72f53a075c1f215cd352a0d289387bad10f328825f396dbb
+    # bittensor-pylon:2.4.0, same digest as envs/deployed/docker-compose.yml
+    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:b0b4f4d532aed7dba6ffc979ce270ac3286b3c98678a87f8d2c3ec8086453184
     platform: linux/amd64
     restart: unless-stopped
     ports:
       - "127.0.0.1:${PYLON_HOST_PORT:-8000}:8000"
     environment:
       PYLON_BITTENSOR_NETWORK: "${BITTENSOR_NETWORK:?}"
-      PYLON_BITTENSOR_ARCHIVE_NETWORK: "${BITTENSOR_NETWORK:?}"
+      PYLON_BITTENSOR_ARCHIVE_NETWORK: "${BITTENSOR_ARCHIVE_NETWORK:-${BITTENSOR_NETWORK:?}}"
       PYLON_OPEN_ACCESS_TOKEN: "${PYLON_OPEN_ACCESS_TOKEN:?}"
       PYLON_IDENTITIES: '["miner"]'
       PYLON_BITTENSOR_WALLET_PATH: /wallets
@@ -49,6 +50,7 @@ services:
       PYLON_IDENTITY: miner
       PYLON_IDENTITY_TOKEN: "${MINER_PYLON_TOKEN:?}"
       NETUID: "${NETUID:?}"
+      SUBMISSION_NAMESPACE: "${SUBMISSION_NAMESPACE:?}"
     command: ["${FACTORY_IMAGE:-}"]
     read_only: true
     tmpfs:

@@ -25,8 +25,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
 - `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with the opt-in
   `alloy` Compose profile and its `alloy/config.alloy`, which push metrics to the company monitoring stack;
-  operator promotion would use `deploy-config-production`, with this compose file and the installer
-  scripts as the operator-critical files; no production configuration branch has been promoted
+  operator promotion uses `deploy-config-production` (mainnet subnet 12, mechanism 1) and
+  `deploy-config-refinery`, with this compose file and the installer scripts as the operator-critical files
 - `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
   and submitter images to GHCR on push to `deploy-build-*` branches; `build-baselines.yml` publishes
   the factory and judge images when their sources change
@@ -35,6 +35,8 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
   path: the validator through `installer/` (on Refinery the `ubuntu` operator installs into `~/factory-horde` from
   `deploy-config-refinery`, following builds on `deploy-build-refinery`), a miner through
   `miner/docker-compose.yml`. Do not add Refinery-specific deployment or operation scripts
+- `production/` — the same for mainnet subnet 12, where FactoryHorde is mechanism 1 beside ComputeHorde and
+  reuses its hotkeys: `.env` examples and a guide, no deployment scripts
 - `knowledge/` — Bittensor / Nexus / localnet domain knowledge
 - `docs/` — additional documentation
 - `spec/file-protocol.md`, `spec/fixtures/protocol-v1/` — implemented record contract and fixtures
@@ -80,6 +82,8 @@ is persisted before replacing Compose assets and cleared only after successful C
 Updater executor activation intent survives replacement/restart failures and requires health
 from a process started during the activation attempt before it is cleared.
 
+Commitments are tagged envelopes shared with ComputeHorde on the same hotkey (`spec/fixtures/commitment-v2/envelopes.json`). FactoryHorde owns `<F:package@base64url-sha256>`; `discovery.py` rebuilds the image under `VALIDATOR_SUBMISSION_NAMESPACE`, which dispatch requires, and rejects commitments without exactly one well-formed envelope. The submitter (`SUBMISSION_NAMESPACE`) rewrites only its own envelope, preserves all other bytes and keeps a 33-byte reserve for ComputeHorde's `<M:…>` manifest within the 128-byte limit. The chain has no compare-and-set, so either writer can overwrite the other's newest change from a stale read; submitters are therefore scheduled and write only when their envelope is missing or different.
+
 Workloads run without a network or environment by default. With `EXECUTOR_FACTORY_NETWORK` the executor attaches factories and judges to the internal network of the opt-in `inference` Compose profile and gives them `ANTHROPIC_BASE_URL` and a placeholder `CLAUDE_CODE_OAUTH_TOKEN`; review mode requires the proxy, and localnet explicitly selects fixture mode; that profile's `inference-proxy` (Caddy, configured inline in `envs/deployed/docker-compose.yml`) holds the real token and forwards only `/v1/messages*` to Anthropic. The configured network identifies the proxy; each workload gets its own internal isolated-gateway network connected only to that proxy. Application checks run in executor-owned networkless containers with a narrow judge-only file channel; parent terminal publication requires confirmed child termination. Inference shares one credential without a quota. `EXECUTOR_MAX_RUNNING_JOBS` (default 4) caps workload containers, counted from Docker so the limit survives restarts; waiting jobs never stretch round deadlines and are logged at error level; a factory cancelled before it ran is a validator-side gap (`factory_not_started`), not a rejected submission, and terminal jobs left in Docker's created state release their slot. Every hour the executor prunes stopped workload containers older than `EXECUTOR_CONTAINER_RETENTION_HOURS` (default 168), so their logs stay available that long. Per-workload networks need small Docker address pools (see `installer/README.md`). With `EXECUTOR_REGISTRY_NETWORK`, a judge's `install` action briefly connects its application sandbox to the `registry-proxy` (Squid, PyPI and npm only) for a fixed wheels-only pip or scripts-free npm install; it first kills every other sandbox process, runs pip isolated from the project with only plain index requirements, and the executor restores and verifies `--network none` before any other command. `TASK_SPECIFICATION` (`VALIDATOR_SPECIFICATION`) sets the task text of newly admitted rounds. Admission freezes `TASK_REQUIREMENTS`, `JUDGE_MODE` and the optional `JUDGE_MODEL` with that text; judges record the model IDs actually used. Weights come only from the newest completed round: a miner without an accepted score for every task is excluded from that round, other miners are still weighted, older rounds never stand in, no weights are produced while a published judge of that round still lacks a retained result, and review rounds require the configured judge image digest. `TASK_DIRECTORY` enables discovery of all non-hidden JSON files in its read-only mount. Admission freezes the complete set before discovery; every miner runs every task, with separate executions and mean per-task scores. Judge sessions have no action-count limit or fixed command/session timeout; existing round stops remain authoritative. The judge's instructions and trusted guides, not controller code, require a later observation of the resulting state for each state change and tell the model to bound its own commands. Each judge has one sandbox time budget ending `EXECUTOR_JUDGE_RESERVE_SECONDS` before its deadline; once spent it finishes with the evidence it has. Undemonstrated or failing behaviour is unmet; a project that cannot run at all is rejected as an invalid submission; missing evidence for judge-side reasons makes that evaluation unavailable. Decisions, execution captures, assessments and final reasons are retained in each report directory.
 
 Ruff and basedpyright config is duplicated between `validator/pyproject.toml` and `miner/pyproject.toml`. When
@@ -99,7 +103,7 @@ contains workflows for:
 - Generally bootstrapping the project
 
 Use those workflows within V2's sequential tasks. Build an immutable candidate and verify isolated localnet;
-do not promote configuration to active operators, deploy to subnet 12 or change emissions for this prototype.
+do not change emissions. Since 23 November 2026 the user has deployed FactoryHorde as mechanism 1 of subnet 12 (`production/`).
 For task 17, the user explicitly selected this existing VM on 2 October 2026: do not create or prepare another
 VM. Use a separate localnet installation here and report that environment scope accurately.
 
@@ -178,7 +182,7 @@ or tracing sidecar runs.
 Readiness requires fresh runtime chain/executor/Docker observations, compatible records, writable paths and
 reconciliation. The same collector exports the latest round's number, cohort size and window, per-miner
 accepted scores and calculated weights from records, and the validator's permit, last weight update and
-per-miner incentive from a separate Nexus actor with a throttled, bounded Pylon neuron read that never blocks readiness. Miner hotkeys are
+per-miner incentive of the configured mechanism from a separate Nexus actor with a throttled, bounded Pylon neuron read that never blocks readiness. Miner hotkeys are
 the only identity labels; job and round IDs stay in records. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
 termination. The same validator scrape path forwards executor counters/histograms. There is no textfile collector
 or executor HTTP server. Record I/O counters and latency histograms live in

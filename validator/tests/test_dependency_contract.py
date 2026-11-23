@@ -243,5 +243,5 @@ def test_published_baseline_references_fit_a_miner_commitment() -> None:
     kinds = re.findall(r"^\s+- kind: ([\w-]+)$", workflow, re.MULTILINE)
     assert "deceptive" in kinds
     for kind in kinds:
-        # miner.miner.COMMITMENT_MAX_BYTES bounds the full digest reference.
-        assert len(f"ghcr.io/backend-developers-ltd/factory-horde-{kind}@sha256:{'0' * 64}") <= 128
+        # Envelope "<F:" + package + "@" + 43-character base64url digest + ">" plus ComputeHorde's 33-byte reserve.
+        assert len(f"<F:factory-horde-{kind}@{'A' * 43}>") + 33 <= 128
