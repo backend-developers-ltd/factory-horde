@@ -7,7 +7,7 @@
 // job="factory-horde/<job>" with the target address as instance.
 
 prometheus.scrape "node_exporter" {
-	targets    = [{__address__ = "node-exporter:9100"}]
+	targets    = [{__address__ = "host.docker.internal:" + sys.env("NODE_EXPORTER_PORT")}]
 	job_name   = "node-exporter"
 	forward_to = [otelcol.receiver.prometheus.default.receiver]
 }

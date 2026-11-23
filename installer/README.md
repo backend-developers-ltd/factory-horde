@@ -155,8 +155,8 @@ For manual use, the startup order is the same installer plus local-chain bootstr
 
 1. Prepare a literal operator environment with `ENVIRONMENT=localnet`, `NETUID=2`,
    `BITTENSOR_NETWORK=ws://subtensor:9944`, `MECHANISM_ID=1`,
-   `BLOCK_DURATION_SECONDS=0.25`, unused `SUBTENSOR_HOST_PORT`, `PYLON_HOST_PORT` and
-   `PROMETHEUS_HOST_PORT`, and an explicit `VALIDATOR_IMAGE`. Other identity/path/token
+   `BLOCK_DURATION_SECONDS=0.25`, unused `SUBTENSOR_HOST_PORT`, `PYLON_HOST_PORT`,
+   `PROMETHEUS_HOST_PORT` and `NODE_EXPORTER_HOST_PORT`, and an explicit `VALIDATOR_IMAGE`. Other identity/path/token
    defaults are generated. Dispatch and weight writes default to false.
 2. Run `installer/install.sh /absolute/installation --env-file /absolute/operator.env
    --ref snapshot --source file:///absolute/source-checkout --service
@@ -243,7 +243,7 @@ The login also needs an entry in that repository's `scripts/otel_inventory.yml`;
 
 The `claude-usage-exporter` service reports how much of the Claude subscription budget is used. With the `inference` profile, `inference-proxy` writes a JSON access log to the `inference-log` volume (without credentials, rolled at 10 MiB) and the exporter reads the newest `anthropic-ratelimit-unified-*` response headers from it: `claude_subscription_utilization_ratio{window="5h"|"7d"}` (0 to 1), `claude_subscription_reset_timestamp_seconds{window}` and `claude_subscription_observed_timestamp_seconds{window}`. Anthropic returns these headers only on model responses, so the values change only while factories or judges call Claude. A response may report only some windows (Refinery's subscription reports only `7d`), so each window keeps the newest response that reported it. `claude_subscription_window_reported{window}` is 1 when the newest response with budget headers included the window and 0 when it did not, which the dashboard shows as no limit; the exporter exports nothing until it has seen such a response. Without the profile it runs but exports nothing. It is independent of the validator so it can be removed when the subscription is replaced.
 
-Per-miner validator series are labelled with the miner hotkey. The permit, last weight update and incentive come from one Pylon neuron read a minute; Pylon does not expose the weights stored on chain or pending commit-reveal commits, so the validator exports calculated weights and the resulting incentive instead. Evaluated image digests stay in the records. The local Prometheus keeps up to 1 GB of samples. node-exporter runs in the application's bridge network, so it reports no host network traffic.
+Per-miner validator series are labelled with the miner hotkey. The permit, last weight update and incentive come from one Pylon neuron read a minute; Pylon does not expose the weights stored on chain or pending commit-reveal commits, so the validator exports calculated weights and the resulting incentive instead. Evaluated image digests stay in the records. The local Prometheus keeps up to 1 GB of samples. node-exporter runs in the host network namespace, so its network metrics describe the host's interfaces. It listens only on the default Docker bridge address (`docker0`, which `host.docker.internal` resolves to) on `NODE_EXPORTER_HOST_PORT` (default 9100), not on public interfaces; it refuses to start without a `docker0` IPv4 address.
 
 Trace export and remote-write remain disabled; only the `alloy` profile needs upstream
 credentials. See [validator operations](../validator/README.md), the

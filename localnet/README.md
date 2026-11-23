@@ -401,8 +401,8 @@ profiles passed, alongside the mixed-cohort, cancellation, storage and crash che
 
 Pylon listens on loopback port 8000, Subtensor on 9944 and Prometheus on 9090.
 Prometheus scrapes Pylon with a distinct Bearer token and node-exporter for host
-CPU/filesystem data. Node-exporter uses the host PID/root views but the Compose
-network namespace. Both monitoring images are pinned. No remote-write, Alloy or
+CPU, filesystem and network data. Node-exporter uses the host PID, root and network
+views and listens only on the `docker0` address at `NODE_EXPORTER_HOST_PORT` (9100). Both monitoring images are pinned. No remote-write, Alloy or
 upstream credentials are required. Prometheus also scrapes the validator at
 `validator:9101/metrics`. A Nexus actor owns this server; executor metrics come
 from atomic files through the same scrape path. Host metrics remain host metrics.

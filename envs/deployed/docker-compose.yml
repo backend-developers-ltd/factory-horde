@@ -96,16 +96,28 @@ services:
       pylon:
         condition: service_healthy
 
+  # Host network namespace so network metrics describe the host's interfaces, not a container's.
+  # It listens only on the default bridge address that host.docker.internal (host-gateway) resolves
+  # to, never on public interfaces.
   node-exporter:
-    # node-exporter:v1.12.1
-    image: docker.io/prom/node-exporter@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    # node-exporter:v1.13.1
+    image: docker.io/prom/node-exporter@sha256:7296504d4ada44b7d7ab4431e27e9f9900d8488f8d55842f4b12ae2704e16dfe
     restart: unless-stopped
+    network_mode: host
     pid: host
+    environment:
+      NODE_EXPORTER_PORT: "${NODE_EXPORTER_HOST_PORT:-9100}"
     volumes:
       - /:/host:ro,rslave
-    command:
-      - --path.rootfs=/host
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|boot|var/.+)($$|/)
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        address=$$(ip -4 -o addr show docker0 | awk '{split($$4, a, "/"); print a[1]; exit}')
+        [ -n "$$address" ] || { echo "docker0 has no IPv4 address" >&2; exit 1; }
+        exec /bin/node_exporter --path.rootfs=/host \
+          --collector.filesystem.mount-points-exclude='^/(sys|proc|dev|host|etc|run|boot|var/.+)($$|/)' \
+          --web.listen-address="$$address:$$NODE_EXPORTER_PORT"
 
   prometheus:
     # prometheus:v3.15.1
@@ -115,6 +127,8 @@ services:
       - "127.0.0.1:${PROMETHEUS_HOST_PORT:-9090}:9090"
     environment:
       PYLON_METRICS_TOKEN: "${PYLON_METRICS_TOKEN:?}"
+      NODE_EXPORTER_PORT: "${NODE_EXPORTER_HOST_PORT:-9100}"
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - prometheus-data:/prometheus
     entrypoint:
@@ -127,7 +141,7 @@ services:
         scrape_configs:
           - job_name: host
             static_configs:
-              - targets: ['node-exporter:9100']
+              - targets: ['host.docker.internal:$${NODE_EXPORTER_PORT}']
           - job_name: pylon
             static_configs:
               - targets: ['pylon:8000']
@@ -157,6 +171,8 @@ services:
       METRICS_UPSTREAM_USER: "${METRICS_UPSTREAM_USER:-}"
       METRICS_UPSTREAM_PASSWORD: "${METRICS_UPSTREAM_PASSWORD:-}"
       PYLON_METRICS_TOKEN: "${PYLON_METRICS_TOKEN:?}"
+      NODE_EXPORTER_PORT: "${NODE_EXPORTER_HOST_PORT:-9100}"
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ./alloy:/etc/alloy:ro
     command: [run, --storage.path=/var/lib/alloy/data, /etc/alloy/config.alloy]
