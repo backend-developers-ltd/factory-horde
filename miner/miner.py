@@ -1,5 +1,6 @@
-"""Publish one public GHCR manifest reference through the miner's own Pylon identity."""
+"""Publish one FactoryHorde commitment envelope through the miner's own Pylon identity, keeping every other byte."""
 
+import base64
 import json
 import os
 import re
@@ -28,7 +29,13 @@ from tenacity import Retrying, stop_after_attempt
 
 # The selected Pylon 2.3.4 writer uses RawN, whose supported maximum is Raw128.
 COMMITMENT_MAX_BYTES = 128
-IMAGE_PATTERN = r"ghcr\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[0-9a-f]{64}"
+# ComputeHorde's largest manifest envelope: "<M:" + six "X999" codes joined by ";" + ">".
+COMPUTE_HORDE_MANIFEST_RESERVE = 33
+SEGMENT = r"[a-z0-9]+(?:[._-][a-z0-9]+)*"
+IMAGE_PATTERN = rf"ghcr\.io/{SEGMENT}(?:/{SEGMENT})+@sha256:[0-9a-f]{{64}}"
+NAMESPACE_PATTERN = rf"ghcr\.io(?:/{SEGMENT})+"
+OWN_ENVELOPE = re.compile(rb"<F:([^<>]*)>")
+MANIFEST_ENVELOPE = re.compile(rb"<M:[^<>]*>")
 _events = Counter("factory_horde_submissions_total", "One-shot submission outcomes", ("outcome",))
 _latency = Histogram("factory_horde_submission_seconds", "Submission and read-back duration")
 
@@ -51,7 +58,7 @@ class SubmissionApi(Protocol):
 
 @dataclass(frozen=True)
 class Publication:
-    """Evidence from an exact read-back, including the original commitment block."""
+    """Read-back evidence of the own envelope; commitment_block is the last write by either mechanism."""
 
     outcome: Literal["published", "unchanged", "recovered"]
     netuid: int
@@ -63,27 +70,63 @@ class Publication:
 
 
 def validate_reference(image: str) -> str:
-    """Accept a complete GHCR digest that fits the selected writer's byte bound.
+    """Accept a complete GHCR digest reference.
 
     Raises:
-        ValueError: The registry, digest syntax or encoded length is unsupported.
+        ValueError: The registry or digest syntax is unsupported.
     """
     if re.fullmatch(IMAGE_PATTERN, image) is None:
         raise ValueError("Expected ghcr.io/owner/image@sha256:<64 lowercase hexadecimal characters>")
-    if len(image.encode("utf-8")) > COMMITMENT_MAX_BYTES:
-        raise ValueError(f"The selected Pylon writer accepts at most {COMMITMENT_MAX_BYTES} UTF-8 bytes")
     return image
 
 
-def decode_reference(value: str) -> str:
-    """Decode only unambiguous v1 hexadecimal UTF-8 commitments.
+def encode_envelope(image: str, namespace: str) -> bytes:
+    """Encode IMAGE as FactoryHorde's commitment envelope relative to NAMESPACE.
 
     Raises:
-        ValueError: Hexadecimal, UTF-8 or reference validation fails.
+        ValueError: The image or namespace is invalid, the image lies outside the namespace,
+            or the envelope can never fit beside ComputeHorde's manifest.
     """
-    if re.fullmatch(r"(?:0x)?(?:[0-9a-fA-F]{2})+", value) is None:
+    validate_reference(image)
+    if re.fullmatch(NAMESPACE_PATTERN, namespace) is None:
+        raise ValueError("Expected a ghcr.io/owner namespace")
+    if not image.startswith(namespace + "/"):
+        raise ValueError(f"Image must be published under namespace {namespace}")
+    package, digest = image.removeprefix(namespace + "/").split("@sha256:")
+    compact = base64.urlsafe_b64encode(bytes.fromhex(digest)).rstrip(b"=")
+    envelope = b"<F:" + package.encode() + b"@" + compact + b">"
+    if len(envelope) + COMPUTE_HORDE_MANIFEST_RESERVE > COMMITMENT_MAX_BYTES:
+        raise ValueError(
+            f"Package name is too long: its envelope and ComputeHorde's manifest must fit {COMMITMENT_MAX_BYTES} bytes"
+        )
+    return envelope
+
+
+def merge_envelope(current: bytes, envelope: bytes) -> bytes:
+    """Replace only FactoryHorde's envelope, keeping every other byte and ComputeHorde's manifest room.
+
+    Raises:
+        SubmissionError: The result would exceed the writer's limit or ComputeHorde's manifest reserve.
+    """
+    own = list(OWN_ENVELOPE.finditer(current))
+    if own:
+        tail = OWN_ENVELOPE.sub(b"", current[own[0].end() :])
+        merged = current[: own[0].start()] + envelope + tail
+    else:
+        manifest = MANIFEST_ENVELOPE.search(current)
+        at = manifest.start() if manifest is not None else len(current)
+        merged = current[:at] + envelope + current[at:]
+    if len(merged) > COMMITMENT_MAX_BYTES:
+        raise SubmissionError(f"Commitment would exceed the writer's {COMMITMENT_MAX_BYTES}-byte limit")
+    if len(MANIFEST_ENVELOPE.sub(b"", merged)) + COMPUTE_HORDE_MANIFEST_RESERVE > COMMITMENT_MAX_BYTES:
+        raise SubmissionError("Commitment would leave ComputeHorde less than its 33-byte manifest reserve")
+    return merged
+
+
+def _raw(value: str) -> bytes:
+    if re.fullmatch(r"(?:0x)?(?:[0-9a-fA-F]{2})*", value) is None:
         raise ValueError("Malformed hexadecimal commitment")
-    return validate_reference(CommitmentDataBytes.fromhex(value).decode("utf-8"))
+    return bytes(CommitmentDataBytes.fromhex(value.removeprefix("0x")))
 
 
 def _read(api: SubmissionApi) -> GetCommitmentResponse | None:
@@ -93,13 +136,12 @@ def _read(api: SubmissionApi) -> GetCommitmentResponse | None:
         return None
 
 
-def _matches(response: GetCommitmentResponse | None, image: str) -> bool:
+def _matches(response: GetCommitmentResponse | None, envelope: bytes) -> bool:
     if response is None:
         return False
     try:
-        return decode_reference(response.commitment) == image
+        return OWN_ENVELOPE.findall(_raw(response.commitment)) == [envelope[3:-1]]
     except ValueError:
-        # An invalid old commitment must not prevent a miner from correcting it.
         return False
 
 
@@ -124,17 +166,17 @@ def _evidence(
     )
 
 
-def submit(api: SubmissionApi, image: str, netuid: int, *, confirm_seconds: float = 150) -> Publication:
-    """Read first, write at most once, then require exact registered read-back.
+def submit(api: SubmissionApi, image: str, netuid: int, namespace: str, *, confirm_seconds: float = 150) -> Publication:
+    """Read first, replace only the own envelope, write at most once, then require registered read-back.
 
     HTTP timeouts can leave the service's shielded write running. Recovery polls
     reads only; automatic HTTP write retries must be disabled in the client config.
 
     Raises:
-        SubmissionError: Configuration changes or exact confirmation never arrives.
-        ValueError: The reference or confirmation period is invalid.
+        SubmissionError: Configuration changes, the commitment cannot be preserved or confirmation never arrives.
+        ValueError: The reference, namespace or confirmation period is invalid.
     """
-    validate_reference(image)
+    envelope = encode_envelope(image, namespace)
     if confirm_seconds <= 0:
         raise ValueError("Confirmation period must be positive")
     with _latency.time():
@@ -143,12 +185,17 @@ def submit(api: SubmissionApi, image: str, netuid: int, *, confirm_seconds: floa
             if api.netuid != netuid:
                 raise SubmissionError("Configured Pylon identity belongs to a different subnet")
             previous = _read(api)
-            if previous is not None and _matches(previous, image):
+            if previous is not None and _matches(previous, envelope):
                 result = _evidence(api, previous, image, netuid, "unchanged")
             else:
+                try:
+                    current = b"" if previous is None else _raw(previous.commitment)
+                except ValueError as error:
+                    raise SubmissionError("Cannot preserve an undecodable commitment; refusing to overwrite") from error
+                merged = merge_envelope(current, envelope)
                 outcome: Literal["published", "recovered"] = "published"
                 try:
-                    api.set_commitment(CommitmentDataBytes(image.encode("utf-8")))
+                    api.set_commitment(CommitmentDataBytes(merged))
                 except PylonRequestException, PylonBadGateway:
                     outcome = "recovered"
                 deadline = time.monotonic() + confirm_seconds
@@ -157,7 +204,7 @@ def submit(api: SubmissionApi, image: str, netuid: int, *, confirm_seconds: floa
                         response = _read(api)
                     except PylonRequestException:
                         response = None
-                    if response is not None and _matches(response, image):
+                    if response is not None and _matches(response, envelope):
                         result = _evidence(api, response, image, netuid, outcome)
                         break
                     remaining = deadline - time.monotonic()
@@ -171,13 +218,17 @@ def submit(api: SubmissionApi, image: str, netuid: int, *, confirm_seconds: floa
         return result
 
 
-@click.command(help="Publish IMAGE once and confirm its chain value. Supply PYLON_IDENTITY_TOKEN in the environment.")
+@click.command(
+    help="Publish IMAGE as this miner's FactoryHorde envelope and confirm it on chain. "
+    "Safe to repeat: an unchanged envelope is not rewritten. Supply PYLON_IDENTITY_TOKEN in the environment."
+)
 @click.argument("image")
 @click.option("--pylon-address", envvar="PYLON_ADDRESS", required=True)
 @click.option("--identity", envvar="PYLON_IDENTITY", required=True)
 @click.option("--netuid", type=click.IntRange(min=0), envvar="NETUID", required=True)
+@click.option("--namespace", envvar="SUBMISSION_NAMESPACE", required=True)
 @click.option("--confirm-seconds", type=click.FloatRange(min=1, max=600), default=150, show_default=True)
-def main(image: str, pylon_address: str, identity: str, netuid: int, confirm_seconds: float) -> None:
+def main(image: str, pylon_address: str, identity: str, netuid: int, namespace: str, confirm_seconds: float) -> None:
     """Publish IMAGE once and exit after exact chain-facing confirmation.
 
     Supply PYLON_IDENTITY_TOKEN through the environment, never as a command argument.
@@ -187,7 +238,7 @@ def main(image: str, pylon_address: str, identity: str, netuid: int, confirm_sec
     """
     started = time.monotonic()
     try:
-        validate_reference(image)
+        encode_envelope(image, namespace)
         token = os.environ.get("PYLON_IDENTITY_TOKEN")
         if not token:
             raise click.ClickException("Set PYLON_IDENTITY_TOKEN in the environment")
@@ -199,7 +250,7 @@ def main(image: str, pylon_address: str, identity: str, netuid: int, confirm_sec
             timeout=PylonTimeout(read=confirm_seconds),
         )
         with PylonClient(config) as client:
-            result = submit(client.v1.identity, image, netuid, confirm_seconds=confirm_seconds)
+            result = submit(client.v1.identity, image, netuid, namespace, confirm_seconds=confirm_seconds)
     except (BasePylonException, SubmissionError, ValueError) as error:
         raise click.ClickException(str(error)) from error
     click.echo(json.dumps({**asdict(result), "elapsed_seconds": time.monotonic() - started}))
