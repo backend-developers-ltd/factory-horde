@@ -1,7 +1,7 @@
 {
   "files": {
-    "envs/deployed/alloy/config.alloy": "7bc72e920bb07632207c55fc956283f6f0c8944d8b0c88513828d3fe4c3874d2",
-    "envs/deployed/docker-compose.yml": "af80b6aa628f0e8bdf60dcbad358ad6fdce4a72a2c41574c8f779f5825d75fac",
+    "envs/deployed/alloy/config.alloy": "dcf441961c9b6bf3a1c5b3ffc56c156cb64cf143b93b32556bb417959e8b98d2",
+    "envs/deployed/docker-compose.yml": "f2608b6bc4ed4fc763319be9f1e50079664e5c3b4c78ef0d451128f0e4816320",
     "executor/executor.py": "967cd92af6eb6fe4dc88cb95afb74d76e6500f883b7f6d8d53d74d29eb150bf5",
     "executor/executor.sha256": "8de5a52170f2a0dff37eddd74c1f009dea3900ef485c1898e29f689477df1579",
     "installer/factory-horde-executor.service": "34c2f1705b9eb3694a8a048643f695b561366a66af058dd7724e6d9a5496c93d",

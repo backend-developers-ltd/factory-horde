@@ -167,7 +167,7 @@ Skip for higher level tasks that do not touch the code.
 ### Observability
 
 `envs/deployed/docker-compose.yml` uses pinned official Prometheus and node-exporter images.
-Prometheus scrapes node-exporter, the validator on port 9101, Pylon's `/metrics` with `PYLON_METRICS_TOKEN`
+Prometheus scrapes node-exporter (host network namespace, bound only to the `docker0` address at `NODE_EXPORTER_HOST_PORT`, reached through `host.docker.internal`), the validator on port 9101, Pylon's `/metrics` with `PYLON_METRICS_TOKEN`
 and `claude-usage-exporter` on port 9102. That standalone sidecar exports the Claude subscription's 5h/7d budget
 use from the rate-limit response headers in `inference-proxy`'s access log; it is deliberately outside the
 validator so it can be dropped when the subscription is replaced.

@@ -92,6 +92,7 @@ class Check:
             SUBTENSOR_HOST_PORT=str(port()),
             PYLON_HOST_PORT=str(port()),
             PROMETHEUS_HOST_PORT=str(port()),
+            NODE_EXPORTER_HOST_PORT=str(port()),
             VALIDATOR_IMAGE=validator_image or (REPO / "localnet/state/validator-image.id").read_text().strip(),
             VALIDATOR_DISPATCH_ENABLED="false",
             VALIDATOR_WEIGHTS_ENABLED="false",
