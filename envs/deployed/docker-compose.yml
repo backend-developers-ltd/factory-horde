@@ -1,8 +1,8 @@
 # Common application services. Localnet overlays only the chain, identities and isolated paths.
 services:
   pylon:
-    # bittensor-pylon:2.3.4
-    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:2e7a3470b1ff6f4a72f53a075c1f215cd352a0d289387bad10f328825f396dbb
+    # bittensor-pylon:2.4.0
+    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:b0b4f4d532aed7dba6ffc979ce270ac3286b3c98678a87f8d2c3ec8086453184
     platform: linux/amd64
     restart: unless-stopped
     ports:

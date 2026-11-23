@@ -175,8 +175,8 @@ Current source selects these versions following the emSign/eMudhra audit:
 | Validator, submitter, judge and executor-fixture Python base | 3.14.9-slim-trixie (previous refresh) |
 | Validator and submitter uv image | 0.13.6 (previous refresh) |
 | Factory Node base | 24.22.1-bookworm-slim |
-| Pylon service | 2.3.4 |
-| Submitter Pylon client | 2.3.1 |
+| Pylon service | 2.4.0 |
+| Validator and submitter Pylon client | 2.4.0 |
 | Prometheus | 3.15.1 |
 | node-exporter | 1.12.1 |
 | Subtensor localnet | v486, under `ghcr.io/raofoundation/subtensor-localnet` |
@@ -190,14 +190,15 @@ base as the application Dockerfiles.
 
 Both uv projects now require uv >= 0.13.6 and constrain certifi >= 2026.10.19;
 certifi remains locked at 2026.10.23. The validator also constrains botocore >=
-1.43.117. The certificate packages, boto3 and the submitter Pylon client have a
-one-day package-specific cooldown. Other cooldown settings are unchanged. The
+1.43.117. The certificate packages and boto3 have a
+one-day package-specific cooldown; the Pylon client, which we release ourselves, is
+exempt from the cooldown in both projects. Other cooldown settings are unchanged. The
 locks retain the existing seven-day `UV_EXCLUDE_NEWER` setting from this environment;
 unsetting that override applies the validator's stricter eleven-day project policy.
 Boto3/botocore 1.43.119 was still inside the one-day cooldown when resolving.
 
-The selected Nexus revision requires Pylon client 2.3.0, so the validator retains
-that version. There is no newer published `nodejs-wheel-binaries` than the locked
+The selected Nexus revision pins Pylon client 2.3.1; the validator overrides that
+pin with 2.4.0, which only adds mechanism-aware neuron reads. There is no newer published `nodejs-wheel-binaries` than the locked
 24.19.0. Drand was excluded from this refresh at the user's request.
 
 Version updates alone do not finish the audit: node-exporter 1.12.1 and BuildKit

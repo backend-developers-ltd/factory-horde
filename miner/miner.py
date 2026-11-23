@@ -27,7 +27,7 @@ from pylon_client.artanis import (
 from pylon_client.artanis.v1 import GetCommitmentResponse, GetNeuronsResponse, SetCommitmentResponse
 from tenacity import Retrying, stop_after_attempt
 
-# The selected Pylon 2.3.4 writer uses RawN, whose supported maximum is Raw128.
+# The selected Pylon 2.4.0 writer uses RawN, whose supported maximum is Raw128.
 COMMITMENT_MAX_BYTES = 128
 # ComputeHorde's largest manifest envelope: "<M:" + six "X999" codes joined by ";" + ">".
 COMPUTE_HORDE_MANIFEST_RESERVE = 33

@@ -6,7 +6,7 @@ requires-python = ">=3.14"
 dependencies = [
     "attrs>=26.1.0", # previously this was required for Nexus (litestar needed it) #TODO: See if this is still the case
     "bittensor-nexus-library",
-    "bittensor-pylon-client==2.3.1",
+    "bittensor-pylon-client==2.4.0",
     "click>=8.3.2",
     "opentelemetry-api~=1.41",
     "opentelemetry-exporter-otlp-proto-http~=1.41",
@@ -33,7 +33,9 @@ constraint-dependencies = ["certifi>=2026.10.19", "botocore>=1.43.117"]
 # This exclusion is a crucial security measure and MUST NOT be relaxed.
 # This is intended to help avoid pulling in freshly published compromised dependencies.
 exclude-newer = "11 days"
-exclude-newer-package = { certifi = "P1D", botocore = "P1D", boto3 = "P1D" }
+exclude-newer-package = { certifi = "P1D", botocore = "P1D", boto3 = "P1D", bittensor-pylon-client = false } # We control Pylon releases.
+# Nexus d54e268 pins bittensor-pylon-client==2.3.1; 2.4.0 is additive (mechanism-aware neuron reads).
+override-dependencies = ["bittensor-pylon-client==2.4.0"]
 
 [tool.uv.sources]
 # master: mechanism-aware status/writes and idle-context expiry (context_ttl).
