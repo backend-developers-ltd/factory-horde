@@ -12,7 +12,7 @@ The existing rendered scaffold must not be rendered again.
 
 | Component | Responsibility | Implementation location |
 |---|---|---|
-| Miner submitter | Validate and commit a public digest using its own Pylon identity; exact read-back; exit | `miner/miner.py` and `miner/Dockerfile` |
+| Miner submitter | Validate a public digest and commit its FactoryHorde envelope using its own Pylon identity; read-back of the envelope; exit | `miner/miner.py` and `miner/Dockerfile` |
 | Baseline factory | Invoke pinned Pi help/version without inference, wait approximately 60 seconds, write fresh greeting project | `miner/factory/` |
 | Judge | Adaptively inspect and test projects in an isolated application sandbox, then grade captured observations against frozen criteria, or draw a uniform random score in explicit fixture mode; write one report | `judge/` |
 | Validator | Discover/freeze cohort, schedule, publish jobs/stops, accept scores, calculate weights | `validator/src/validator/` |

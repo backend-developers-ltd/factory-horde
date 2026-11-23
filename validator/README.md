@@ -4,7 +4,7 @@ The validator runs inside the common Compose stack. Nexus observes actual blocks
 through Pylon and atomically records `control/chain-observation.json` in the shared
 data root. This proves chain connectivity; it is not full executor/application
 readiness. Dispatch defaults to disabled. Enabling it requires `VALIDATOR_HOTKEY`,
-`VALIDATOR_JUDGE_IMAGE`, and the Pylon identity name/token, in addition to normal
+`VALIDATOR_JUDGE_IMAGE`, `VALIDATOR_SUBMISSION_NAMESPACE` and the Pylon identity name/token, in addition to normal
 chain and data-root settings.
 
 The pinned Nexus `mechanism-id` revision, Pylon versions and verified API checks are

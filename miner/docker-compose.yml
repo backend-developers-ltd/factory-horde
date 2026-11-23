@@ -1,5 +1,6 @@
 # A miner's Pylon with a single "miner" identity, and the one-shot submitter that publishes
-# FACTORY_IMAGE through it. Settings come from the .env beside this file; see README.md.
+# FACTORY_IMAGE as its FactoryHorde envelope through it. Settings come from the .env beside this
+# file; see README.md.
 name: factory-horde-miner
 services:
   pylon:
@@ -49,6 +50,7 @@ services:
       PYLON_IDENTITY: miner
       PYLON_IDENTITY_TOKEN: "${MINER_PYLON_TOKEN:?}"
       NETUID: "${NETUID:?}"
+      SUBMISSION_NAMESPACE: "${SUBMISSION_NAMESPACE:?}"
     command: ["${FACTORY_IMAGE:-}"]
     read_only: true
     tmpfs:

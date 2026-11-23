@@ -318,8 +318,8 @@ restores the ordinary validator. Raw artifacts remain in `state/task11-rounds.js
 and `state/task11-coordinator.log`.
 
 For continuous scheduling, set `VALIDATOR_DISPATCH_ENABLED=true`, `VALIDATOR_HOTKEY`
-to the registered validator's public hotkey and `JUDGE_IMAGE` to the published judge
-digest in `localnet/.env`, then recreate the validator. The example environment lists
+to the registered validator's public hotkey, `JUDGE_IMAGE` to the published judge
+digest and `SUBMISSION_NAMESPACE` to the registry owner of the miners' images in `localnet/.env`, then recreate the validator. The example environment lists
 the default two-hour timing. Only one coordinator may write a data root. Keep
 existing files across restart; unresolved old jobs hold future slots. Disabling
 dispatch pauses the coordinator; existing executor requests retain their deadlines.

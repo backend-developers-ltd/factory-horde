@@ -190,6 +190,17 @@ without installing an application cron job. Use the full installer for candidate
 acceptance. `prepare-data-root.sh /absolute/data/root` remains the independent
 ownership/permissions preparation command.
 
+## Second mechanism beside ComputeHorde
+
+FactoryHorde can run as a second mechanism on ComputeHorde's subnet, with the same miner and validator hotkeys. Both mechanisms share one commitment per hotkey; each rewrites only its own envelope (see [the commitment format](../miner/README.md#commitment-format)). Such a deployment needs:
+
+- `MECHANISM_ID=1` in `.env`, so weights and chain metrics address FactoryHorde's mechanism.
+- The shared validator hotkey in `VALIDATOR_HOTKEY`, signed through this installation's own Pylon; ComputeHorde's validator keeps its own.
+- A Pylon service release with per-mechanism neuron reads (the first release after 2.3.4) or newer, so incentive and last-update metrics report this mechanism instead of mechanism 0.
+- ComputeHorde's miner on a release that keeps other envelopes (`ec106a6e` or newer) on every shared miner hotkey before any FactoryHorde envelope is written; older releases erase `<F:…>` within 5 minutes.
+- `SUBMISSION_NAMESPACE` in the installation's `.env` before the cron updater applies a release with envelope commitments. With dispatch enabled the validator refuses to start without it, and the updater does not roll back.
+- Scheduled submitters on every miner (for example a 5-minute cron job), because a writer can overwrite the other mechanism's newest change from a stale read; a run that finds its envelope in place writes nothing.
+
 ## Task specification and inference proxy
 
 `TASK_SPECIFICATION` in `.env` is the task text given to every factory in new rounds. Write it on one line in single quotes, without `$` or backticks. Unset or empty keeps the built-in greeting task, and a round that is already admitted keeps the text it started with.
