@@ -22,9 +22,10 @@ that host. It does not prove provisioning on a fresh operating system.
 digests, build revisions, dependency locks, Nexus/Pylon versions and the executor
 checksum. [Candidate instructions](../envs/candidate/README.md) use the exact
 configuration revision above. Later acceptance/documentation commits do not change
-the packaged application or executor bytes. No production configuration branch
-has been promoted; building/publishing artifacts is separate from operator release
-selection. Subnet 12 and public-chain emissions were not changed.
+the packaged application or executor bytes. This candidate was never promoted;
+building/publishing artifacts is separate from operator release selection. Since 23
+November 2026 `deploy-config-production` runs FactoryHorde as mechanism 1 of subnet 12
+(see [production](../production/README.md)); emissions were not changed.
 
 ## Reproduction and evidence
 
@@ -264,4 +265,4 @@ Live Claude runs on the isolated source-checkout localnet used images built from
 
 ## Second-mechanism commitments — 23 November 2026
 
-To run beside ComputeHorde on the same hotkeys, commitments became a sequence of tagged envelopes. FactoryHorde commits `<F:package@digest>`, with the SHA-256 digest in unpadded base64url, and the validator rebuilds the image under `VALIDATOR_SUBMISSION_NAMESPACE`, which dispatch now requires; legacy bare references are no longer accepted. The submitter (`SUBMISSION_NAMESPACE`) changes only its own envelope, keeps every other byte and a 33-byte reserve for ComputeHorde's manifest, and refuses to overwrite an undecodable commitment. Because the chain has no compare-and-set, a stale write by either mechanism can drop the other's newest change, so miners schedule the submitter; a run that finds its envelope writes nothing. Shared examples live in `spec/fixtures/commitment-v2/envelopes.json`. Localnet checks and per-mechanism chain metrics follow once the required Pylon release exists.
+To run beside ComputeHorde on the same hotkeys, commitments became a sequence of tagged envelopes. FactoryHorde commits `<F:package@digest>`, with the SHA-256 digest in unpadded base64url, and the validator rebuilds the image under `VALIDATOR_SUBMISSION_NAMESPACE`, which dispatch now requires; legacy bare references are no longer accepted. The submitter (`SUBMISSION_NAMESPACE`) changes only its own envelope, keeps every other byte and a 33-byte reserve for ComputeHorde's manifest, and refuses to overwrite an undecodable commitment. Because the chain has no compare-and-set, a stale write by either mechanism can drop the other's newest change, so miners schedule the submitter; a run that finds its envelope writes nothing. Shared examples live in `spec/fixtures/commitment-v2/envelopes.json`. With Pylon 2.4.0 the dashboard reads incentive and last update of the configured mechanism. `localnet/check_submissions.py` verifies coexistence with ComputeHorde-shaped content on localnet.

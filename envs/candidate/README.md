@@ -12,7 +12,7 @@ All eight selected images passed anonymous pulls. Installation from Git revision
 monitoring checks on the prepared Linux host; see [task-16 evidence](../../spec/evidence/task16-candidate.json).
 This isolated localnet candidate passed [task-17 end-to-end acceptance](../../spec/evidence/task17-acceptance.json).
 The user selected the existing VM and prohibited preparing another VM; no clean-OS claim is made.
-No production configuration branch has been promoted. The complete reproduction
+This candidate was never promoted; the subnet 12 deployment is described in [production](../../production/README.md). The complete reproduction
 sequence and retained evidence are linked from the [handoff](../../docs/implementation-handoff.md).
 
 ## Install the selected application
