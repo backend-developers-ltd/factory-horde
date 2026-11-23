@@ -57,6 +57,8 @@ INFERENCE_TOKEN_PLACEHOLDER = "inference-proxy"
 # Docker's own network modes would bypass the inference proxy or share the host's network.
 RESERVED_NETWORKS = ("none", "host", "bridge", "default")
 PRUNE_INTERVAL_SECONDS = 3600
+# Waits before retrying a failed image pull, so a transient registry or network error does not reject a submission.
+PULL_RETRY_DELAYS = (10.0, 30.0)
 
 
 class ProtocolError(ValueError):
@@ -1690,6 +1692,12 @@ class Executor:
             if hashlib.sha256(content).hexdigest() != manifest.get("specification_sha256"):
                 raise ProtocolError("Input specification hash mismatch")
             pull = self.docker.call("pull", "--platform", "linux/amd64", request.image, timeout=600)
+            for delay in PULL_RETRY_DELAYS:
+                if not pull.returncode or self.shutdown.wait(delay) or self.cancelled(request):
+                    break
+                pull = self.docker.call("pull", "--platform", "linux/amd64", request.image, timeout=600)
+            if self.shutdown.is_set():
+                return
             if pull.returncode:
                 self.status(
                     request,
