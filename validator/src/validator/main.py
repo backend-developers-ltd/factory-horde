@@ -165,7 +165,13 @@ class Validator(NexusValidator):
         )
         if settings.pylon_identity_name and settings.pylon_identity_token:
             chain_view = ChainViewNode(
-                partial(read_chain_view, settings.pylon_config(), settings.netuid, settings.validator_hotkey)
+                partial(
+                    read_chain_view,
+                    settings.pylon_config(),
+                    settings.netuid,
+                    settings.validator_hotkey,
+                    settings.mechanism_id,
+                )
             )
             self.connect(self.tasks.poll_clock.source, taps=(chain_view.sink,))
             self.connect(chain_view.ok, monitoring.chain_view)

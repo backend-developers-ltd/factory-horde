@@ -182,7 +182,7 @@ or tracing sidecar runs.
 Readiness requires fresh runtime chain/executor/Docker observations, compatible records, writable paths and
 reconciliation. The same collector exports the latest round's number, cohort size and window, per-miner
 accepted scores and calculated weights from records, and the validator's permit, last weight update and
-per-miner incentive from a separate Nexus actor with a throttled, bounded Pylon neuron read that never blocks readiness. Miner hotkeys are
+per-miner incentive of the configured mechanism from a separate Nexus actor with a throttled, bounded Pylon neuron read that never blocks readiness. Miner hotkeys are
 the only identity labels; job and round IDs stay in records. `control/executor-health.json` is atomic file-only health evidence; it never proves workload
 termination. The same validator scrape path forwards executor counters/histograms. There is no textfile collector
 or executor HTTP server. Record I/O counters and latency histograms live in
