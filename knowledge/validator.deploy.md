@@ -60,7 +60,7 @@ system unit. The operator's cron has only that restart sudo grant. A changed sys
 unit requires installation privileges; unhealthy replacement requires ordinary
 repair and is not rolled back automatically. See [installer instructions](../installer/README.md).
 
-There are two environments, `production` (mainnet subnet 12) and `refinery` (the Refinery development chain), each with its own build branch, image packages and configuration branch; see [other environments](#other-environments). Refinery's servers consume published assets without a source checkout, using the same installer, configuration and promotion flow as production; see [the Refinery guide](../refinery/README.md).
+Refinery is a production deployment on another chain: it follows `deploy-config-production`, runs the `production` images and sets only its chain, subnet and mechanism differently in `.env`. Its servers consume published assets without a source checkout, using the same installer, configuration and promotion flow as production; see [the Refinery guide](../refinery/README.md).
 
 [Task 16's candidate](../envs/candidate/README.md) uses this build/promotion structure. Production
 configuration promotion, subnet-12 deployment and emissions changes remain outside
@@ -150,7 +150,7 @@ stack.
    image: <image_registry>/<github_org>/<image_basename>-${ENVIRONMENT:?}@sha256:<digest>
    ```
 
-   This line is the only place the validator image is selected. Operator `.env` files carry no image setting, so promoting the pin is all it takes for every server of the environment to move to the new image.
+   This line is the only place the validator image is selected. Operator `.env` files carry no image setting, so promoting the pin is all it takes for every server to move to the new image.
 
    For a submitter release, pin the published submitter digest in `miner/docker-compose.yml` as part of the same configuration release. Miner operators download and verify that file from the selected revision, then run the new submitter on demand; see [miner installation](../miner/README.md#submitting-from-a-server).
 
@@ -240,12 +240,9 @@ procedure 2 step 2 happens against the stack the operator will end up running.
 
 ## Other environments
 
-Mirror the same flow with a matching pair of branches — `deploy-build-<env>`
-triggers a CI build of `<image_basename>-<env>:v0-latest`. Operators explicitly
-select `--ref deploy-config-<env>` (or a full commit SHA) and supply the same `ENVIRONMENT=<env>`
-in their operator environment. No installer argument defaults the subnet/network.
+`production` is the only environment: mainnet and Refinery both follow `deploy-config-production` and run the `-production` images, differing only in the chain, subnet and mechanism settings of their `.env`.
 
-FactoryHorde has `production` and `refinery`. Each environment's images are separate packages with their own digests, and the Compose files hold one pin, so a release commit belongs to the environment whose digests it pins. Run procedures 1 and 2 per environment: build on `deploy-build-<env>`, pin that build's validator and submitter digests, and promote that commit to `deploy-config-<env>` only. Never promote a commit to the configuration branch of an environment other than the one it pins: that environment's package has no such digest and its servers could not pull the image. The same holds for procedure 3: promote a service bump to an environment from a commit that pins that environment's validator.
+The branch and image names keep the template's `<env>` suffix so that another environment can be added later with its own `deploy-build-<env>`, `deploy-config-<env>` and `ENVIRONMENT=<env>`. The Compose files hold a single pin, and each environment's images are separate packages with their own digests, so adding one also requires a way to pin each environment separately.
 
 ## After done
 

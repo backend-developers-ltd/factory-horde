@@ -11,7 +11,7 @@ Mainnet subnet 12 uses [`production/`](../production/README.md).
 Build and promote images through [the deployment procedures](../knowledge/validator.deploy.md). On the operator host, select the configuration branch explicitly and resolve it once before downloading the installer. The installation directory is runtime state, not a Git checkout.
 
 ```sh
-RELEASE_REF=deploy-config-production # use deploy-config-refinery for Refinery
+RELEASE_REF=deploy-config-production # Refinery too
 RELEASE_SHA=$(git ls-remote https://github.com/backend-developers-ltd/factory-horde.git "refs/heads/$RELEASE_REF" | cut -f1)
 test "${#RELEASE_SHA}" -eq 40
 RELEASE_URL="https://raw.githubusercontent.com/backend-developers-ltd/factory-horde/$RELEASE_SHA"
@@ -22,7 +22,7 @@ curl -fsSL "$RELEASE_URL/installer/release.py" -o "$BOOTSTRAP/release.py"
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
-Two settings select a deployment's environment, and they must name the same one: `--ref deploy-config-<env>` is the configuration branch the installation follows, and `ENVIRONMENT=<env>` in the operator environment file selects that environment's image package (`factory-horde-validator-<env>`). The image digest is pinned only in the release's Compose file, so no image setting exists on the server and a promoted release needs no change there.
+The image digest is pinned only in the release's Compose file, so no image setting exists on the server and a promoted release needs no change there.
 
 The first installation validates and applies a complete release; subsequent cron runs follow the chosen configuration branch. If a release changes the manifest's asset set, bootstrap the new installer as above and rerun installation against the existing directory; its `.env`, wallet paths and data are preserved.
 

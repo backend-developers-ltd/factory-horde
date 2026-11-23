@@ -37,7 +37,7 @@ beside it (never committed):
 | `SUBMISSION_NAMESPACE` | Registry owner all submissions must be published under, for example `ghcr.io/backend-developers-ltd` |
 | `PYLON_HOST_PORT` | Optional override (8000) |
 
-For an operator installation, resolve the reviewed configuration branch once, download the Compose file and verify it against that release's manifest. Use `deploy-config-refinery` for the internal chain; `ENVIRONMENT` in `.env` must name the same environment as the branch, because the file pins that environment's submitter image. Repeat this sequence for upgrades; retain `.env` and the Pylon volume.
+For an operator installation, resolve the reviewed configuration branch once, download the Compose file and verify it against that release's manifest. Use `deploy-config-production`, for Refinery too. Repeat this sequence for upgrades; retain `.env` and the Pylon volume.
 
 ```sh
 mkdir -p ~/factory-horde/miner
