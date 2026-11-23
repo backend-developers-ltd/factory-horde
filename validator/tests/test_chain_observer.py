@@ -43,6 +43,30 @@ def test_dispatch_requires_explicit_identity_and_judge() -> None:
         )
 
 
+DISPATCH = {
+    "NETUID": 2,
+    "pylon_service_address": "http://pylon.test",
+    "pylon_open_access_token": "test",
+    "pylon_identity_name": "validator",
+    "pylon_identity_token": "token",
+    "dispatch_enabled": True,
+    "VALIDATOR_HOTKEY": "5" + "c" * 47,
+    "judge_image": "ghcr.io/example/judge@sha256:" + "a" * 64,
+}
+
+
+def test_dispatch_requires_submission_namespace() -> None:
+    with pytest.raises(ValidationError, match="submission namespace"):
+        Settings.model_validate(DISPATCH)
+    settings = Settings.model_validate({**DISPATCH, "submission_namespace": "ghcr.io/example"})
+    assert settings.submission_namespace == "ghcr.io/example"
+
+
+def test_submission_namespace_must_be_a_ghcr_owner() -> None:
+    with pytest.raises(ValidationError, match="submission_namespace"):
+        Settings.model_validate({**DISPATCH, "submission_namespace": "docker.io/example"})
+
+
 def test_compose_seconds_configuration_is_validated(monkeypatch: pytest.MonkeyPatch) -> None:
     for key, value in {
         "VALIDATOR_GENERATION_WINDOW": "100",

@@ -4,7 +4,7 @@
 
 **Goal:** Let FactoryHorde run as mechanism 1 on ComputeHorde's subnet with the same miner and validator hotkeys, so both mechanisms share one commitment per hotkey and each only ever rewrites its own part.
 
-**Architecture:** The commitment becomes a sequence of tagged envelopes, extending the format ComputeHorde already uses (`<M:…>` manifest, legacy `<D:…>` shield). FactoryHorde owns `<F:package@digest>`, where the digest is base64url and the registry/owner namespace (for example `ghcr.io/backend-developers-ltd`) comes from configuration. FactoryHorde's submitter replaces only its own envelope and keeps every other byte. ComputeHorde's miner gets a one-line change so that its rebuild also keeps `<F:…>` envelopes. ComputeHorde's validator already ignores anything outside `<M:…>`. The chain has no compare-and-set for commitments, so either writer can overwrite the other's newest change from a stale read; both writers therefore run periodically, and each run repairs its own part.
+**Architecture:** The commitment becomes a sequence of tagged envelopes, extending the format ComputeHorde already uses (`<M:…>` manifest, legacy `<D:…>` shield). FactoryHorde owns `<F:package@digest>`, where the digest is base64url and the registry/owner namespace (for example `ghcr.io/backend-developers-ltd`) comes from configuration. FactoryHorde's submitter replaces only its own envelope and keeps every other byte. ComputeHorde's miner keeps every envelope it does not own (merged in ComputeHorde #878), so its rebuild also keeps `<F:…>`. ComputeHorde's validator already ignores anything outside `<M:…>`. The chain has no compare-and-set for commitments, so either writer can overwrite the other's newest change from a stale read; both writers therefore run periodically, and each run repairs its own part.
 
 Pylon's neuron reads also become mechanism-aware. Subtensor stores `Incentive` and `LastUpdate` per mechanism, but Pylon builds neurons from the `get_neurons_lite` runtime call, which only reads mechanism 0. An optional `mechanism_id` query parameter (default 0) overlays the requested mechanism's values. FactoryHorde's monitoring then requests `MECHANISM_ID`, so its incentive and last-update gauges stop showing ComputeHorde's values.
 
@@ -16,7 +16,7 @@ Pylon's neuron reads also become mechanism-aware. Subtensor stores `Incentive` a
 
 ## Background and decisions
 
-**Why the envelope format.** Commitments are stored per (netuid, hotkey). Mechanisms have no separate slot. ComputeHorde's miner (`miner/app/src/compute_horde_miner/miner/manifest_commitment.py:43`) rebuilds the commitment every 5 minutes, keeps only `<D:…>` envelopes and appends a fresh `<M:…>`. ComputeHorde's validator (`compute_horde/compute_horde/manifest_utils.py`, `extract_manifest_payload`) searches for the first `<M:…>` anywhere and ignores the rest.
+**Why the envelope format.** Commitments are stored per (netuid, hotkey). Mechanisms have no separate slot. ComputeHorde's miner (`miner/app/src/compute_horde_miner/miner/manifest_commitment.py:43`) rebuilds the commitment every 5 minutes, keeps every other single-capital-letter envelope (`<[A-LN-Z]:…>`, since #878; before it only `<D:…>`) and appends a fresh `<M:…>`. ComputeHorde's validator (`compute_horde/compute_horde/manifest_utils.py`, `extract_manifest_payload`) searches for the first `<M:…>` anywhere and ignores the rest.
 
 **Size budget.** Pylon writes a single `Raw` field, so the whole commitment is limited to 128 bytes. ComputeHorde's writer enforces the same limit.
 
@@ -34,7 +34,7 @@ The FactoryHorde writer guarantees ComputeHorde's room before writing. It refuse
 **Ownership rules.**
 
 - FactoryHorde rewrites only `<F:…>` envelopes. It keeps every other byte unchanged, including `<D:…>`, `<M:…>` and unrecognized data. A new envelope goes immediately before the first `<M:…>` (else at the end). That matches ComputeHorde's canonical order (preserved envelopes, then the manifest), so ComputeHorde sees no change and does no extra rewrite. If FactoryHorde cannot decode the current commitment, it refuses to write rather than risk destroying the other mechanism's data.
-- ComputeHorde rewrites only `<M:…>`. It keeps `<D:…>` and `<F:…>`, and still discards non-envelope garbage, which is its existing cleanup behaviour.
+- ComputeHorde rewrites only `<M:…>`. It keeps every other tagged envelope, including `<D:…>` and `<F:…>`, and still discards non-envelope garbage, which is its existing cleanup behaviour.
 
 **Concurrent writes.** Both writers read, modify, then write, and the chain offers no compare-and-set. The commitments pallet on current subtensor (`pallets/commitments/src/lib.rs`, `set_commitment`, checked on `main`) has no per-hotkey block interval. It charges each write `max(100, length)` bytes against a quota of 3100 bytes per hotkey per tempo (`MaxSpace`), about 31 writes, shared by both mechanisms. Two writes seconds apart therefore both land, and the later one wins. A write computed from a stale read can undo the other writer's newest change:
 
@@ -90,7 +90,7 @@ bittensor-pylon (branch `mechanism-neuron-reads`, from `master`; paths relative 
 - Tests: `pylon_service/tests/unit/_unstable_identity_endpoints/test_get_neurons_mechanism.py` (new), `pylon_service/tests/unit/open_access_endpoints/test_get_neurons_mechanism.py` (new), `pylon_service/tests/integration/contact/test_reads.py`, `pylon_service/tests/pact/state_handlers.py`, `pylon_client/tests/unit/{synchronous,asynchronous}/identity/test_get_latest_neurons.py`, `pylon_client/tests/pact/{synchronous,asynchronous}/identity/test_get_latest_neurons.py`, `pylon_client/tests/pact/matchers.py`, the regenerated pact JSON files and snapshot files.
 - Docs: `CLAUDE.md` (Neuron Data endpoints), `docs/SERVICE.md`, `docs/CLIENT.md`.
 
-ComputeHorde (branch `preserve-factory-horde-commitment`, from `master`):
+ComputeHorde (branch `preserve-factory-horde-commitment`, merged as #878):
 
 - Modify `miner/app/src/compute_horde_miner/miner/manifest_commitment.py:42-44`.
 - Modify `miner/app/src/compute_horde_miner/miner/tests/test_manifest_commitment.py`.
@@ -829,101 +829,38 @@ docker run --rm --platform linux/amd64 --entrypoint /app/pylon_service/.venv/bin
 
 ---
 
-### Task 4: ComputeHorde keeps FactoryHorde envelopes
+### Task 4: ComputeHorde keeps other mechanisms' envelopes
 
-**Goal:** ComputeHorde's miner preserves `<F:…>` envelopes when it rewrites its manifest, and tests show its validator still parses manifests next to them.
+**Status:** Done. Merged as ComputeHorde pull request #878 (`ec106a6e`, "feat: preserve commitment envelopes written by others").
+
+**Goal:** ComputeHorde's miner preserves every tagged envelope it does not own when it rewrites its manifest, without naming FactoryHorde or its tag, and tests show its validator still parses manifests next to such envelopes.
 
 **Files:**
-- Modify: `/home/jan/Projects/reef/ComputeHorde/miner/app/src/compute_horde_miner/miner/manifest_commitment.py:42-44`
+- Modify: `/home/jan/Projects/reef/ComputeHorde/miner/app/src/compute_horde_miner/miner/manifest_commitment.py`
 - Test: `/home/jan/Projects/reef/ComputeHorde/miner/app/src/compute_horde_miner/miner/tests/test_manifest_commitment.py`
 - Test: `/home/jan/Projects/reef/ComputeHorde/validator/app/src/compute_horde_validator/validator/allowance/tests/test_manifests.py`
 
 **Acceptance Criteria:**
-- [ ] With `<D:…><F:…><M:A2>` on chain and manifest `{A: 3}`, `set_commitment` is called with `<D:…><F:…><M:A3>`.
-- [ ] With `<D:…><F:…><M:A3>` on chain and manifest `{A: 3}`, `set_commitment` is not called.
-- [ ] `<M:A3><F:…>` (F after M) is rewritten to `<F:…><M:A3>`, with the F bytes unchanged.
-- [ ] `parse_commitments_to_manifests({hk: b"<F:…><M:A5>"})` returns `{(hk, always_on__gpu_24gb): 5}`.
-- [ ] All existing ComputeHorde miner and validator manifest tests pass unchanged.
+- [x] With `<D:…><X:…><M:A2>` on chain and manifest `{A: 3}`, `set_commitment` is called with `<D:…><X:…><M:A3>`.
+- [x] With `<D:…><X:…><M:A3>` on chain and manifest `{A: 3}`, `set_commitment` is not called.
+- [x] `<M:A3><X:…>` (X after M) is rewritten to `<X:…><M:A3>`, with the X bytes unchanged.
+- [x] `parse_commitments_to_manifests({hk: b"<D:…><X:…><M:A5>"})` returns `{(hk, always_on__gpu_24gb): 5}`.
+- [x] All existing ComputeHorde miner and validator manifest tests pass unchanged.
 
-**Verify:** `cd /home/jan/Projects/reef/ComputeHorde/miner && nox -s test -- -k test_manifest_commitment` → all selected tests pass. Then `cd ../validator && nox -s test -- -k TestParseCommitmentsToManifests` → all selected tests pass. Both `test` sessions already pass their whole test directory to pytest, so a file path as an extra argument would not narrow the run; `-k` does.
+**Verify:** `cd /home/jan/Projects/reef/ComputeHorde/miner && nox -s test -- -k test_manifest_commitment`, then `cd ../validator && nox -s test -- -k TestParseCommitmentsToManifests` → all selected tests pass.
 
-**Steps:**
-
-- [ ] **Step 1: Branch.** `cd /home/jan/Projects/reef/ComputeHorde && git checkout master && git pull && git checkout -b preserve-factory-horde-commitment`
-
-- [ ] **Step 2: Write the failing miner tests.** Append to class `TestCommitManifest` in `test_manifest_commitment.py`:
+**What was merged:** In `manifest_commitment.py` the miner keeps every envelope whose tag is a single capital letter other than `M`, and rebuilds its own `<M:…>` after them:
 
 ```python
-    FACTORY = "<F:factory-horde-factory@" + "A" * 43 + ">"
-
-    @pytest.mark.parametrize("old_manifest", ["", "<M:A2>", "<M:A3>"])
-    @pytest.mark.parametrize("shield", ["", "<D:https://example.com/s>"])
-    def test_preserves_factory_horde_submission(self, mock_pylon_client, old_manifest, shield):
-        current = shield + self.FACTORY + old_manifest
-        mock_pylon_client.v1.identity.get_own_commitment.return_value = own_commitment(
-            commitment=pylon_hex(current)
-        )
-        expected = shield + self.FACTORY + "<M:A3>"
-
-        assert commit_manifest({ExecutorClass.always_on__gpu_24gb: 3}, mock_pylon_client) is True
-        if current == expected:
-            mock_pylon_client.v1.identity.set_commitment.assert_not_called()
-        else:
-            mock_pylon_client.v1.identity.set_commitment.assert_called_once_with(
-                expected.encode("utf-8")
-            )
-
-    def test_moves_factory_horde_submission_before_manifest(self, mock_pylon_client):
-        mock_pylon_client.v1.identity.get_own_commitment.return_value = own_commitment(
-            commitment=pylon_hex("<M:A3>" + self.FACTORY)
-        )
-
-        assert commit_manifest({ExecutorClass.always_on__gpu_24gb: 3}, mock_pylon_client) is True
-        mock_pylon_client.v1.identity.set_commitment.assert_called_once_with(
-            (self.FACTORY + "<M:A3>").encode("utf-8")
-        )
-```
-
-- [ ] **Step 3: Run to see them fail.** `cd /home/jan/Projects/reef/ComputeHorde/miner && nox -s test -- -k factory_horde`. Expected: FAIL, because the F envelope is dropped from the written value.
-
-- [ ] **Step 4: Implement.** In `manifest_commitment.py`, replace lines 42-44:
-
-```python
-        # Preserve shield and FactoryHorde (mechanism 1) envelopes, discarding old manifests and hex garbage.
-        preserved = "".join(re.findall(r"<[DF]:[^<>]*>", current_commitment))
+        # Keep envelopes written by others (e.g. shield <D:...>), discarding old manifests and non-envelope garbage.
+        # <M:...> is the miner's own envelope and is never preserved.
+        preserved = "".join(re.findall(r"<[A-LN-Z]:[^<>]*>", current_commitment))
         merged_commitment = merge_manifest(preserved, new_manifest_string)
 ```
 
-- [ ] **Step 5: Run the whole module.** `nox -s test -- -k test_manifest_commitment`. Expected: all pass, including `test_preserves_visible_shield` and `test_replaces_nested_commitment`.
+The tests use a neutral `<X:other-mechanism@…>` envelope (`test_preserves_other_envelopes`, `test_moves_other_envelopes_before_manifest` and the validator's `test_parse_commitments_beside_other_envelopes`). FactoryHorde's only obligation is that its tag stays a single capital letter other than `M`, which `F` is. Kept envelopes count towards ComputeHorde's 128-byte limit, so a stale envelope of a retired writer stays until that writer removes it, as `<D:…>` already did.
 
-- [ ] **Step 6: Validator compatibility test (test only).** Append to `TestParseCommitmentsToManifests` in `test_manifests.py`:
-
-```python
-    def test_parse_commitments_beside_factory_horde(self):
-        commitments = {
-            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY": (
-                b"<D:https://example.com/s><F:factory-horde-factory@" + b"A" * 43 + b"><M:A5>"
-            ),
-        }
-
-        result = parse_commitments_to_manifests(commitments)
-
-        assert result == {
-            (
-                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                ExecutorClass.always_on__gpu_24gb,
-            ): 5
-        }
-```
-
-Run `cd /home/jan/Projects/reef/ComputeHorde/validator && nox -s test -- -k TestParseCommitmentsToManifests`. Expected: PASS without any production change.
-
-- [ ] **Step 7: Lint and commit.** Run `nox -s lint` in `miner/`, then:
-
-```bash
-git add miner/app/src/compute_horde_miner/miner/manifest_commitment.py miner/app/src/compute_horde_miner/miner/tests/test_manifest_commitment.py validator/app/src/compute_horde_validator/validator/allowance/tests/test_manifests.py
-git commit -m "Preserve FactoryHorde commitment envelopes"
-```
+**Rollout consequence:** ComputeHorde miners on a release older than `ec106a6e` still erase `<F:…>` within 5 minutes. A FactoryHorde miner whose hotkey also runs a ComputeHorde miner must run that release or newer before it schedules the submitter.
 
 ---
 
@@ -1807,7 +1744,7 @@ SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd
 - [ ] `cd validator && uv run pytest -q`, `cd miner && uv run pytest -q`, `uv run ruff check`, `uv run ruff format --check` and `uv run basedpyright` in both FactoryHorde projects report no failures.
 - [ ] `release.py manifest --check` passes.
 - [ ] ComputeHorde `nox -s lint` in `miner/` and the two `-k` test selections from Task 4 pass.
-- [ ] Three pull requests are open against `master`: factory-horde (`second-mechanism-commitments`), ComputeHorde (`preserve-factory-horde-commitment`) and factory-horde-demo-miners (`submission-namespace`). Each branch was confirmed with `git branch --show-current` before pushing.
+- [ ] Pull requests are open against `master` for factory-horde (`second-mechanism-commitments`) and factory-horde-demo-miners (`submission-namespace`); ComputeHorde's (`preserve-factory-horde-commitment`) was merged as #878. Each branch was confirmed with `git branch --show-current` before pushing.
 - [ ] The factory-horde description lists the rollout in this order: ComputeHorde miner release; `SUBMISSION_NAMESPACE` in every validator and miner `.env`; FactoryHorde validator and submitter release together with the demo miners' new `sync.sh`; mechanism count and emission split; validator with `MECHANISM_ID=1`; scheduled submitters.
 
 **Verify:** `gh pr list --author @me --state open` in the factory-horde, ComputeHorde and factory-horde-demo-miners checkouts → one open pull request each for the three branches.

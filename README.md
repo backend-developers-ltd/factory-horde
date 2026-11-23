@@ -54,8 +54,8 @@ or newer. There is no root Python project or uv workspace. Run `uv sync` in the
 relevant project and preserve its dependency-age restriction. The host executor is
 one standard-library Python file; the validator has no Docker socket or wallet mount.
 
-No operator configuration branch has been promoted, and no subnet-12, public-chain
-or emissions change is part of this prototype. Quality calibration,
+FactoryHorde runs on Refinery and as mechanism 1 of mainnet subnet 12 ([production](production/README.md)); emission
+splits are left to the subnet owner. Quality calibration,
 stronger isolation, private/encrypted submissions, automatic rollback, scale/storage
 systems and TEE remain future work.
 

@@ -42,9 +42,11 @@ Follow [published operator installation](../installer/README.md#published-operat
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
 # Set JUDGE_IMAGE to the published GHCR digest for the review judge in your release.
-# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD.
+# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD; check SUBMISSION_NAMESPACE.
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
+
+**Upgrading to envelope commitments.** An existing installation must have `SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd` in `~/factory-horde/.env` before `deploy-config-refinery` moves to a release with envelope commitments: once dispatch is enabled, the validator refuses to start without it, and the updater does not roll back. The miners' `.env` needs the same line before they run the new submitter.
 
 The metrics login comes from the company monitoring stack: see [monitoring](../installer/README.md#monitoring-and-recovery) for how it is created and registered. Metrics then appear in the central Grafana under the deployment's `client_server_group` and `host`.
 
@@ -64,12 +66,12 @@ cd ~/factory-horde/miner
 # Use the miner instructions to download the verified Compose file from deploy-config-refinery.
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/miner.env.example" -o .env
-# Fill in HOST_WALLET_DIR and the three tokens in .env.
+# Fill in HOST_WALLET_DIR and the three tokens in .env; check SUBMISSION_NAMESPACE.
 docker compose up -d --wait
 docker compose run --rm submit
 ```
 
-The validator admits the miner from the first round that starts after its commitment.
+The validator admits the miner from the first round that starts after its commitment. Schedule the submitter as [the miner instructions](../miner/README.md#submitting-from-a-server) describe, so a commitment another writer dropped is restored.
 
 The Refinery miner server runs three demo miners. Their factories are built and documented in [factory-horde-demo-miners](https://github.com/backend-developers-ltd/factory-horde-demo-miners).
 

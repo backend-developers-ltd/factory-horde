@@ -22,6 +22,9 @@ from .check_executor import inspect
 from .runtime import Runtime
 
 ROOT = Path(__file__).resolve().parent
+MINERS = 5
+# A baseline factory runs for about a minute; each executor-capped batch needs one factory slot.
+FACTORY_BATCH_SECONDS = 70
 
 
 def wait_for(predicate: Callable[[], bool], message: str, seconds: float = 200) -> None:
@@ -63,6 +66,9 @@ def main() -> None:
     ):
         raise RuntimeError("An existing round is still active or unresolved; reconcile it first")
     previous_rounds = {r.plan.round_id for r in existing}
+    slots = min(runtime.executor_slots, MINERS)
+    batches = -(-MINERS // slots)
+    generation_seconds = 30 + FACTORY_BATCH_SECONDS * batches
     previous_requests = set(rounds.requests())
     identities = Registrations.model_validate_json((runtime.state / "registrations.json").read_bytes())
     own = next(row.hotkey for row in identities.registrations if row.identity == "validator")
@@ -75,7 +81,8 @@ def main() -> None:
         "VALIDATOR_JUDGE_MODE": "fixture",
         "VALIDATOR_HOTKEY": own,
         "VALIDATOR_JUDGE_IMAGE": images["GHCR_JUDGE_IMAGE"] or "",
-        "VALIDATOR_GENERATION_WINDOW": "100",
+        "VALIDATOR_SUBMISSION_NAMESPACE": (images["GHCR_FACTORY_IMAGE"] or "").rsplit("/", 1)[0],
+        "VALIDATOR_GENERATION_WINDOW": str(generation_seconds),
         "VALIDATOR_CONFIRMATION_WINDOW": "15",
         "VALIDATOR_EVALUATION_WINDOW": "65",
         "VALIDATOR_JUDGE_STOP_RESERVE": "10",
@@ -107,14 +114,25 @@ def main() -> None:
             raise RuntimeError("A runtime without a valid chain beat admitted work")
         subprocess.run(["docker", "rm", "--force", name], check=True, capture_output=True)
         print("PASS: missing initial chain beat prevented discovery and dispatch", flush=True)
+        launched = datetime.now(UTC)
         subprocess.run([*command, "validator"], check=True, capture_output=True)
 
+        # A persisted schedule can make the coordinator admit the already started slot with its original
+        # deadlines; only a round frozen after launch exercises every stage.
         def new_rounds() -> list[RoundRecord]:
-            return [r for r in rounds.rounds() if r.plan.round_id not in previous_rounds]
+            return [
+                r
+                for r in rounds.rounds()
+                if r.plan.round_id not in previous_rounds and r.plan.deadlines.start >= launched
+            ]
 
-        wait_for(lambda: len(new_rounds()) == 1, "Coordinator did not admit exactly one round", 90)
+        wait_for(
+            lambda: len(new_rounds()) == 1,
+            "Coordinator did not admit exactly one fresh round",
+            generation_seconds + 15 + 65 + 90,
+        )
         plan: RoundPlan = new_rounds()[0].plan
-        if len(plan.cohort) != 5 or any(m.image != images["GHCR_FACTORY_IMAGE"] for m in plan.cohort):
+        if len(plan.cohort) != MINERS or any(m.image != images["GHCR_FACTORY_IMAGE"] for m in plan.cohort):
             raise RuntimeError("Coordinator did not freeze the five baseline commitments")
         factories = [request_for(plan, member, "factory") for member in plan.cohort]
         judges = [request_for(plan, member, "judge") for member in plan.cohort]
@@ -125,11 +143,20 @@ def main() -> None:
         subprocess.run(["docker", "restart", "--time", "1", name], check=True, capture_output=True)
         print("PASS: restarted application immediately after factory request publication", flush=True)
         wait_for(
-            lambda: all(
+            lambda: sum(
                 (status := rounds.status(job)) is not None and status.execution == "running" for job in factories
-            ),
-            "Five factories did not run concurrently",
+            )
+            == slots,
+            "Factories did not run concurrently in every executor slot",
             60,
+        )
+        wait_for(
+            lambda: all(
+                (status := rounds.status(job)) is not None and status.execution in ("running", "exited")
+                for job in factories
+            ),
+            "Not every factory started within the generation window",
+            generation_seconds,
         )
         original_ids = {
             str(job.job_id): status.container_id for job in factories if (status := rounds.status(job)) is not None
@@ -137,7 +164,7 @@ def main() -> None:
         wait_for(
             lambda: all((status := rounds.status(job)) is not None and status.confirmed_stopped for job in factories),
             "Baseline factories did not finish",
-            95,
+            generation_seconds,
         )
         if datetime.now(UTC) >= plan.deadlines.evaluation_start or any(job in rounds.requests() for job in judges):
             raise RuntimeError("Could not establish early completion before the judge gate")
@@ -184,7 +211,7 @@ def main() -> None:
                 raise RuntimeError("Judge bypassed evaluation start")
             outcomes.append(decision)
         usable = results.latest_usable_round()
-        if usable is None or usable[0] != plan or len(usable[1]) != 5:
+        if usable is None or usable[0] != plan or len(usable[1]) != MINERS:
             raise RuntimeError("Five stable accepted scores are not available")
         logs = subprocess.run(["docker", "logs", name], capture_output=True, text=True, check=True)
         (runtime.state / "task11-coordinator.log").write_text(logs.stdout + logs.stderr)
@@ -193,6 +220,8 @@ def main() -> None:
             "image_id": runtime.image("validator"),
             "missing_initial_block_prevented_dispatch": True,
             "restart_boundaries": ["request_publication", "generation_end", "evaluation_start"],
+            "executor_slots": slots,
+            "generation_seconds": generation_seconds,
             "early_factory_completion": early_finished_at.isoformat(),
             "round": completed[0].model_dump(mode="json"),
             "outcomes": [decision.model_dump(mode="json") for decision in outcomes],

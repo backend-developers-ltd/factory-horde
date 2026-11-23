@@ -4,7 +4,7 @@ The installer and updater use the common Compose application and one host system
 executor. Historical localnet acceptance used the [immutable candidate](../envs/candidate/README.md). Refinery uses the same operator release path with its own chain settings and current published images. [End-to-end acceptance](../spec/evidence/task17-acceptance.json)
 passed in a separate installation on the existing user-selected VM. Follow the
 [packaged reproduction sequence](../localnet/README.md#packaged-candidate-acceptance-on-this-vm).
-No subnet-12 or production configuration is promoted by these instructions.
+Mainnet subnet 12 uses [`production/`](../production/README.md).
 
 ## Published operator installation
 
@@ -189,6 +189,17 @@ It validates the source manifest and installs next to the configured data root,
 without installing an application cron job. Use the full installer for candidate
 acceptance. `prepare-data-root.sh /absolute/data/root` remains the independent
 ownership/permissions preparation command.
+
+## Second mechanism beside ComputeHorde
+
+FactoryHorde can run as a second mechanism on ComputeHorde's subnet, with the same miner and validator hotkeys. Both mechanisms share one commitment per hotkey; each rewrites only its own envelope (see [the commitment format](../miner/README.md#commitment-format)). Such a deployment needs:
+
+- `MECHANISM_ID=1` in `.env`, so weights and chain metrics address FactoryHorde's mechanism.
+- The shared validator hotkey in `VALIDATOR_HOTKEY`, signed through this installation's own Pylon; ComputeHorde's validator keeps its own.
+- Pylon service 2.4.0 or newer, the first release with per-mechanism neuron reads, so incentive and last-update metrics report this mechanism instead of mechanism 0.
+- ComputeHorde's miner on a release that keeps other envelopes (`ec106a6e` or newer) on every shared miner hotkey before any FactoryHorde envelope is written; older releases erase `<F:…>` within 5 minutes.
+- `SUBMISSION_NAMESPACE` in the installation's `.env` before the cron updater applies a release with envelope commitments. With dispatch enabled the validator refuses to start without it, and the updater does not roll back.
+- Scheduled submitters on every miner (for example a 5-minute cron job), because a writer can overwrite the other mechanism's newest change from a stale read; a run that finds its envelope in place writes nothing.
 
 ## Task specification and inference proxy
 

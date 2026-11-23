@@ -4,10 +4,10 @@ requires-python = ">=3.14"
 
 [options]
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
-exclude-newer-span = "P7D"
+exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
-bittensor-pylon-client = { timestamp = "0001-01-01T00:00:00Z", span = "P1D" }
+bittensor-pylon-client = false
 certifi = { timestamp = "0001-01-01T00:00:00Z", span = "P1D" }
 
 [manifest]
@@ -277,7 +277,7 @@ wheels = [
 
 [[package]]
 name = "bittensor-pylon-client"
-version = "2.3.1"
+version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apscheduler" },
@@ -289,9 +289,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/a3/c46f0e6f8c0a1caf3dd4d58d1b95af78db0f7611219597a8a168b5710a10/bittensor_pylon_client-2.3.1.tar.gz", hash = "sha256:c062529c519ebe7a9278fc70229e368084ce6c07c4d40fdb4956d447fdb9330d", size = 39236, upload-time = "2026-10-22T22:27:30.303Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/12/d2/1ae5cc185d8826cb6b9727fbd9f816462e40a12e9825af4b11fff3009e37/bittensor_pylon_client-2.4.0.tar.gz", hash = "sha256:8e7e9cb1f5c41acc46ff17cb748d37a2b476675e28720e71213fa11af401b4ae", size = 39963, upload-time = "2026-11-23T08:09:20.697Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/1e/931672841cb97459cba211ecbc99bad90ce40dad7a716db7f37c6b5c4516/bittensor_pylon_client-2.3.1-py3-none-any.whl", hash = "sha256:f6dde7450ce2da3d87f46562c978ad78a2d45cd764776cd5277b031e9f0c2814", size = 67706, upload-time = "2026-10-22T22:27:28.531Z" },
+    { url = "https://files.pythonhosted.org/packages/82/e7/a20ad7ffcee9790280d3ccbee2ab5059a4937e4c14c9fbac749febad0096/bittensor_pylon_client-2.4.0-py3-none-any.whl", hash = "sha256:7c0a45824f6ac61902049e943f6799013039dfa42b4c9b2c1dab3f1b1e6e5e1e", size = 68546, upload-time = "2026-11-23T08:09:19.487Z" },
 ]
 
 [[package]]
@@ -728,7 +728,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bittensor-pylon-client", specifier = "==2.3.1" },
+    { name = "bittensor-pylon-client", specifier = "==2.4.0" },
     { name = "click", specifier = ">=8.3.2" },
     { name = "prometheus-client", specifier = ">=0.25.0" },
     { name = "tenacity", specifier = ">=9.1.4" },
