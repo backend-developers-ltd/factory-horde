@@ -25,7 +25,9 @@ from validator.discovery import decode_reference
 from validator.records import RoundPlan, RoundRecord, request_for
 from validator.result_repository import ResultRepository
 from validator.result_store import FileTaskResultStore
-from validator.weighing import Weigher, read_membership, softmax
+from validator.weighing import Weigher, read_membership, winner_weights
+
+from miner.miner import encode_envelope
 
 from .check_executor import inspect
 from .check_executor_recovery import Check, docker, until
@@ -94,6 +96,11 @@ class Adversarial(Check):
             }
         )
 
+    @property
+    def namespace(self) -> str:
+        """Registry owner shared by every published profile image."""
+        return self.profiles["factory-valid"].image.rsplit("/", 1)[0]
+
     def client_config(self, identity: str) -> Config:
         """Use only the explicitly configured local Pylon identity, with no write retries."""
         key = "VALIDATOR_PYLON_IDENTITY_TOKEN" if identity == "validator" else f"{identity.upper()}_PYLON_TOKEN"
@@ -131,7 +138,7 @@ class Adversarial(Check):
     def commitments(self, profiles: list[str]) -> None:
         """Set the five actual miner commitments before a production discovery snapshot."""
         for miner, profile in zip(self.miners, profiles, strict=True):
-            self.publish_bytes(miner.identity, self.profiles[profile].image.encode())
+            self.publish_bytes(miner.identity, encode_envelope(self.profiles[profile].image, self.namespace))
 
     def start_validator(self, judge: str, *, disconnected: bool = False) -> None:
         """Run the common Compose service with its production entrypoint on this separate root."""
@@ -151,6 +158,7 @@ class Adversarial(Check):
             "VALIDATOR_WEIGHTS_ENABLED": "false",
             "VALIDATOR_HOTKEY": self.own,
             "VALIDATOR_JUDGE_IMAGE": self.profiles[judge].image,
+            "VALIDATOR_SUBMISSION_NAMESPACE": self.namespace,
             "VALIDATOR_GENERATION_WINDOW": "20",
             "VALIDATOR_CONFIRMATION_WINDOW": "5",
             "VALIDATOR_EVALUATION_WINDOW": "30",
@@ -280,7 +288,9 @@ class Adversarial(Check):
         docker("kill", self.name)
         docker("start", self.name)
         # The chain value changes now, but this round's frozen request remains unchanged.
-        self.publish_bytes(self.miners[-1].identity, self.profiles["factory-valid"].image.encode())
+        self.publish_bytes(
+            self.miners[-1].identity, encode_envelope(self.profiles["factory-valid"].image, self.namespace)
+        )
         self.finished(plan)
         self.stop_validator()
         if any(
@@ -291,9 +301,9 @@ class Adversarial(Check):
         store = FileTaskResultStore(self.results)
         weigher = Weigher(store, lambda: read_membership(self.client_config("validator"), 2))
         selected, _, scores = weigher.select()
-        weights = softmax(scores)
+        weights = winner_weights(scores, selected)
         if selected != plan.round_id or set(weights) != {Hotkey(self.miners[0].hotkey)}:
-            raise RuntimeError("A failed miner acquired positive softmax weight")
+            raise RuntimeError("A failed miner acquired positive weight")
         result["weights"] = {str(key): float(value) for key, value in weights.items()}
         self.evidence["mixed"] = result
         # Re-enable the same production schedule for the next ordinary slot.
@@ -320,14 +330,13 @@ class Adversarial(Check):
             RuntimeError: Invalid commitments or a failed image pull became eligible work.
         """
         self.commitments(["factory-valid"] * 5)
-        missing = "ghcr.io/backend-developers-ltd/factory-horde-fixture@sha256:" + "0" * 64
-        self.publish_bytes(self.miners[0].identity, missing.encode())
+        missing = f"{self.namespace}/factory-horde-fixture@sha256:{'0' * 64}"
+        self.publish_bytes(self.miners[0].identity, encode_envelope(missing, self.namespace))
         self.publish_bytes(self.miners[1].identity, b"\xff")
-        self.publish_bytes(
-            self.miners[2].identity,
-            b"ghcr.io/backend-developers-ltd/factory-horde-fixture:latest",
-        )
-        overlong = "ghcr.io/a/" + "x" * 60 + "@sha256:" + "0" * 64
+        # A tag instead of a digest inside an otherwise well-formed envelope.
+        self.publish_bytes(self.miners[2].identity, b"<F:factory-horde-fixture:latest>")
+        # Its envelope is 108 bytes and can never fit beside ComputeHorde's 33-byte reserve.
+        overlong = f"{self.namespace}/{'x' * 60}@sha256:{'0' * 64}"
         submitter = self.runtime.image("submitter")
         with PylonClient(self.client_config(self.miners[3].identity)) as client:
             before = client.v1.identity.get_own_commitment()
@@ -347,6 +356,8 @@ class Adversarial(Check):
                     self.miners[3].identity,
                     "--netuid",
                     "2",
+                    "--namespace",
+                    self.namespace,
                 ],
                 capture_output=True,
                 text=True,
@@ -355,7 +366,7 @@ class Adversarial(Check):
             if rejected.returncode == 0 or "128" not in rejected.stderr:
                 raise RuntimeError("Production submitter did not reject the overlong reference before network I/O")
             try:
-                decode_reference(overlong.encode().hex())
+                decode_reference((b"<F:" + b"x" * 126 + b">").hex(), self.namespace)
             except ValueError as error:
                 if "128" not in str(error):
                     raise RuntimeError("Unexpected overlong discovery rejection") from error
@@ -395,7 +406,7 @@ class Adversarial(Check):
         """
         self.commitments(["factory-valid"] * 5)
         baseline = self.runtime.image("factory")
-        self.publish_bytes(self.miners[0].identity, baseline.encode())
+        self.publish_bytes(self.miners[0].identity, encode_envelope(baseline, self.namespace))
         self.arm("pull", baseline)
         projections = self.root / "control/projections"
         projections.mkdir(exist_ok=True)

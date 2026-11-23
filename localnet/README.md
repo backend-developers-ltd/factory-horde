@@ -451,6 +451,8 @@ Factory dispatch remains disabled, so this update does not execute a workload.
 Evidence is written under `state/`; public task evidence is in
 [task6-submissions.json](../spec/evidence/task6-submissions.json).
 
+Before the immutability check, it seeds miner1 with ComputeHorde-shaped content (`<D:https://example.com/s><M:A3;S2>`) and checks that the submitter inserts only its `<F:…>` envelope, that discovery still finds the image after a ComputeHorde manifest rewrite, and that the next submitter run restores an envelope dropped by a stale ComputeHorde write. Miner1 keeps that foreign content afterwards, so later checks also run beside it; the `coexistence` evidence entry records each chain value.
+
 The selected Pylon 2.3.3 writer supports at most 128 UTF-8 bytes through `RawN`;
 the baseline factory reference is 124 bytes. The local runtime uses a 3,100-byte
 per-epoch space allowance, with a minimum charge of 100 bytes per commitment.

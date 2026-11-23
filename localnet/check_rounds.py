@@ -75,6 +75,7 @@ def main() -> None:
         "VALIDATOR_JUDGE_MODE": "fixture",
         "VALIDATOR_HOTKEY": own,
         "VALIDATOR_JUDGE_IMAGE": images["GHCR_JUDGE_IMAGE"] or "",
+        "VALIDATOR_SUBMISSION_NAMESPACE": (images["GHCR_FACTORY_IMAGE"] or "").rsplit("/", 1)[0],
         "VALIDATOR_GENERATION_WINDOW": "100",
         "VALIDATOR_CONFIRMATION_WINDOW": "15",
         "VALIDATOR_EVALUATION_WINDOW": "65",

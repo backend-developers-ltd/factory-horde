@@ -4,12 +4,13 @@ import argparse
 import json
 import os
 import subprocess
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
 from pydantic import BaseModel
-from pylon_client.artanis import Config, IdentityName, PylonAuthToken, PylonClient
+from pylon_client.artanis import CommitmentDataBytes, Config, IdentityName, PylonAuthToken, PylonClient
 from validator.discovery import freeze_discovery
 from validator.record_files import RecordFiles
 
@@ -46,6 +47,9 @@ def main() -> None:
     if config.get("ENVIRONMENT") != "localnet" or config.get("NETUID") != "2":
         raise RuntimeError("Requires isolated localnet subnet 2")
     factory, judge = runtime.image("factory"), runtime.image("judge")
+    namespace = factory.rsplit("/", 1)[0]
+    if judge.rsplit("/", 1)[0] != namespace:
+        raise RuntimeError("Localnet images must share one namespace")
     submitter = runtime.image("submitter")
     registrations = Registrations.model_validate_json((runtime.state / "registrations.json").read_bytes())
     identities = {row.identity: row for row in registrations.registrations}
@@ -82,6 +86,8 @@ def main() -> None:
                 f"PYLON_IDENTITY={identity}",
                 "--env",
                 "NETUID=2",
+                "--env",
+                f"SUBMISSION_NAMESPACE={namespace}",
                 submitter,
                 image,
             ],
@@ -101,6 +107,28 @@ def main() -> None:
             raise RuntimeError("Submitter confirmed the wrong identity, image or subnet")
         return response
 
+    def raw(identity: str) -> PylonClient:
+        return PylonClient(
+            Config(
+                address=runtime.pylon_address,
+                identity_name=IdentityName(identity),
+                identity_token=PylonAuthToken(config[f"{identity.upper()}_PYLON_TOKEN"] or ""),
+            )
+        )
+
+    def chain_value(identity: str) -> str:
+        with raw(identity) as client:
+            return bytes.fromhex(client.v1.identity.get_own_commitment().commitment.removeprefix("0x")).decode()
+
+    def write_raw(identity: str, value: str, settle_seconds: float = 150) -> None:
+        with raw(identity) as client:
+            client.v1.identity.set_commitment(CommitmentDataBytes(value.encode()))
+        deadline = time.monotonic() + settle_seconds
+        while chain_value(identity) != value:
+            if time.monotonic() > deadline:
+                raise RuntimeError(f"Raw commitment {value!r} never appeared")
+            time.sleep(2)
+
     publications = [publish(f"miner{i}", factory) for i in range(1, 6)]
     repeated = publish("miner1", factory)
     if repeated.outcome != "unchanged" or repeated.commitment_block != publications[0].commitment_block:
@@ -117,8 +145,34 @@ def main() -> None:
             identity_token=PylonAuthToken(config["VALIDATOR_PYLON_IDENTITY_TOKEN"] or ""),
         )
     ) as client:
+        shield = "<D:https://example.com/s>"
+        miner1 = identities["miner1"].hotkey
+        seeded = f"{shield}<M:A3;S2>"
+        write_raw("miner1", seeded)
+        _ = publish("miner1", factory)
+        after_submit = chain_value("miner1")
+        envelope = after_submit.removeprefix(shield).removesuffix("<M:A3;S2>")
+        if after_submit != f"{shield}{envelope}<M:A3;S2>" or not envelope.startswith("<F:"):
+            raise RuntimeError(f"Submitter changed foreign content: {after_submit!r}")
+        # ComputeHorde's patched miner rewrites only its manifest.
+        compute_horde_rewrite = f"{shield}{envelope}<M:A4>"
+        write_raw("miner1", compute_horde_rewrite)
+        coexist = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
+        discovered = next((member.image for member in coexist.cohort if member.miner_hotkey == miner1), None)
+        if discovered != factory:
+            raise RuntimeError("Discovery missed the submission beside ComputeHorde content")
+        # A ComputeHorde write computed from a stale read drops the envelope; the next submitter run restores it.
+        lost_update = f"{shield}<M:A4>"
+        write_raw("miner1", lost_update)
+        dropped = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
+        if not any(r.miner_hotkey == miner1 and "No FactoryHorde submission" in r.reason for r in dropped.rejected):
+            raise RuntimeError("A commitment without an envelope was not rejected")
+        repair = publish("miner1", factory)
+        after_repair = chain_value("miner1")
+        if repair.outcome != "published" or after_repair != compute_horde_rewrite:
+            raise RuntimeError(f"Submitter did not restore its envelope: {after_repair!r}")
         snapshot_id = uuid4()
-        before = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey)
+        before = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey, namespace)
         expected = {identities[f"miner{i}"].hotkey: identities[f"miner{i}"].uid for i in range(1, 6)}
         if {member.miner_hotkey: member.uid for member in before.cohort} != expected:
             raise RuntimeError("Discovery disagrees with independent bootstrap attribution")
@@ -126,16 +180,16 @@ def main() -> None:
             raise RuntimeError("Unexpected image in initial discovery")
         try:
             updated = publish("miner5", judge)
-            recovered = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey)
+            recovered = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey, namespace)
             if recovered != before:
                 raise RuntimeError("An active frozen cohort changed")
-            after = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey)
+            after = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
             changed = next(member for member in after.cohort if member.miner_hotkey == identities["miner5"].hotkey)
             if changed.image != judge:
                 raise RuntimeError("A new snapshot missed the commitment update")
         finally:
             _ = publish("miner5", factory)
-        final = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey)
+        final = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
         if any(member.image != factory for member in final.cohort):
             raise RuntimeError("Fixture image restoration failed")
     evidence = {
@@ -149,6 +203,14 @@ def main() -> None:
         "after_update": after.model_dump(mode="json"),
         "frozen_unchanged": True,
         "restored": final.model_dump(mode="json"),
+        "coexistence": {
+            "before": seeded,
+            "after_submit": after_submit,
+            "compute_horde_rewrite": compute_horde_rewrite,
+            "discovered_image": discovered,
+            "after_lost_update": lost_update,
+            "after_repair": after_repair,
+        },
     }
     _ = (runtime.state / "task6-submission-check.json").write_text(json.dumps(evidence, indent=2) + "\n")
     print(
