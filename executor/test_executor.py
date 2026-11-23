@@ -19,7 +19,9 @@ import pytest
 from validator.health import ExecutorHealth, ExecutorMetrics
 from validator.records import JobStatus
 
+from . import executor as executor_module
 from .executor import (
+    PULL_RETRY_DELAYS,
     REQUIREMENT,
     ApplicationRunner,
     Docker,
@@ -41,6 +43,11 @@ from .executor import (
 FIXTURES = Path(__file__).resolve().parents[1] / "spec/fixtures/protocol-v1"
 
 
+@pytest.fixture(autouse=True)
+def immediate_pull_retries(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(executor_module, "PULL_RETRY_DELAYS", (0.0,) * len(PULL_RETRY_DELAYS))
+
+
 @pytest.fixture
 def job_request() -> Request:
     value = parse((FIXTURES / "factory-request.json").read_bytes())
@@ -56,6 +63,8 @@ class FakeDocker(Docker):
         self.container: dict[str, object] | None = None
         self.offline = False
         self.pull_error = False
+        self.pull_failures = 0
+        self.pulls = 0
         self.created = 0
         self.started = 0
         self.running: list[str] = []
@@ -70,6 +79,11 @@ class FakeDocker(Docker):
     def call(self, *args: str, timeout: float = 30) -> subprocess.CompletedProcess[str]:
         if args[0] == "ps":
             return subprocess.CompletedProcess(args, 0, "\n".join(self.running), "")
+        if args[0] == "pull":
+            self.pulls += 1
+            if self.pull_failures:
+                self.pull_failures -= 1
+                return subprocess.CompletedProcess(args, 1, "", "fixture transient pull failure")
         return subprocess.CompletedProcess(
             args, int(self.pull_error), "", "fixture pull failure" if self.pull_error else ""
         )
@@ -181,6 +195,14 @@ def test_absent_or_unavailable_expected_execution_never_means_stopped(executor: 
     executor.step(job_request)
     assert status(executor, job_request).execution == "unresolved"
     assert daemon.created == 1 and daemon.started == 0
+
+
+def test_transient_pull_failure_is_retried(executor: Executor, job_request: Request) -> None:
+    daemon = FakeDocker(executor)
+    daemon.pull_failures = len(PULL_RETRY_DELAYS)
+    executor.docker = daemon
+    executor.step(job_request)
+    assert daemon.pulls == len(PULL_RETRY_DELAYS) + 1 and daemon.created == 1
 
 
 def test_pull_failure_permanently_prevents_start(executor: Executor, job_request: Request) -> None:

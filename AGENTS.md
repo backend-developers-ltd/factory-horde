@@ -75,7 +75,7 @@ transient host I/O failure; neither supplies a score.
 Malformed report encodings and numeric overflow are persisted evaluation failures;
 transient filesystem errors remain retryable. Judges must actually finish by the
 frozen round end, including its stop-confirmation reserve. Definitive Docker startup
-rejections become terminal never-started failures; ambiguous starts remain unresolved.
+rejections become terminal never-started failures; ambiguous starts remain unresolved. A failed image pull is retried after 10 and 30 seconds before it becomes terminal.
 Completed executor jobs leave normal polling after durable terminal publication; restart
 rebuilds that knowledge through retained-record reconciliation. Application activation intent
 is persisted before replacing Compose assets and cleared only after successful Compose startup.
