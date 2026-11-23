@@ -72,6 +72,12 @@ class Runtime:
         return Path(self.config["FACTORY_HORDE_DATA_ROOT"])
 
     @property
+    def executor_slots(self) -> int:
+        """The installed executor's cap on running workload containers."""
+        executor = dotenv_values(self.data.parent / "executor/executor.env")
+        return int(executor["EXECUTOR_MAX_RUNNING_JOBS"] or "")
+
+    @property
     def pylon_address(self) -> str:
         """Only a loopback connection to this local installation's Pylon."""
         return f"http://127.0.0.1:{int(self.config.get('PYLON_HOST_PORT') or '8000')}"

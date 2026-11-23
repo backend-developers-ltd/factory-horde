@@ -102,6 +102,8 @@ def inspect(job: JobRequest, root: Path, expected: JobStatus) -> Container:
     }
     if job.report_dir is not None:
         mounts["/report"] = (str(root / job.report_dir), True)
+    if job.kind == "judge":
+        mounts["/runner"] = (str(root / f"control/runners/{job.job_id}"), True)
     if any(m.Type != "bind" for m in value.Mounts) or {m.Destination: (m.Source, m.RW) for m in value.Mounts} != mounts:
         raise RuntimeError("Container mounts differ from its exact job contract")
     if (

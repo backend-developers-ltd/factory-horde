@@ -64,7 +64,7 @@ The independent chain checker runs as a module from the repository root using th
 miner bootstrap group; no Bittensor SDK enters the validator runtime.
 
 Checks run sequentially on the selected chain: submission checks temporarily change
-commitments, round checks use 100/15/65-second stages, and weight checks independently
+commitments, round checks use shortened stages, and weight checks independently
 read two actual updates across a validator restart. Adversarial checks also change
 commitments temporarily, retaining their deliberately unresolved workloads in a
 separate data root. The installer check creates another isolated Compose/local-chain
@@ -310,7 +310,13 @@ env -u UV_EXCLUDE_NEWER uv run --project validator python -m localnet.check_roun
 This bounded check runs the production entrypoint and common Compose service with
 five existing baseline commitments. It verifies initial chain unavailability,
 then uses 100/15/65-second stages, a ten-second judge reserve and five-second stop
-grace. It restarts after request publication and at generation/evaluation boundaries,
+grace. The executor runs at most `EXECUTOR_MAX_RUNNING_JOBS` factories at once, read
+from the installation's `executor/executor.env`; when that cap is below five, each
+further batch of factories extends the generation window by 70 seconds (170 seconds
+at the default cap of four). A schedule persisted by an earlier run can make the
+coordinator admit an already started slot with its original deadlines; the check
+lets that round settle and verifies the next round, which can add up to one round
+interval. It restarts after request publication and at generation/evaluation boundaries,
 checks early factory completion does not start judges, and reconstructs all ten
 task outcomes and five scores. The same installed systemd executor handles every
 Docker job. It stops the probe after settled results, before the next slot, and
