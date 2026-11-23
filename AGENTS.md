@@ -23,18 +23,12 @@ This is a monorepo with two **independent** uv projects plus shared local-develo
   `miner` is a one-shot Pylon submitter; the `bootstrap` dependency group holds the local-chain SDK
 - `localnet/` — Local subtensor + pylon + bootstrap + miner fixtures for end-to-end development
 - `installer/` — rendered validator installer scripts (`install.sh`, `update_compose.sh`, `README.md`)
-- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with the opt-in
-  `alloy` Compose profile and its `alloy/config.alloy`, which push metrics to the company monitoring stack;
-  operator promotion uses `deploy-config-production`, followed by both the mainnet (subnet 12, mechanism 1)
-  and the Refinery deployment, with this compose file and the installer scripts as the operator-critical files
-- `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator
-  and submitter images to GHCR on push to `deploy-build-*` branches (`deploy-build-production` is the only
-  environment; Refinery is a production deployment on another chain); `build-baselines.yml` publishes
-  the factory and judge images when their sources change
+- `envs/deployed/` — rendered application `docker-compose.yml` (validator + pylon), with the opt-in `alloy` Compose profile and its `alloy/config.alloy`, which push metrics to the company monitoring stack; operator promotion uses `deploy-config-production` (mainnet subnet 12, mechanism 1) and `deploy-config-refinery`, with this compose file and the installer scripts as the operator-critical files. As in the Nexus template, the validator image is selected only by this file's pin of `factory-horde-validator-${ENVIRONMENT}`; there is no `.env` image override outside localnet, whose overlay runs `VALIDATOR_IMAGE`. Each configuration branch therefore carries the digest of its own environment's package
+- `.github/workflows/` — rendered CI; `build-validator.yml` builds and pushes validator and submitter images to GHCR on push to `deploy-build-*` branches, as `factory-horde-validator-<env>` and `factory-horde-submitter-<env>` (`production` and `refinery`); `build-baselines.yml` publishes the factory and judge images when their sources change
 - `refinery/` — only what is specific to the Refinery development chain (subnet 11): validator and
   miner `.env` examples, the `//Alice` funding script and a guide. Deployment itself is the generic
   path: the validator through `installer/` (on Refinery the `ubuntu` operator installs into `~/factory-horde` from
-  `deploy-config-production`), a miner through
+  `deploy-config-refinery`, following builds on `deploy-build-refinery`), a miner through
   `miner/docker-compose.yml`. Do not add Refinery-specific deployment or operation scripts
 - `production/` — the same for mainnet subnet 12, where FactoryHorde is mechanism 1 beside ComputeHorde and
   reuses its hotkeys: `.env` examples and a guide, no deployment scripts

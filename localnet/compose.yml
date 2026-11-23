@@ -19,6 +19,11 @@ services:
       timeout: 3s
       retries: 30
 
+  validator:
+    # Localnet has no published release: it runs a source build or an explicitly selected candidate.
+    # The placeholder keeps the configuration valid before localnet/build-validator.sh has run.
+    image: "${VALIDATOR_IMAGE:-factory-horde-validator-localnet:unbuilt}"
+
   pylon:
     environment:
       PYLON_BITTENSOR_NETWORK: ws://subtensor:9944

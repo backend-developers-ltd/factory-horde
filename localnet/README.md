@@ -124,7 +124,7 @@ image ID in `state/validator-image.id`; this is a source-build smoke check, not 
 published registry digest or final release candidate.
 
 `compose.sh` always combines `envs/deployed/docker-compose.yml` with the local
-overlay. It rejects non-local endpoints, netuid other than 2, or wallets/data outside
+overlay, which replaces the published validator release with `VALIDATOR_IMAGE`. It rejects non-local endpoints, netuid other than 2, or wallets/data outside
 the isolated paths. Bootstrap also enforces isolation before opening any wallet.
 No application command uses tmux or runs the validator on the host.
 
