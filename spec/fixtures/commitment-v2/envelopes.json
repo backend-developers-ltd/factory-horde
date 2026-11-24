@@ -1,29 +1,36 @@
 {
-  "namespace": "ghcr.io/backend-developers-ltd",
+  "legacy_namespace": "ghcr.io/backend-developers-ltd",
   "valid": [
     {
-      "commitment": "<F:factory-horde-factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>",
+      "commitment": "<F:ghcr.io/backend-developers-ltd/factory-horde-factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>",
       "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:abababababababababababababababababababababababababababababababab"
     },
     {
-      "commitment": "<F:factory-horde-deceptive@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3;S2>",
+      "commitment": "<F:ghcr.io/backend-developers-ltd/factory-horde-deceptive@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3;S2>",
       "image": "ghcr.io/backend-developers-ltd/factory-horde-deceptive@sha256:abababababababababababababababababababababababababababababababab"
     },
     {
-      "commitment": "<D:https://example.com/s><F:fh-miner-openhands@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3>",
-      "image": "ghcr.io/backend-developers-ltd/fh-miner-openhands@sha256:abababababababababababababababababababababababababababababababab"
+      "commitment": "<D:https://example.com/s><F:ghcr.io/third-party/fh-miner-openhands@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3>",
+      "image": "ghcr.io/third-party/fh-miner-openhands@sha256:abababababababababababababababababababababababababababababababab"
     },
     {
-      "commitment": "<M:A3><F:fh-miner-oneshot@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>",
-      "image": "ghcr.io/backend-developers-ltd/fh-miner-oneshot@sha256:abababababababababababababababababababababababababababababababab"
+      "commitment": "<M:A3><F:ghcr.io/a-very-long-github-owner-name-of-39-ch/team/nested-package-name@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>",
+      "image": "ghcr.io/a-very-long-github-owner-name-of-39-ch/team/nested-package-name@sha256:abababababababababababababababababababababababababababababababab"
+    }
+  ],
+  "legacy": [
+    {
+      "commitment": "<F:factory-horde-factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3>",
+      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:abababababababababababababababababababababababababababababababab"
     }
   ],
   "invalid": [
     {"commitment": "<M:A3>", "reason": "No FactoryHorde submission"},
-    {"commitment": "<F:a@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><F:b@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Multiple FactoryHorde submissions"},
-    {"commitment": "<F:Factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Malformed FactoryHorde submission"},
-    {"commitment": "<F:factory@q6ur>", "reason": "Malformed FactoryHorde submission"},
-    {"commitment": "<F:factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6t>", "reason": "Malformed FactoryHorde submission"},
+    {"commitment": "<F:ghcr.io/o/a@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><F:ghcr.io/o/b@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Multiple FactoryHorde submissions"},
+    {"commitment": "<F:ghcr.io/o/Factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Malformed FactoryHorde submission"},
+    {"commitment": "<F:ghcr.io/o/factory@q6ur>", "reason": "Malformed FactoryHorde submission"},
+    {"commitment": "<F:ghcr.io/o/factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6t>", "reason": "Malformed FactoryHorde submission"},
+    {"commitment": "<F:ghcr.io/owner-only@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Malformed FactoryHorde submission"},
     {"commitment": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:abababababababababababababababababababababababababababababababab", "reason": "No FactoryHorde submission"}
   ]
 }
