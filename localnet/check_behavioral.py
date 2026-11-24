@@ -125,7 +125,6 @@ def main() -> None:
     if args.inspect:
         assess(runtime, rounds, variants, args.adversarial)
         return
-    namespace = args.factory_image.rsplit("/", 1)[0]
     for row in miners:
         config = Config(
             address=runtime.pylon_address,
@@ -135,7 +134,7 @@ def main() -> None:
             timeout=PylonTimeout(read=150),
         )
         with PylonClient(config) as client:
-            submit(client.v1.identity, args.factory_image, 2, namespace)
+            submit(client.v1.identity, args.factory_image, 2)
         print(f"Committed {row.identity}: control {variants[row.hotkey]}", flush=True)
     name = f"factory-horde-behavioral-{uuid4()}"
     command = [*runtime.command, "run", "--detach", "--no-deps", "--name", name]
@@ -144,7 +143,6 @@ def main() -> None:
         "VALIDATOR_WEIGHTS_ENABLED": "false",
         "VALIDATOR_JUDGE_MODE": "review",
         "VALIDATOR_JUDGE_IMAGE": judge,
-        "VALIDATOR_SUBMISSION_NAMESPACE": namespace,
         "VALIDATOR_GENERATION_WINDOW": "60",
         "VALIDATOR_CONFIRMATION_WINDOW": "15",
         "VALIDATOR_EVALUATION_WINDOW": "1200",

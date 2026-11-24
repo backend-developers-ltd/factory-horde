@@ -97,8 +97,8 @@ class Adversarial(Check):
         )
 
     @property
-    def namespace(self) -> str:
-        """Registry owner shared by every published profile image."""
+    def owner_path(self) -> str:
+        """Registry and owner path shared by every published profile image."""
         return self.profiles["factory-valid"].image.rsplit("/", 1)[0]
 
     def client_config(self, identity: str) -> Config:
@@ -138,7 +138,7 @@ class Adversarial(Check):
     def commitments(self, profiles: list[str]) -> None:
         """Set the five actual miner commitments before a production discovery snapshot."""
         for miner, profile in zip(self.miners, profiles, strict=True):
-            self.publish_bytes(miner.identity, encode_envelope(self.profiles[profile].image, self.namespace))
+            self.publish_bytes(miner.identity, encode_envelope(self.profiles[profile].image))
 
     def start_validator(self, judge: str, *, disconnected: bool = False) -> None:
         """Run the common Compose service with its production entrypoint on this separate root."""
@@ -158,7 +158,6 @@ class Adversarial(Check):
             "VALIDATOR_WEIGHTS_ENABLED": "false",
             "VALIDATOR_HOTKEY": self.own,
             "VALIDATOR_JUDGE_IMAGE": self.profiles[judge].image,
-            "VALIDATOR_SUBMISSION_NAMESPACE": self.namespace,
             "VALIDATOR_GENERATION_WINDOW": "20",
             "VALIDATOR_CONFIRMATION_WINDOW": "5",
             "VALIDATOR_EVALUATION_WINDOW": "30",
@@ -288,9 +287,7 @@ class Adversarial(Check):
         docker("kill", self.name)
         docker("start", self.name)
         # The chain value changes now, but this round's frozen request remains unchanged.
-        self.publish_bytes(
-            self.miners[-1].identity, encode_envelope(self.profiles["factory-valid"].image, self.namespace)
-        )
+        self.publish_bytes(self.miners[-1].identity, encode_envelope(self.profiles["factory-valid"].image))
         self.finished(plan)
         self.stop_validator()
         if any(
@@ -330,45 +327,67 @@ class Adversarial(Check):
             RuntimeError: Invalid commitments or a failed image pull became eligible work.
         """
         self.commitments(["factory-valid"] * 5)
-        missing = f"{self.namespace}/factory-horde-fixture@sha256:{'0' * 64}"
-        self.publish_bytes(self.miners[0].identity, encode_envelope(missing, self.namespace))
+        missing = f"{self.owner_path}/factory-horde-fixture@sha256:{'0' * 64}"
+        self.publish_bytes(self.miners[0].identity, encode_envelope(missing))
         self.publish_bytes(self.miners[1].identity, b"\xff")
         # A tag instead of a digest inside an otherwise well-formed envelope.
         self.publish_bytes(self.miners[2].identity, b"<F:factory-horde-fixture:latest>")
-        # Its envelope is 108 bytes and can never fit beside ComputeHorde's 33-byte reserve.
-        overlong = f"{self.namespace}/{'x' * 60}@sha256:{'0' * 64}"
+        # Beside foreign content, a commitment over the former 128-byte limit must read back exactly and be discovered.
+        baseline = self.runtime.image("factory")
+        long_commitment = b"<D:" + b"s" * 150 + b">" + encode_envelope(baseline) + b"<M:A3>"
+        if len(long_commitment) <= 128:
+            raise RuntimeError("Long commitment fixture is not over 128 bytes")
+        self.publish_bytes(self.miners[4].identity, long_commitment)
+        with PylonClient(self.client_config(self.miners[4].identity)) as client:
+            if (
+                bytes(CommitmentDataBytes.fromhex(client.v1.identity.get_own_commitment().commitment))
+                != long_commitment
+            ):
+                raise RuntimeError("Chain did not return the over-128-byte commitment byte-identically")
+        # Envelope = 3 + len(owner path) + 1 + package + 1 + 43 + 1; this one is 170 bytes, valid on chain but over a
+        # 200-byte operator cap once ComputeHorde's 33-byte reserve is added.
+        capped = f"{self.owner_path}/{'x' * (170 - 49 - len(self.owner_path))}@sha256:{'0' * 64}"
+        if len(encode_envelope(capped)) != 170:
+            raise RuntimeError("Capped fixture has the wrong length")
+        # This one can never fit 512 bytes beside ComputeHorde's reserve.
+        overlong = f"{self.owner_path}/{'x' * 450}@sha256:{'0' * 64}"
         submitter = self.runtime.image("submitter")
         with PylonClient(self.client_config(self.miners[3].identity)) as client:
             before = client.v1.identity.get_own_commitment()
-            rejected = subprocess.run(
-                [
-                    "docker",
-                    "run",
-                    "--rm",
-                    "--network",
-                    "none",
-                    "--read-only",
-                    submitter,
-                    overlong,
-                    "--pylon-address",
-                    "http://127.0.0.1:1",
-                    "--identity",
-                    self.miners[3].identity,
-                    "--netuid",
-                    "2",
-                    "--namespace",
-                    self.namespace,
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if rejected.returncode == 0 or "128" not in rejected.stderr:
-                raise RuntimeError("Production submitter did not reject the overlong reference before network I/O")
+            rejections: dict[str, str] = {}
+            for image, extra, limit in (
+                (capped, ["--commitment-max-bytes", "200"], "200"),
+                (overlong, [], "512"),
+            ):
+                rejected = subprocess.run(
+                    [
+                        "docker",
+                        "run",
+                        "--rm",
+                        "--network",
+                        "none",
+                        "--read-only",
+                        submitter,
+                        image,
+                        "--pylon-address",
+                        "http://127.0.0.1:1",
+                        "--identity",
+                        self.miners[3].identity,
+                        "--netuid",
+                        "2",
+                        *extra,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if rejected.returncode == 0 or limit not in rejected.stderr:
+                    raise RuntimeError(f"Submitter did not reject a reference over {limit} bytes before network I/O")
+                rejections[limit] = rejected.stderr.strip()
             try:
-                decode_reference((b"<F:" + b"x" * 126 + b">").hex(), self.namespace)
+                decode_reference((b"<F:" + b"x" * 510 + b">").hex())
             except ValueError as error:
-                if "128" not in str(error):
+                if "512" not in str(error):
                     raise RuntimeError("Unexpected overlong discovery rejection") from error
             else:
                 raise RuntimeError("Discovery accepted an overlong commitment")
@@ -384,13 +403,16 @@ class Adversarial(Check):
             m.miner_hotkey in {self.miners[1].hotkey, self.miners[2].hotkey} for m in plan.cohort
         ):
             raise RuntimeError("Malformed/tag-only submission entered the frozen cohort")
+        if not any(m.miner_hotkey == self.miners[4].hotkey and m.image == baseline for m in plan.cohort):
+            raise RuntimeError("Discovery missed the over-128-byte commitment's envelope")
         evidence = self.verify(plan, 2)
         evidence["discovery"] = json.loads(self.repository.files.read_bytes(f"control/discovery/{plan.round_id}.json"))
         evidence["overlong_rejected"] = {
             "bytes": len(overlong.encode()),
-            "submitter_error": rejected.stderr.strip(),
+            "submitter_errors": rejections,
             "discovery_rejected": True,
             "chain_commitment_unchanged": True,
+            "long_commitment_bytes": len(long_commitment),
         }
         self.evidence["commitment_and_pull_failures"] = evidence
         print(
@@ -406,7 +428,7 @@ class Adversarial(Check):
         """
         self.commitments(["factory-valid"] * 5)
         baseline = self.runtime.image("factory")
-        self.publish_bytes(self.miners[0].identity, encode_envelope(baseline, self.namespace))
+        self.publish_bytes(self.miners[0].identity, encode_envelope(baseline))
         self.arm("pull", baseline)
         projections = self.root / "control/projections"
         projections.mkdir(exist_ok=True)
