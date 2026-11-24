@@ -59,6 +59,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     dispatch_enabled: bool = False
     validator_hotkey: MinerHotkey | None = Field(default=None, validation_alias="VALIDATOR_HOTKEY")
     judge_image: ImageReference | None = None
+    # Transitional: reads envelopes written before they carried ghcr.io/OWNER. Remove once all miners resubmitted.
     submission_namespace: str | None = Field(default=None, pattern=r"^ghcr\.io(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+$")
     generation_window: timedelta = timedelta(hours=1)
     confirmation_window: timedelta = timedelta(minutes=5)
@@ -113,15 +114,9 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     def _dispatch_configuration(self) -> Self:
         self.round_timing()
         if self.dispatch_enabled and not (
-            self.validator_hotkey
-            and self.judge_image
-            and self.submission_namespace
-            and self.pylon_identity_name
-            and self.pylon_identity_token
+            self.validator_hotkey and self.judge_image and self.pylon_identity_name and self.pylon_identity_token
         ):
-            raise ValueError(
-                "Dispatch requires validator hotkey, judge digest, submission namespace and Pylon identity credentials"
-            )
+            raise ValueError("Dispatch requires validator hotkey, judge digest and Pylon identity credentials")
         if self.weights_enabled and not (self.pylon_identity_name and self.pylon_identity_token):
             raise ValueError("Weight setting requires Pylon identity credentials")
         if self.weight_epoch_offset > self.weight_tempo:
@@ -180,12 +175,7 @@ class Validator(NexusValidator):
         self.connect(self.subnet_clock.source, taps=(monitoring.block,))
         self.connect(monitoring.error, errors.sink)
         self.connect(monitoring.ok, MessageLoggerNode[Readiness]("factory-horde-health").sink)
-        if (
-            settings.dispatch_enabled
-            and settings.validator_hotkey is not None
-            and settings.judge_image is not None
-            and settings.submission_namespace is not None
-        ):
+        if settings.dispatch_enabled and settings.validator_hotkey is not None and settings.judge_image is not None:
             discovery = partial(
                 freeze_via_pylon,
                 self.results.files,

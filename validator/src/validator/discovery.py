@@ -14,7 +14,8 @@ from pylon_client.artanis.v1 import GetCommitmentsResponse, GetNeuronsResponse
 from validator.record_files import RecordConflictError, RecordFiles
 from validator.records import BlockHash, CohortMember, ImageReference, MinerHotkey, NonnegativeInt, Record, UtcTime
 
-COMMITMENT_MAX_BYTES = 128
+# The chain's BigRaw bound for one commitment.
+COMMITMENT_MAX_BYTES = 512
 _SEGMENT = rb"[a-z0-9]+(?:[._-][a-z0-9]+)*"
 _OWN_ENVELOPE = re.compile(rb"<F:([^<>]*)>")
 _PAYLOAD = re.compile(rb"(" + _SEGMENT + rb"(?:/" + _SEGMENT + rb")*)@([A-Za-z0-9_-]{43})")
@@ -53,10 +54,11 @@ class DiscoverySnapshot(Record):
     rejected: tuple[RejectedSubmission, ...]
 
 
-def decode_reference(value: str, namespace: str) -> str:
-    """Decode the single FactoryHorde envelope of a hex commitment into a namespaced GHCR reference.
+def decode_reference(value: str, legacy_namespace: str | None = None) -> str:
+    """Decode the single FactoryHorde envelope of a hex commitment into a GHCR digest reference.
 
-    Other mechanisms' envelopes in the same commitment are ignored.
+    Envelopes carry ghcr.io/OWNER/PACKAGE. Older envelopes carry only PACKAGE and are read under
+    `legacy_namespace` when it is configured. Other mechanisms' envelopes are ignored.
 
     Raises:
         ValueError: Hex, length, envelope, digest or rebuilt reference is invalid.
@@ -65,7 +67,7 @@ def decode_reference(value: str, namespace: str) -> str:
         raise ValueError("Malformed hexadecimal commitment")
     raw = bytes(CommitmentDataBytes.fromhex(value.removeprefix("0x")))
     if len(raw) > COMMITMENT_MAX_BYTES:
-        raise ValueError("Commitment exceeds the selected writer's 128-byte limit")
+        raise ValueError(f"Commitment exceeds the chain's {COMMITMENT_MAX_BYTES}-byte limit")
     payloads = _OWN_ENVELOPE.findall(raw)
     if not payloads:
         raise ValueError("No FactoryHorde submission")
@@ -77,14 +79,22 @@ def decode_reference(value: str, namespace: str) -> str:
     digest = base64.urlsafe_b64decode(match[2] + b"=")
     if base64.urlsafe_b64encode(digest).rstrip(b"=") != match[2]:
         raise ValueError("Malformed FactoryHorde submission")
-    return _image.validate_python(f"{namespace}/{match[1].decode()}@sha256:{digest.hex()}")
+    path = match[1].decode()
+    if not path.startswith("ghcr.io/"):
+        if legacy_namespace is None:
+            raise ValueError("FactoryHorde submission lacks its registry owner")
+        path = f"{legacy_namespace}/{path}"
+    try:
+        return _image.validate_python(f"{path}@sha256:{digest.hex()}")
+    except ValueError as error:
+        raise ValueError("Malformed FactoryHorde submission") from error
 
 
 def discover(
     api: DiscoveryApi,
     netuid: int,
     validator_hotkey: str,
-    namespace: str,
+    legacy_namespace: str | None,
     allowed_hotkeys: tuple[str, ...] | None = None,
 ) -> DiscoverySnapshot:
     """Read commitments first, then membership at exactly their returned block.
@@ -92,6 +102,7 @@ def discover(
     A valid registered submission defines miner eligibility. Validator permits and
     axon availability do not define miner roles. An optional explicit allowlist can
     constrain local fixtures; the validator's own hotkey is always excluded.
+    `legacy_namespace` is needed only to read envelopes without ghcr.io/OWNER.
 
     Raises:
         ValueError: Subnet, block or membership attribution is inconsistent.
@@ -118,7 +129,7 @@ def discover(
                     reason = "not registered at the commitment snapshot block"
                 else:
                     try:
-                        image = decode_reference(value, namespace)
+                        image = decode_reference(value, legacy_namespace)
                     except ValueError as error:
                         reason = str(error)
                     else:
@@ -150,10 +161,12 @@ def freeze_discovery(
     api: DiscoveryApi,
     netuid: int,
     validator_hotkey: str,
-    namespace: str,
+    legacy_namespace: str | None,
     allowed_hotkeys: tuple[str, ...] | None = None,
 ) -> DiscoverySnapshot:
     """Recover a committed snapshot before chain reads; later updates cannot rewrite it.
+
+    `legacy_namespace` is passed to discovery for envelopes without ghcr.io/OWNER.
 
     Raises:
         RecordConflictError: A reused identity selects a different subnet or role policy.
@@ -163,7 +176,7 @@ def freeze_discovery(
     try:
         result = files.read(relative, DiscoverySnapshot)
     except FileNotFoundError:
-        result = discover(api, netuid, validator_hotkey, namespace, allowed)
+        result = discover(api, netuid, validator_hotkey, legacy_namespace, allowed)
         files.publish(relative, result)
     if (result.netuid, result.validator_hotkey, result.allowed_hotkeys) != (netuid, validator_hotkey, allowed):
         raise RecordConflictError("Discovery identity already has a different subnet or role policy")
@@ -171,8 +184,13 @@ def freeze_discovery(
 
 
 def freeze_via_pylon(
-    files: RecordFiles, config: Config, netuid: int, validator_hotkey: str, namespace: str, snapshot_id: UUID
+    files: RecordFiles,
+    config: Config,
+    netuid: int,
+    validator_hotkey: str,
+    legacy_namespace: str | None,
+    snapshot_id: UUID,
 ) -> DiscoverySnapshot:
     """Actor callback using only public Pylon v1; the validator never loads a wallet."""
     with PylonClient(config) as client:
-        return freeze_discovery(files, snapshot_id, client.v1.identity, netuid, validator_hotkey, namespace)
+        return freeze_discovery(files, snapshot_id, client.v1.identity, netuid, validator_hotkey, legacy_namespace)

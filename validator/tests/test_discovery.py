@@ -15,9 +15,10 @@ FIXTURES = Path(__file__).resolve().parents[2] / "spec/fixtures/discovery-v1"
 ENVELOPES = json.loads((Path(__file__).resolve().parents[2] / "spec/fixtures/commitment-v2/envelopes.json").read_text())
 NEURON = Neuron.model_validate_json((FIXTURES / "neuron.json").read_bytes())
 VALIDATOR = Hotkey("5" + "c" * 47)
-NAMESPACE = "ghcr.io/example"
+LEGACY_NAMESPACE = "ghcr.io/example"
 IMAGE = "ghcr.io/example/factory@sha256:" + "ab" * 32
-ENVELOPE = "<F:factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>"
+ENVELOPE = "<F:ghcr.io/example/factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>"
+LEGACY_ENVELOPE = "<F:factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>"
 BLOCK = Block(number=BlockNumber(100), hash=BlockHash("0x" + "a" * 64))
 
 
@@ -41,7 +42,7 @@ class FakeApi:
 
 def test_registered_miner_with_validator_permit_is_eligible() -> None:
     api = FakeApi()
-    snapshot = discover(api, 2, VALIDATOR, NAMESPACE)
+    snapshot = discover(api, 2, VALIDATOR, None)
     assert NEURON.validator_permit
     assert api.calls == ["commitments", BLOCK.number]
     assert len(snapshot.cohort) == 1 and snapshot.cohort[0].miner_hotkey == NEURON.hotkey
@@ -60,32 +61,32 @@ def test_exclude_self_unregistered_bad_and_unselected_submissions() -> None:
         }
     )
     api.neurons[invalid] = NEURON.model_copy(update={"hotkey": invalid, "uid": 3})
-    snapshot = discover(api, 2, VALIDATOR, NAMESPACE)
+    snapshot = discover(api, 2, VALIDATOR, None)
     assert len(snapshot.cohort) == 1
     assert {item.miner_hotkey for item in snapshot.rejected} == {VALIDATOR, unknown, invalid}
-    assert discover(api, 2, VALIDATOR, NAMESPACE, ()).cohort == ()
+    assert discover(api, 2, VALIDATOR, None, ()).cohort == ()
 
 
 def test_existing_snapshot_survives_update_and_fresh_repository(tmp_path: Path) -> None:
     api = FakeApi()
     identity = uuid4()
-    before = freeze_discovery(RecordFiles(tmp_path), identity, api, 2, VALIDATOR, NAMESPACE)
-    api.commitments[NEURON.hotkey] = CommitmentDataHex(ENVELOPE.replace("factory@", "factory2@").encode().hex())
+    before = freeze_discovery(RecordFiles(tmp_path), identity, api, 2, VALIDATOR, None)
+    api.commitments[NEURON.hotkey] = CommitmentDataHex(ENVELOPE.replace("/factory@", "/factory2@").encode().hex())
     api.calls.clear()
-    recovered = freeze_discovery(RecordFiles(tmp_path), identity, api, 2, VALIDATOR, NAMESPACE)
+    recovered = freeze_discovery(RecordFiles(tmp_path), identity, api, 2, VALIDATOR, None)
     assert recovered == before and api.calls == []
-    after = freeze_discovery(RecordFiles(tmp_path), uuid4(), api, 2, VALIDATOR, NAMESPACE)
+    after = freeze_discovery(RecordFiles(tmp_path), uuid4(), api, 2, VALIDATOR, None)
     assert after.cohort[0].image != before.cohort[0].image
     assert after.cohort[0].factory_job_id != before.cohort[0].factory_job_id
     with pytest.raises(RecordConflictError):
-        freeze_discovery(RecordFiles(tmp_path), identity, api, 12, VALIDATOR, NAMESPACE)
+        freeze_discovery(RecordFiles(tmp_path), identity, api, 12, VALIDATOR, None)
 
 
 def test_mismatched_block_fails_closed() -> None:
     api = FakeApi()
     api.membership_block = BLOCK.model_copy(update={"hash": BlockHash("0x" + "b" * 64)})
     with pytest.raises(ValueError, match="same chain block"):
-        discover(api, 2, VALIDATOR, NAMESPACE)
+        discover(api, 2, VALIDATOR, None)
 
 
 @pytest.mark.parametrize(
@@ -98,24 +99,50 @@ def test_mismatched_block_fails_closed() -> None:
         "0x61 62",
         "0xff",
         IMAGE.encode().hex(),  # legacy bare reference
-        (ENVELOPE + "x" * 100).encode().hex(),  # over 128 bytes
-        ENVELOPE.replace("factory@", "Factory@").encode().hex(),  # malformed package
+        (ENVELOPE + "x" * (513 - len(ENVELOPE))).encode().hex(),  # over 512 bytes
+        ENVELOPE.replace("/factory@", "/Factory@").encode().hex(),  # malformed package
     ],
 )
 def test_invalid_wire_data(value: str) -> None:
     with pytest.raises(ValueError):
-        decode_reference(value, NAMESPACE)
+        decode_reference(value)
 
 
 def test_bytes_outside_the_envelope_are_ignored() -> None:
-    assert decode_reference(("junk" + ENVELOPE + "<M:A3>\n").encode().hex(), NAMESPACE) == IMAGE
+    assert decode_reference(("junk" + ENVELOPE + "<M:A3>\n").encode().hex()) == IMAGE
+
+
+@pytest.mark.parametrize("case", ENVELOPES["valid"])
+def test_valid_envelopes_decode_without_namespace(case: dict[str, str]) -> None:
+    assert decode_reference(case["commitment"].encode().hex()) == case["image"]
+
+
+@pytest.mark.parametrize("case", ENVELOPES["legacy"])
+def test_legacy_envelopes_need_the_namespace(case: dict[str, str]) -> None:
+    value = case["commitment"].encode().hex()
+    assert decode_reference(value, ENVELOPES["legacy_namespace"]) == case["image"]
+    with pytest.raises(ValueError, match="registry owner"):
+        decode_reference(value)
+
+
+@pytest.mark.parametrize("case", ENVELOPES["invalid"])
+def test_invalid_envelopes_are_rejected(case: dict[str, str]) -> None:
+    with pytest.raises(ValueError, match=case["reason"]):
+        decode_reference(case["commitment"].encode().hex(), ENVELOPES["legacy_namespace"])
+
+
+def test_commitment_bound_is_the_chain_limit() -> None:
+    fits = ENVELOPE + "x" * (512 - len(ENVELOPE))
+    assert decode_reference(fits.encode().hex()) == IMAGE
+    with pytest.raises(ValueError, match="512"):
+        decode_reference((fits + "x").encode().hex())
 
 
 @pytest.mark.parametrize("case", ENVELOPES["valid"])
 def test_valid_envelopes_join_the_cohort(case: dict[str, str]) -> None:
     api = FakeApi()
     api.commitments = {NEURON.hotkey: CommitmentDataHex(case["commitment"].encode().hex())}
-    snapshot = discover(api, 2, VALIDATOR, ENVELOPES["namespace"])
+    snapshot = discover(api, 2, VALIDATOR, None)
     assert [member.image for member in snapshot.cohort] == [case["image"]]
 
 
@@ -123,9 +150,18 @@ def test_valid_envelopes_join_the_cohort(case: dict[str, str]) -> None:
 def test_invalid_envelopes_are_rejected_with_reason(case: dict[str, str]) -> None:
     api = FakeApi()
     api.commitments = {NEURON.hotkey: CommitmentDataHex(case["commitment"].encode().hex())}
-    snapshot = discover(api, 2, VALIDATOR, ENVELOPES["namespace"])
+    snapshot = discover(api, 2, VALIDATOR, ENVELOPES["legacy_namespace"])
     assert snapshot.cohort == ()
     assert case["reason"] in snapshot.rejected[0].reason
+
+
+def test_legacy_envelope_joins_the_cohort_only_with_the_namespace() -> None:
+    api = FakeApi()
+    api.commitments = {NEURON.hotkey: CommitmentDataHex(LEGACY_ENVELOPE.encode().hex())}
+    assert [member.image for member in discover(api, 2, VALIDATOR, LEGACY_NAMESPACE).cohort] == [IMAGE]
+    snapshot = discover(api, 2, VALIDATOR, None)
+    assert snapshot.cohort == ()
+    assert "registry owner" in snapshot.rejected[0].reason
 
 
 def test_duplicate_uid_or_wrong_hotkey_rejected() -> None:
@@ -133,7 +169,7 @@ def test_duplicate_uid_or_wrong_hotkey_rejected() -> None:
     another = Hotkey("5" + "d" * 47)
     api.neurons[another] = NEURON
     with pytest.raises(ValueError, match="attribution"):
-        discover(api, 2, VALIDATOR, NAMESPACE)
+        discover(api, 2, VALIDATOR, None)
     api.neurons[another] = NEURON.model_copy(update={"hotkey": another})
     with pytest.raises(ValueError, match="duplicate UIDs"):
-        discover(api, 2, VALIDATOR, NAMESPACE)
+        discover(api, 2, VALIDATOR, None)

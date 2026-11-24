@@ -55,14 +55,12 @@ DISPATCH = {
 }
 
 
-def test_dispatch_requires_submission_namespace() -> None:
-    with pytest.raises(ValidationError, match="submission namespace"):
-        Settings.model_validate(DISPATCH)
-    settings = Settings.model_validate({**DISPATCH, "submission_namespace": "ghcr.io/example"})
-    assert settings.submission_namespace == "ghcr.io/example"
+def test_dispatch_does_not_require_a_submission_namespace() -> None:
+    assert Settings.model_validate(DISPATCH).submission_namespace is None
 
 
-def test_submission_namespace_must_be_a_ghcr_owner() -> None:
+def test_legacy_submission_namespace_must_be_a_ghcr_owner() -> None:
+    assert Settings.model_validate({**DISPATCH, "submission_namespace": "ghcr.io/example"}).submission_namespace
     with pytest.raises(ValidationError, match="submission_namespace"):
         Settings.model_validate({**DISPATCH, "submission_namespace": "docker.io/example"})
 
