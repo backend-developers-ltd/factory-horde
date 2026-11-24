@@ -333,8 +333,8 @@ class Adversarial(Check):
         # A tag instead of a digest inside an otherwise well-formed envelope.
         self.publish_bytes(self.miners[2].identity, b"<F:factory-horde-fixture:latest>")
         # Beside foreign content, a commitment over the former 128-byte limit must read back exactly and be discovered.
-        baseline = self.runtime.image("factory")
-        long_commitment = b"<D:" + b"s" * 150 + b">" + encode_envelope(baseline) + b"<M:A3>"
+        valid = self.profiles["factory-valid"].image
+        long_commitment = b"<D:" + b"s" * 150 + b">" + encode_envelope(valid) + b"<M:A3>"
         if len(long_commitment) <= 128:
             raise RuntimeError("Long commitment fixture is not over 128 bytes")
         self.publish_bytes(self.miners[4].identity, long_commitment)
@@ -403,7 +403,7 @@ class Adversarial(Check):
             m.miner_hotkey in {self.miners[1].hotkey, self.miners[2].hotkey} for m in plan.cohort
         ):
             raise RuntimeError("Malformed/tag-only submission entered the frozen cohort")
-        if not any(m.miner_hotkey == self.miners[4].hotkey and m.image == baseline for m in plan.cohort):
+        if not any(m.miner_hotkey == self.miners[4].hotkey and m.image == valid for m in plan.cohort):
             raise RuntimeError("Discovery missed the over-128-byte commitment's envelope")
         evidence = self.verify(plan, 2)
         evidence["discovery"] = json.loads(self.repository.files.read_bytes(f"control/discovery/{plan.round_id}.json"))
