@@ -3,9 +3,7 @@
 The validator runs inside the common Compose stack. Nexus observes actual blocks
 through Pylon and atomically records `control/chain-observation.json` in the shared
 data root. This proves chain connectivity; it is not full executor/application
-readiness. Dispatch defaults to disabled. Enabling it requires `VALIDATOR_HOTKEY`,
-`VALIDATOR_JUDGE_IMAGE`, `VALIDATOR_SUBMISSION_NAMESPACE` and the Pylon identity name/token, in addition to normal
-chain and data-root settings.
+readiness. Dispatch defaults to disabled. Enabling it requires `VALIDATOR_HOTKEY`, `VALIDATOR_JUDGE_IMAGE` and the Pylon identity name/token, in addition to normal chain and data-root settings. The optional, transitional `VALIDATOR_SUBMISSION_NAMESPACE` lets discovery read envelopes committed before they carried `ghcr.io/OWNER`; remove it once all miners have resubmitted.
 
 The pinned Nexus `mechanism-id` revision, Pylon versions and verified API checks are
 documented in [dependency selection](../spec/dependency-selection.md).

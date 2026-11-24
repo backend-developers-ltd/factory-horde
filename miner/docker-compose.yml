@@ -50,7 +50,8 @@ services:
       PYLON_IDENTITY: miner
       PYLON_IDENTITY_TOKEN: "${MINER_PYLON_TOKEN:?}"
       NETUID: "${NETUID:?}"
-      SUBMISSION_NAMESPACE: "${SUBMISSION_NAMESPACE:?}"
+      # Optional cap on the whole commitment; empty uses the chain's 512 bytes.
+      COMMITMENT_MAX_BYTES: "${COMMITMENT_MAX_BYTES:-}"
     command: ["${FACTORY_IMAGE:-}"]
     read_only: true
     tmpfs:

@@ -23,6 +23,8 @@ The miner server runs the `oneshot` and `openhands` demo miners from [factory-ho
 
 ## Before the first commitment
 
-- Every ComputeHorde miner whose hotkey commits a FactoryHorde envelope must run a ComputeHorde release with `ec106a6e` (ComputeHorde #878) or newer. Older releases remove `<F:…>` within 5 minutes, and the two writers then use up the hotkey's commitment quota.
+- Every ComputeHorde miner whose hotkey commits a FactoryHorde envelope must run a ComputeHorde release with 512-byte commitments ([ComputeHorde#880](https://github.com/backend-developers-ltd/ComputeHorde/pull/880)) or newer. Releases before `ec106a6e` (ComputeHorde #878) remove `<F:…>` within 5 minutes, and the two writers then use up the hotkey's commitment quota; later releases without 512-byte commitments stop updating their manifest beside a full image reference.
+- The submitter keeps `COMMITMENT_MAX_BYTES=200` from [`miner.env.example`](miner.env.example), so FactoryHorde and ComputeHorde together stay within the hotkey's 3,100-byte commitment quota per tempo.
+- The validator and miners run the Pylon release with `BigRaw` support ([bittensor-pylon#107](https://github.com/bittensor-church/bittensor-pylon/pull/107)), since full image references make commitments longer than 128 bytes.
 - The subnet already has two mechanisms. Mechanism 1 receives emission only after the subnet owner changes the emission split; until then its weights have no effect on rewards.
 - Commit-reveal is enabled on the subnet; Pylon commits and reveals the validator's weights.
