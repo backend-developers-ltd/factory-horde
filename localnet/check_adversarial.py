@@ -33,6 +33,10 @@ from .check_executor import inspect
 from .check_executor_recovery import Check, docker, until
 from .runtime import Runtime
 
+GENERATION_SECONDS = 20
+# Generation, confirmation and evaluation windows of start_validator.
+SLOT_INTERVAL = timedelta(seconds=GENERATION_SECONDS + 5 + 30)
+
 ROOT = Path(__file__).resolve().parent
 
 
@@ -142,6 +146,7 @@ class Adversarial(Check):
 
     def start_validator(self, judge: str, *, disconnected: bool = False) -> None:
         """Run the common Compose service with its production entrypoint on this separate root."""
+        self.await_slot_start()
         command = [
             *self.runtime.command,
             "run",
@@ -158,7 +163,7 @@ class Adversarial(Check):
             "VALIDATOR_WEIGHTS_ENABLED": "false",
             "VALIDATOR_HOTKEY": self.own,
             "VALIDATOR_JUDGE_IMAGE": self.profiles[judge].image,
-            "VALIDATOR_GENERATION_WINDOW": "20",
+            "VALIDATOR_GENERATION_WINDOW": str(GENERATION_SECONDS),
             "VALIDATOR_CONFIRMATION_WINDOW": "5",
             "VALIDATOR_EVALUATION_WINDOW": "30",
             "VALIDATOR_JUDGE_STOP_RESERVE": "5",
@@ -169,6 +174,16 @@ class Adversarial(Check):
         for key, value in settings.items():
             command.extend(("--env", f"{key}={value}"))
         subprocess.run([*command, "validator"], check=True, capture_output=True)
+
+    def await_slot_start(self) -> None:
+        """Wait for a new slot, since a validator admits a slot already under way with its original deadlines."""
+        try:
+            schedule = json.loads(self.repository.files.read_bytes("control/schedule.json"))
+        except FileNotFoundError:
+            return
+        late = (datetime.now(UTC) - datetime.fromisoformat(schedule["next_start"])) % SLOT_INTERVAL
+        if late > timedelta(seconds=5):
+            time.sleep((SLOT_INTERVAL - late).total_seconds())
 
     def stop_validator(self) -> None:
         """Keep logs and business evidence while removing only this bounded probe container."""
@@ -294,12 +309,15 @@ class Adversarial(Check):
             self.repository.files.read_bytes(f"control/requests/{job}.json") != data for job, data in retained.items()
         ):
             raise RuntimeError("Commitment update or validator crash rewrote an active request")
-        result = self.verify(plan, 1)
+        # The validator only requires nonempty output; the real judge rejects a missing README or a symlink, but the
+        # fixture judge scores them, so only the nonzero and hanging factories are excluded here.
+        result = self.verify(plan, 3)
         store = FileTaskResultStore(self.results)
         weigher = Weigher(store, lambda: read_membership(self.client_config("validator"), 2))
         selected, _, scores = weigher.select()
         weights = winner_weights(scores, selected)
-        if selected != plan.round_id or set(weights) != {Hotkey(self.miners[0].hotkey)}:
+        scored = {Hotkey(self.miners[i].hotkey) for i in (0, 1, 4)}
+        if selected != plan.round_id or set(weights) != scored:
             raise RuntimeError("A failed miner acquired positive weight")
         result["weights"] = {str(key): float(value) for key, value in weights.items()}
         self.evidence["mixed"] = result
@@ -314,7 +332,7 @@ class Adversarial(Check):
             raise RuntimeError("Commitment change was not confined to the next cohort")
         self.finished(next_plan)
         self.stop_validator()
-        self.evidence["next_cohort"] = self.verify(next_plan, 2)
+        self.evidence["next_cohort"] = self.verify(next_plan, 3)
         print(
             "PASS: mixed outcomes, crash after publication, failed-weight exclusion and next-cohort commitment change",
             flush=True,

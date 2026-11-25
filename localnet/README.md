@@ -388,6 +388,7 @@ projection writes and validator kills after publication/acceptance; every judge
 report profile; and executor kills around Docker create/start. Docker unavailability
 and deletion of an expected execution deliberately leave unresolved evidence.
 The suite checks actual Docker identities, exit states and job-local startup counts.
+The validator only requires nonempty factory output and leaves file checks to the real judge, so the fixture judge scores the missing-output and symlink factories; only the nonzero and hanging ones are excluded. Each validator start waits for a new 55-second slot, because a slot already under way keeps its original deadlines. The suite's executor uses `EXECUTOR_MAX_RUNNING_JOBS` from `.env`, which must allow all five local miners' factories at once.
 
 Raw records, outputs, reports, logs and incremental `evidence.json` remain under
 `state/factory-horde-adversarial-<uuid>/`; `state/task13-latest.txt` identifies the
