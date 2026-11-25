@@ -38,7 +38,7 @@ services:
 
   validator:
     # The environment's published release, bumped via knowledge/validator.deploy.md (Procedure 2).
-    image: "ghcr.io/backend-developers-ltd/factory-horde-validator-${ENVIRONMENT:?}@sha256:51d9c45a5b191e967a89d167ceaf176a34e44739792ae10fdcb7b39180bcdf21"
+    image: "ghcr.io/backend-developers-ltd/factory-horde-validator-${ENVIRONMENT:?}@sha256:73983e8d22b385acea824899bfeb1c53e2447447c8f7aa6f84885e69b73652d2"
     platform: linux/amd64
     restart: unless-stopped
     user: "${CONTAINER_UID:?}:${CONTAINER_GID:?}"

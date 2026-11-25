@@ -42,7 +42,7 @@ services:
   # Not started by "up". Run: docker compose run --rm submit [IMAGE]
   submit:
     # The environment's published submitter release, bumped via knowledge/validator.deploy.md (Procedure 2).
-    image: "ghcr.io/backend-developers-ltd/factory-horde-submitter-${ENVIRONMENT:?}@sha256:f02d9efd4c278d3ddcc8b360893db0cc5e67572f061ab7801b64b8baca855f89"
+    image: "ghcr.io/backend-developers-ltd/factory-horde-submitter-${ENVIRONMENT:?}@sha256:a8f387fd08f869d4bd9cee958c9aff3f950513580c389893dc551713bf85b22e"
     platform: linux/amd64
     profiles: [submit]
     environment:
