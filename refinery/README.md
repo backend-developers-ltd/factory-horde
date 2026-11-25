@@ -46,8 +46,6 @@ curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
-**Upgrading to full image references.** Envelopes now carry `ghcr.io/OWNER/PACKAGE`, so `SUBMISSION_NAMESPACE` is optional. Upgrade the validator before any miner runs the new submitter: an older validator misreads a full reference as a package under its namespace and admits an image that cannot be pulled. Keep `SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd` in the validator's `~/factory-horde/.env` until every miner has resubmitted with the current submitter, so the validator still reads their older package-only envelopes; then remove it. Miners no longer use the setting.
-
 The metrics login comes from the company monitoring stack: see [monitoring](../installer/README.md#monitoring-and-recovery) for how it is created and registered. Metrics then appear in the central Grafana under the deployment's `client_server_group` and `host`.
 
 `.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `alloy` and `inference` profiles enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and releases promoted to `deploy-config-production` within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.

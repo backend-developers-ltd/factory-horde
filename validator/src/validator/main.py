@@ -59,8 +59,6 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     dispatch_enabled: bool = False
     validator_hotkey: MinerHotkey | None = Field(default=None, validation_alias="VALIDATOR_HOTKEY")
     judge_image: ImageReference | None = None
-    # Transitional: reads envelopes written before they carried ghcr.io/OWNER. Remove once all miners resubmitted.
-    submission_namespace: str | None = Field(default=None, pattern=r"^ghcr\.io(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+$")
     generation_window: timedelta = timedelta(hours=1)
     confirmation_window: timedelta = timedelta(minutes=5)
     evaluation_window: timedelta = timedelta(minutes=55)
@@ -78,9 +76,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     metrics_port: int = Field(default=9101, ge=1, le=65535)
     observation_max_age_seconds: float = Field(default=30, gt=0, allow_inf_nan=False)
 
-    @field_validator(
-        "validator_hotkey", "judge_image", "submission_namespace", "task_directory", "judge_model", mode="before"
-    )
+    @field_validator("validator_hotkey", "judge_image", "task_directory", "judge_model", mode="before")
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
@@ -182,7 +178,6 @@ class Validator(NexusValidator):
                 settings.pylon_config(),
                 settings.netuid,
                 settings.validator_hotkey,
-                settings.submission_namespace,
             )
             coordinator = RoundCoordinatorNode(
                 RoundCoordinator(

@@ -55,16 +55,6 @@ DISPATCH = {
 }
 
 
-def test_dispatch_does_not_require_a_submission_namespace() -> None:
-    assert Settings.model_validate(DISPATCH).submission_namespace is None
-
-
-def test_legacy_submission_namespace_must_be_a_ghcr_owner() -> None:
-    assert Settings.model_validate({**DISPATCH, "submission_namespace": "ghcr.io/example"}).submission_namespace
-    with pytest.raises(ValidationError, match="submission_namespace"):
-        Settings.model_validate({**DISPATCH, "submission_namespace": "docker.io/example"})
-
-
 def test_compose_seconds_configuration_is_validated(monkeypatch: pytest.MonkeyPatch) -> None:
     for key, value in {
         "VALIDATOR_GENERATION_WINDOW": "100",

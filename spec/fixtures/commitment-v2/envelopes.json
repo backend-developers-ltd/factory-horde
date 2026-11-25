@@ -1,5 +1,4 @@
 {
-  "legacy_namespace": "ghcr.io/backend-developers-ltd",
   "valid": [
     {
       "commitment": "<F:ghcr.io/backend-developers-ltd/factory-horde-factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>",
@@ -18,14 +17,9 @@
       "image": "ghcr.io/a-very-long-github-owner-name-of-39-ch/team/nested-package-name@sha256:abababababababababababababababababababababababababababababababab"
     }
   ],
-  "legacy": [
-    {
-      "commitment": "<F:factory-horde-factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3>",
-      "image": "ghcr.io/backend-developers-ltd/factory-horde-factory@sha256:abababababababababababababababababababababababababababababababab"
-    }
-  ],
   "invalid": [
     {"commitment": "<M:A3>", "reason": "No FactoryHorde submission"},
+    {"commitment": "<F:factory-horde-factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><M:A3>", "reason": "FactoryHorde submission lacks its registry owner"},
     {"commitment": "<F:ghcr.io/o/a@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s><F:ghcr.io/o/b@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Multiple FactoryHorde submissions"},
     {"commitment": "<F:ghcr.io/o/Factory@q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s>", "reason": "Malformed FactoryHorde submission"},
     {"commitment": "<F:ghcr.io/o/factory@q6ur>", "reason": "Malformed FactoryHorde submission"},
