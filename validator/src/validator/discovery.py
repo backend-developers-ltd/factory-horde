@@ -80,7 +80,7 @@ def decode_reference(value: str, legacy_namespace: str | None = None) -> str:
     if base64.urlsafe_b64encode(digest).rstrip(b"=") != match[2]:
         raise ValueError("Malformed FactoryHorde submission")
     path = match[1].decode()
-    if not path.startswith("ghcr.io/"):
+    if path.partition("/")[0] != "ghcr.io":
         if legacy_namespace is None:
             raise ValueError("FactoryHorde submission lacks its registry owner")
         path = f"{legacy_namespace}/{path}"
