@@ -27,13 +27,13 @@ from pylon_client.artanis import (
 from pylon_client.artanis.v1 import GetCommitmentResponse, GetNeuronsResponse, SetCommitmentResponse
 from tenacity import Retrying, stop_after_attempt
 
-# The selected Pylon 2.4.0 writer uses RawN, whose supported maximum is Raw128.
-COMMITMENT_MAX_BYTES = 128
+# The chain's BigRaw bound for one commitment. Commitments over 128 bytes need a Pylon that writes BigRaw
+# (2.5.0 or newer); older Pylon releases write only RawN, up to 128 bytes.
+CHAIN_COMMITMENT_MAX_BYTES = 512
 # ComputeHorde's largest manifest envelope: "<M:" + six "X999" codes joined by ";" + ">".
 COMPUTE_HORDE_MANIFEST_RESERVE = 33
 SEGMENT = r"[a-z0-9]+(?:[._-][a-z0-9]+)*"
 IMAGE_PATTERN = rf"ghcr\.io/{SEGMENT}(?:/{SEGMENT})+@sha256:[0-9a-f]{{64}}"
-NAMESPACE_PATTERN = rf"ghcr\.io(?:/{SEGMENT})+"
 OWN_ENVELOPE = re.compile(rb"<F:([^<>]*)>")
 MANIFEST_ENVELOPE = re.compile(rb"<M:[^<>]*>")
 _events = Counter("factory_horde_submissions_total", "One-shot submission outcomes", ("outcome",))
@@ -80,33 +80,28 @@ def validate_reference(image: str) -> str:
     return image
 
 
-def encode_envelope(image: str, namespace: str) -> bytes:
-    """Encode IMAGE as FactoryHorde's commitment envelope relative to NAMESPACE.
+def encode_envelope(image: str, max_bytes: int = CHAIN_COMMITMENT_MAX_BYTES) -> bytes:
+    """Encode IMAGE as FactoryHorde's commitment envelope: registry, owner, package and compact digest.
 
     Raises:
-        ValueError: The image or namespace is invalid, the image lies outside the namespace,
-            or the envelope can never fit beside ComputeHorde's manifest.
+        ValueError: The image is invalid or its envelope can never fit MAX_BYTES beside ComputeHorde's manifest.
     """
     validate_reference(image)
-    if re.fullmatch(NAMESPACE_PATTERN, namespace) is None:
-        raise ValueError("Expected a ghcr.io/owner namespace")
-    if not image.startswith(namespace + "/"):
-        raise ValueError(f"Image must be published under namespace {namespace}")
-    package, digest = image.removeprefix(namespace + "/").split("@sha256:")
+    path, digest = image.split("@sha256:")
     compact = base64.urlsafe_b64encode(bytes.fromhex(digest)).rstrip(b"=")
-    envelope = b"<F:" + package.encode() + b"@" + compact + b">"
-    if len(envelope) + COMPUTE_HORDE_MANIFEST_RESERVE > COMMITMENT_MAX_BYTES:
+    envelope = b"<F:" + path.encode() + b"@" + compact + b">"
+    if len(envelope) + COMPUTE_HORDE_MANIFEST_RESERVE > max_bytes:
         raise ValueError(
-            f"Package name is too long: its envelope and ComputeHorde's manifest must fit {COMMITMENT_MAX_BYTES} bytes"
+            f"Image reference is too long: its envelope and ComputeHorde's manifest must fit {max_bytes} bytes"
         )
     return envelope
 
 
-def merge_envelope(current: bytes, envelope: bytes) -> bytes:
+def merge_envelope(current: bytes, envelope: bytes, max_bytes: int = CHAIN_COMMITMENT_MAX_BYTES) -> bytes:
     """Replace only FactoryHorde's envelope, keeping every other byte and ComputeHorde's manifest room.
 
     Raises:
-        SubmissionError: The result would exceed the writer's limit or ComputeHorde's manifest reserve.
+        SubmissionError: The result would exceed MAX_BYTES or ComputeHorde's manifest reserve.
     """
     own = list(OWN_ENVELOPE.finditer(current))
     if own:
@@ -116,10 +111,12 @@ def merge_envelope(current: bytes, envelope: bytes) -> bytes:
         manifest = MANIFEST_ENVELOPE.search(current)
         at = manifest.start() if manifest is not None else len(current)
         merged = current[:at] + envelope + current[at:]
-    if len(merged) > COMMITMENT_MAX_BYTES:
-        raise SubmissionError(f"Commitment would exceed the writer's {COMMITMENT_MAX_BYTES}-byte limit")
-    if len(MANIFEST_ENVELOPE.sub(b"", merged)) + COMPUTE_HORDE_MANIFEST_RESERVE > COMMITMENT_MAX_BYTES:
-        raise SubmissionError("Commitment would leave ComputeHorde less than its 33-byte manifest reserve")
+    if len(merged) > max_bytes:
+        raise SubmissionError(f"Commitment would exceed the {max_bytes}-byte limit")
+    if len(MANIFEST_ENVELOPE.sub(b"", merged)) + COMPUTE_HORDE_MANIFEST_RESERVE > max_bytes:
+        raise SubmissionError(
+            f"Commitment would leave ComputeHorde less than its 33-byte manifest reserve within {max_bytes} bytes"
+        )
     return merged
 
 
@@ -166,7 +163,14 @@ def _evidence(
     )
 
 
-def submit(api: SubmissionApi, image: str, netuid: int, namespace: str, *, confirm_seconds: float = 150) -> Publication:
+def submit(
+    api: SubmissionApi,
+    image: str,
+    netuid: int,
+    *,
+    max_bytes: int = CHAIN_COMMITMENT_MAX_BYTES,
+    confirm_seconds: float = 150,
+) -> Publication:
     """Read first, replace only the own envelope, write at most once, then require registered read-back.
 
     HTTP timeouts can leave the service's shielded write running. Recovery polls
@@ -174,9 +178,9 @@ def submit(api: SubmissionApi, image: str, netuid: int, namespace: str, *, confi
 
     Raises:
         SubmissionError: Configuration changes, the commitment cannot be preserved or confirmation never arrives.
-        ValueError: The reference, namespace or confirmation period is invalid.
+        ValueError: The reference, size limit or confirmation period is invalid.
     """
-    envelope = encode_envelope(image, namespace)
+    envelope = encode_envelope(image, max_bytes)
     if confirm_seconds <= 0:
         raise ValueError("Confirmation period must be positive")
     with _latency.time():
@@ -192,7 +196,7 @@ def submit(api: SubmissionApi, image: str, netuid: int, namespace: str, *, confi
                     current = b"" if previous is None else _raw(previous.commitment)
                 except ValueError as error:
                     raise SubmissionError("Cannot preserve an undecodable commitment; refusing to overwrite") from error
-                merged = merge_envelope(current, envelope)
+                merged = merge_envelope(current, envelope, max_bytes)
                 outcome: Literal["published", "recovered"] = "published"
                 try:
                     api.set_commitment(CommitmentDataBytes(merged))
@@ -226,9 +230,22 @@ def submit(api: SubmissionApi, image: str, netuid: int, namespace: str, *, confi
 @click.option("--pylon-address", envvar="PYLON_ADDRESS", required=True)
 @click.option("--identity", envvar="PYLON_IDENTITY", required=True)
 @click.option("--netuid", type=click.IntRange(min=0), envvar="NETUID", required=True)
-@click.option("--namespace", envvar="SUBMISSION_NAMESPACE", required=True)
+@click.option(
+    "--commitment-max-bytes",
+    type=click.IntRange(min=1, max=CHAIN_COMMITMENT_MAX_BYTES),
+    envvar="COMMITMENT_MAX_BYTES",
+    default=None,
+    help="Cap on the whole commitment (default: the chain's 512 bytes). Set it on hotkeys shared with ComputeHorde.",
+)
 @click.option("--confirm-seconds", type=click.FloatRange(min=1, max=600), default=150, show_default=True)
-def main(image: str, pylon_address: str, identity: str, netuid: int, namespace: str, confirm_seconds: float) -> None:
+def main(
+    image: str,
+    pylon_address: str,
+    identity: str,
+    netuid: int,
+    commitment_max_bytes: int | None,
+    confirm_seconds: float,
+) -> None:
     """Publish IMAGE once and exit after exact chain-facing confirmation.
 
     Supply PYLON_IDENTITY_TOKEN through the environment, never as a command argument.
@@ -238,7 +255,8 @@ def main(image: str, pylon_address: str, identity: str, netuid: int, namespace: 
     """
     started = time.monotonic()
     try:
-        encode_envelope(image, namespace)
+        max_bytes = commitment_max_bytes or CHAIN_COMMITMENT_MAX_BYTES
+        encode_envelope(image, max_bytes)
         token = os.environ.get("PYLON_IDENTITY_TOKEN")
         if not token:
             raise click.ClickException("Set PYLON_IDENTITY_TOKEN in the environment")
@@ -250,7 +268,7 @@ def main(image: str, pylon_address: str, identity: str, netuid: int, namespace: 
             timeout=PylonTimeout(read=confirm_seconds),
         )
         with PylonClient(config) as client:
-            result = submit(client.v1.identity, image, netuid, namespace, confirm_seconds=confirm_seconds)
+            result = submit(client.v1.identity, image, netuid, max_bytes=max_bytes, confirm_seconds=confirm_seconds)
     except (BasePylonException, SubmissionError, ValueError) as error:
         raise click.ClickException(str(error)) from error
     click.echo(json.dumps({**asdict(result), "elapsed_seconds": time.monotonic() - started}))

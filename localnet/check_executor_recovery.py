@@ -110,6 +110,7 @@ class Check:
                 "EXECUTOR_CPUS",
                 "EXECUTOR_PIDS_LIMIT",
                 "EXECUTOR_POLL_SECONDS",
+                "EXECUTOR_MAX_RUNNING_JOBS",
             )
         }
         selected["FACTORY_HORDE_DATA_ROOT"] = str(self.root)

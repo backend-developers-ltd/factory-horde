@@ -243,5 +243,5 @@ def test_published_baseline_references_fit_a_miner_commitment() -> None:
     kinds = re.findall(r"^\s+- kind: ([\w-]+)$", workflow, re.MULTILINE)
     assert "deceptive" in kinds
     for kind in kinds:
-        # Envelope "<F:" + package + "@" + 43-character base64url digest + ">" plus ComputeHorde's 33-byte reserve.
-        assert len(f"<F:factory-horde-{kind}@{'A' * 43}>") + 33 <= 128
+        # Full envelope plus ComputeHorde's 33-byte reserve must fit the 200-byte production cap.
+        assert len(f"<F:ghcr.io/backend-developers-ltd/factory-horde-{kind}@{'A' * 43}>") + 33 <= 200

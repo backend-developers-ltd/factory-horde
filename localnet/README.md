@@ -326,7 +326,7 @@ and `state/task11-coordinator.log`.
 
 For continuous scheduling, set `VALIDATOR_DISPATCH_ENABLED=true`, `VALIDATOR_HOTKEY`
 to the registered validator's public hotkey, `JUDGE_IMAGE` to the published judge
-digest and `SUBMISSION_NAMESPACE` to the registry owner of the miners' images in `localnet/.env`, then recreate the validator. The example environment lists
+digest in `localnet/.env`, then recreate the validator. `SUBMISSION_NAMESPACE` is optional and transitional: it only lets discovery read envelopes committed before they carried `ghcr.io/OWNER`. The example environment lists
 the default two-hour timing. Only one coordinator may write a data root. Keep
 existing files across restart; unresolved old jobs hold future slots. Disabling
 dispatch pauses the coordinator; existing executor requests retain their deadlines.
@@ -388,6 +388,7 @@ projection writes and validator kills after publication/acceptance; every judge
 report profile; and executor kills around Docker create/start. Docker unavailability
 and deletion of an expected execution deliberately leave unresolved evidence.
 The suite checks actual Docker identities, exit states and job-local startup counts.
+The validator only requires nonempty factory output and leaves file checks to the real judge, so the fixture judge scores the missing-output and symlink factories; only the nonzero and hanging ones are excluded. Each validator start waits for a new 55-second slot, because a slot already under way keeps its original deadlines. The suite's executor uses `EXECUTOR_MAX_RUNNING_JOBS` from `.env`, which must allow all five local miners' factories at once.
 
 Raw records, outputs, reports, logs and incremental `evidence.json` remain under
 `state/factory-horde-adversarial-<uuid>/`; `state/task13-latest.txt` identifies the
@@ -395,11 +396,7 @@ latest retained run. The isolated executor is stopped and disabled on completion
 Do not point ordinary admission at the deliberately unresolved fixture root or
 delete its evidence to force a new round.
 
-The selected Pylon 2.3.3 writer has a 128-byte commitment bound. A direct 129-byte
-request during development timed out instead of returning a rejection. The suite
-tests the production submitter's rejection before network access, the validator's
-independent length check and unchanged chain commitment. Malformed and tag-only
-values within the bound are actually published and excluded by discovery.
+Commitments may hold up to the chain's 512 bytes; Pylon writes values over 128 bytes as `BigRaw`, so this check needs Pylon 2.5.0 or newer. The suite publishes a commitment over 128 bytes beside foreign envelopes and requires an identical read-back and a discovered envelope. It tests the production submitter's rejection before network access of a reference over a `--commitment-max-bytes 200` cap and of one that can never fit 512 bytes, the validator's independent 512-byte check and the unchanged chain commitment. Malformed and tag-only values are actually published and excluded by discovery.
 The completed run and its real Docker observations are summarized in
 [task13-adversarial.json](../spec/evidence/task13-adversarial.json). All ten judge
 profiles passed, alongside the mixed-cohort, cancellation, storage and crash checks.
@@ -458,10 +455,9 @@ Factory dispatch remains disabled, so this update does not execute a workload.
 Evidence is written under `state/`; public task evidence is in
 [task6-submissions.json](../spec/evidence/task6-submissions.json).
 
-Before the immutability check, it seeds miner1 with ComputeHorde-shaped content (`<D:https://example.com/s><M:A3;S2>`) and checks that the submitter inserts only its `<F:…>` envelope, that discovery still finds the image after a ComputeHorde manifest rewrite, and that the next submitter run restores an envelope dropped by a stale ComputeHorde write. Miner1 keeps that foreign content afterwards, so later checks also run beside it; the `coexistence` evidence entry records each chain value.
+Before the immutability check, it seeds miner1 with ComputeHorde-shaped content (`<D:https://example.com/s><M:A3;S2>`) and checks that the submitter inserts only its `<F:…>` envelope, that discovery still finds the image after a ComputeHorde manifest rewrite, and that the next submitter run restores an envelope dropped by a stale ComputeHorde write. Miner1 keeps that foreign content afterwards, so later checks also run beside it; the `coexistence` evidence entry records each chain value. With the baseline factory's full reference this commitment exceeds 128 bytes, so the check needs Pylon 2.5.0 or newer; an older Pylon does not reject the write but lets it time out.
 
-The selected Pylon writer supports at most 128 UTF-8 bytes through `RawN`;
-the baseline factory's `<F:…>` envelope is 69 bytes. The local runtime uses a 3,100-byte
+Pylon writes commitments of at most 128 bytes as `RawN` and longer ones, up to 512 bytes, as `BigRaw`; the baseline factory's `<F:ghcr.io/…>` envelope is 100 bytes. The local runtime uses a 3,100-byte
 per-epoch space allowance, with a minimum charge of 100 bytes per commitment.
 Rapid updates seven blocks apart succeeded. Unregistered writes and an atomic
 4,096-byte batch failed with the expected chain errors. These observations replace

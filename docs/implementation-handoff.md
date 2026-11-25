@@ -176,8 +176,8 @@ Current source selects these versions following the emSign/eMudhra audit:
 | Validator, submitter, judge and executor-fixture Python base | 3.14.9-slim-trixie (previous refresh) |
 | Validator and submitter uv image | 0.13.6 (previous refresh) |
 | Factory Node base | 24.22.1-bookworm-slim |
-| Pylon service | 2.4.0 |
-| Validator and submitter Pylon client | 2.4.0 |
+| Pylon service | 2.5.0 |
+| Validator and submitter Pylon client | 2.5.0 |
 | Prometheus | 3.15.1 |
 | node-exporter | 1.12.1 |
 | Subtensor localnet | v486, under `ghcr.io/raofoundation/subtensor-localnet` |
@@ -199,7 +199,7 @@ unsetting that override applies the validator's stricter eleven-day project poli
 Boto3/botocore 1.43.119 was still inside the one-day cooldown when resolving.
 
 The selected Nexus revision accepts any Pylon 2.x client from 2.3.1; the validator
-selects 2.4.0. There is no newer published `nodejs-wheel-binaries` than the locked
+selects 2.5.0. There is no newer published `nodejs-wheel-binaries` than the locked
 24.19.0. Drand was excluded from this refresh at the user's request.
 
 Version updates alone do not finish the audit: node-exporter 1.12.1 and BuildKit
@@ -266,3 +266,7 @@ Live Claude runs on the isolated source-checkout localnet used images built from
 ## Second-mechanism commitments — 23 November 2026
 
 To run beside ComputeHorde on the same hotkeys, commitments became a sequence of tagged envelopes. FactoryHorde commits `<F:package@digest>`, with the SHA-256 digest in unpadded base64url, and the validator rebuilds the image under `VALIDATOR_SUBMISSION_NAMESPACE`, which dispatch now requires; legacy bare references are no longer accepted. The submitter (`SUBMISSION_NAMESPACE`) changes only its own envelope, keeps every other byte and a 33-byte reserve for ComputeHorde's manifest, and refuses to overwrite an undecodable commitment. Because the chain has no compare-and-set, a stale write by either mechanism can drop the other's newest change, so miners schedule the submitter; a run that finds its envelope writes nothing. Shared examples live in `spec/fixtures/commitment-v2/envelopes.json`. With Pylon 2.4.0 the dashboard reads incentive and last update of the configured mechanism. `localnet/check_submissions.py` verifies coexistence with ComputeHorde-shaped content on localnet.
+
+## Full image references — 25 November 2026
+
+Envelopes now carry the complete reference, `<F:ghcr.io/OWNER/PACKAGE@digest>`, so images from any GHCR owner can take part; this supersedes the package-only envelope of the previous section. `VALIDATOR_SUBMISSION_NAMESPACE` is no longer required for dispatch: it is optional and transitional, used only to read package-only envelopes until every miner has resubmitted, after which it and the legacy path can be removed. The submitter no longer takes `SUBMISSION_NAMESPACE`. Submission and discovery apply the chain's 512-byte bound to the whole commitment, and the submitter accepts a lower `COMMITMENT_MAX_BYTES` cap (200 on hotkeys shared with ComputeHorde, to stay within the hotkey's 3,100-byte commitment quota per tempo). Commitments over 128 bytes need Pylon 2.5.0, which writes them as `BigRaw`; the validator, submitter and Compose files pin it. Rollout order is ComputeHorde with 512-byte commitments on shared hotkeys, then validators, then miners with the new submitter, because an older validator misreads a full reference as a package under its namespace. `localnet/check_submissions.py` and `localnet/check_adversarial.py` cover full references and an over-128-byte commitment on localnet.

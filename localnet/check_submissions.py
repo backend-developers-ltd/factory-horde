@@ -47,9 +47,6 @@ def main() -> None:
     if config.get("ENVIRONMENT") != "localnet" or config.get("NETUID") != "2":
         raise RuntimeError("Requires isolated localnet subnet 2")
     factory, judge = runtime.image("factory"), runtime.image("judge")
-    namespace = factory.rsplit("/", 1)[0]
-    if judge.rsplit("/", 1)[0] != namespace:
-        raise RuntimeError("Localnet images must share one namespace")
     submitter = runtime.image("submitter")
     registrations = Registrations.model_validate_json((runtime.state / "registrations.json").read_bytes())
     identities = {row.identity: row for row in registrations.registrations}
@@ -86,8 +83,6 @@ def main() -> None:
                 f"PYLON_IDENTITY={identity}",
                 "--env",
                 "NETUID=2",
-                "--env",
-                f"SUBMISSION_NAMESPACE={namespace}",
                 submitter,
                 image,
             ],
@@ -157,14 +152,14 @@ def main() -> None:
         # ComputeHorde's patched miner rewrites only its manifest.
         compute_horde_rewrite = f"{shield}{envelope}<M:A4>"
         write_raw("miner1", compute_horde_rewrite)
-        coexist = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
+        coexist = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, None)
         discovered = next((member.image for member in coexist.cohort if member.miner_hotkey == miner1), None)
         if discovered != factory:
             raise RuntimeError("Discovery missed the submission beside ComputeHorde content")
         # A ComputeHorde write computed from a stale read drops the envelope; the next submitter run restores it.
         lost_update = f"{shield}<M:A4>"
         write_raw("miner1", lost_update)
-        dropped = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
+        dropped = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, None)
         if not any(r.miner_hotkey == miner1 and "No FactoryHorde submission" in r.reason for r in dropped.rejected):
             raise RuntimeError("A commitment without an envelope was not rejected")
         repair = publish("miner1", factory)
@@ -172,7 +167,7 @@ def main() -> None:
         if repair.outcome != "published" or after_repair != compute_horde_rewrite:
             raise RuntimeError(f"Submitter did not restore its envelope: {after_repair!r}")
         snapshot_id = uuid4()
-        before = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey, namespace)
+        before = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey, None)
         expected = {identities[f"miner{i}"].hotkey: identities[f"miner{i}"].uid for i in range(1, 6)}
         if {member.miner_hotkey: member.uid for member in before.cohort} != expected:
             raise RuntimeError("Discovery disagrees with independent bootstrap attribution")
@@ -180,16 +175,16 @@ def main() -> None:
             raise RuntimeError("Unexpected image in initial discovery")
         try:
             updated = publish("miner5", judge)
-            recovered = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey, namespace)
+            recovered = freeze_discovery(files, snapshot_id, client.v1.identity, 2, own_hotkey, None)
             if recovered != before:
                 raise RuntimeError("An active frozen cohort changed")
-            after = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
+            after = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, None)
             changed = next(member for member in after.cohort if member.miner_hotkey == identities["miner5"].hotkey)
             if changed.image != judge:
                 raise RuntimeError("A new snapshot missed the commitment update")
         finally:
             _ = publish("miner5", factory)
-        final = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, namespace)
+        final = freeze_discovery(files, uuid4(), client.v1.identity, 2, own_hotkey, None)
         if any(member.image != factory for member in final.cohort):
             raise RuntimeError("Fixture image restoration failed")
     evidence = {

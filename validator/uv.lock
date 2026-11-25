@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "bittensor-pylon-client"
-version = "2.4.0"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apscheduler" },
@@ -103,9 +103,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/12/d2/1ae5cc185d8826cb6b9727fbd9f816462e40a12e9825af4b11fff3009e37/bittensor_pylon_client-2.4.0.tar.gz", hash = "sha256:8e7e9cb1f5c41acc46ff17cb748d37a2b476675e28720e71213fa11af401b4ae", size = 39963, upload-time = "2026-11-23T08:09:20.697Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/cf/bad1ff6f1e19f27ddc03ee131ca9b03c4f8314183dad7e209e9b3ef4a3d0/bittensor_pylon_client-2.5.0.tar.gz", hash = "sha256:0759b128d4f32e1365f7784c3e5d5e23624dac3eed30130e05784808c21294f2", size = 40189, upload-time = "2026-11-24T12:33:46.633Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/e7/a20ad7ffcee9790280d3ccbee2ab5059a4937e4c14c9fbac749febad0096/bittensor_pylon_client-2.4.0-py3-none-any.whl", hash = "sha256:7c0a45824f6ac61902049e943f6799013039dfa42b4c9b2c1dab3f1b1e6e5e1e", size = 68546, upload-time = "2026-11-23T08:09:19.487Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/e8/334565daf2812bc50d2079c94b81632e8a968d87c30c6701849eab6fdcb5/bittensor_pylon_client-2.5.0-py3-none-any.whl", hash = "sha256:e6dd3f451ccdf1e9fb4af4b77bb20d028158915972e29a984dfac0d8e50768a8", size = 68803, upload-time = "2026-11-24T12:33:45.561Z" },
 ]
 
 [[package]]
@@ -1612,7 +1612,7 @@ dev = [
 requires-dist = [
     { name = "attrs", specifier = ">=26.1.0" },
     { name = "bittensor-nexus-library", git = "https://github.com/bittensor-church/bittensor-nexus-library.git?rev=3b630dd09f209cb633647236a00cfcf5673bc730" },
-    { name = "bittensor-pylon-client", specifier = "==2.4.0" },
+    { name = "bittensor-pylon-client", specifier = "==2.5.0" },
     { name = "click", specifier = ">=8.3.2" },
     { name = "opentelemetry-api", specifier = "~=1.41" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = "~=1.41" },

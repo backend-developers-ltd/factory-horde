@@ -22,7 +22,7 @@ the nine opt-in Docker contract tests. The tests exercise the real 60-second wai
 and judge mount contract with networking disabled. Local build IDs are recorded
 under `localnet/state`; these are not published registry manifest references.
 
-The GHCR namespace is `backend-developers-ltd`. The
+The GHCR owner is `backend-developers-ltd`. The
 [baseline workflow](../../.github/workflows/build-baselines.yml) publishes
 `factory-horde-factory` and `factory-horde-judge` using its GitHub job token, on
 relevant pushes to `deploy-build-*` branches. Each matrix job uploads a JSON artifact

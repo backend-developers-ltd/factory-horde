@@ -199,8 +199,9 @@ FactoryHorde can run as a second mechanism on ComputeHorde's subnet, with the sa
 - `MECHANISM_ID=1` in `.env`, so weights and chain metrics address FactoryHorde's mechanism.
 - The shared validator hotkey in `VALIDATOR_HOTKEY`, signed through this installation's own Pylon; ComputeHorde's validator keeps its own.
 - Pylon service 2.4.0 or newer, the first release with per-mechanism neuron reads, so incentive and last-update metrics report this mechanism instead of mechanism 0.
-- ComputeHorde's miner on a release that keeps other envelopes (`ec106a6e` or newer) on every shared miner hotkey before any FactoryHorde envelope is written; older releases erase `<F:…>` within 5 minutes.
-- `SUBMISSION_NAMESPACE` in the installation's `.env` before the cron updater applies a release with envelope commitments. With dispatch enabled the validator refuses to start without it, and the updater does not roll back.
+- ComputeHorde's miner on a release that accepts 512-byte commitments ([ComputeHorde#880](https://github.com/backend-developers-ltd/ComputeHorde/pull/880) or newer) on every shared miner hotkey before a FactoryHorde envelope with a full image reference is written, and `COMMITMENT_MAX_BYTES=200` for the submitter there. Releases before `ec106a6e` erase `<F:…>` within 5 minutes; later ones without 512-byte support stop updating their manifest beside a commitment over 128 bytes.
+- Pylon 2.5.0 or newer, which writes and reads `BigRaw` commitments, for the validator and every miner, since commitments with full image references can exceed the 128 bytes Pylon writes as `RawN`; the validator's Pylon needs it to read them.
+- Optionally, during the transition, `SUBMISSION_NAMESPACE` in the installation's `.env`, so the validator still reads envelopes committed before they carried `ghcr.io/OWNER`. Remove it once all miners have resubmitted.
 - Scheduled submitters on every miner (for example a 5-minute cron job), because a writer can overwrite the other mechanism's newest change from a stale read; a run that finds its envelope in place writes nothing.
 
 ## Task specification and inference proxy

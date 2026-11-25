@@ -47,8 +47,7 @@ def main() -> None:
             identity_token=PylonAuthToken(config["VALIDATOR_PYLON_IDENTITY_TOKEN"] or ""),
         )
     ) as client:
-        namespace = str(images["GHCR_FACTORY_IMAGE"]).rsplit("/", 1)[0]
-        snapshot = freeze_discovery(rounds.files, uuid4(), client.v1.identity, 2, own, namespace)
+        snapshot = freeze_discovery(rounds.files, uuid4(), client.v1.identity, 2, own, None)
     if len(snapshot.cohort) != 5 or any(m.image != images["GHCR_FACTORY_IMAGE"] for m in snapshot.cohort):
         raise RuntimeError("Expected the five registered baseline commitments")
     start = datetime.now(UTC) + timedelta(seconds=10)

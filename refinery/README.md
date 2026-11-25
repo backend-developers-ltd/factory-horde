@@ -42,11 +42,11 @@ Follow [published operator installation](../installer/README.md#published-operat
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/validator.env.example" -o "$HOME/operator.env"
 # Set JUDGE_IMAGE to the published GHCR digest for the review judge in your release.
-# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD; check SUBMISSION_NAMESPACE.
+# Fill in HOST_WALLET_DIR, VALIDATOR_HOTKEY, CLAUDE_CODE_OAUTH_TOKEN, METRICS_UPSTREAM_USER and METRICS_UPSTREAM_PASSWORD.
 bash "$BOOTSTRAP/install.sh" "$HOME/factory-horde" --env-file "$HOME/operator.env" --ref "$RELEASE_REF"
 ```
 
-**Upgrading to envelope commitments.** An existing installation must have `SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd` in `~/factory-horde/.env` before it follows a release with envelope commitments: once dispatch is enabled, the validator refuses to start without it, and the updater does not roll back. The miners' `.env` needs the same line before they run the new submitter.
+**Upgrading to full image references.** Envelopes now carry `ghcr.io/OWNER/PACKAGE`, so `SUBMISSION_NAMESPACE` is optional. Upgrade the validator before any miner runs the new submitter: an older validator misreads a full reference as a package under its namespace and admits an image that cannot be pulled. Keep `SUBMISSION_NAMESPACE=ghcr.io/backend-developers-ltd` in the validator's `~/factory-horde/.env` until every miner has resubmitted with the current submitter, so the validator still reads their older package-only envelopes; then remove it. Miners no longer use the setting.
 
 The metrics login comes from the company monitoring stack: see [monitoring](../installer/README.md#monitoring-and-recovery) for how it is created and registered. Metrics then appear in the central Grafana under the deployment's `client_server_group` and `host`.
 
@@ -66,7 +66,7 @@ cd ~/factory-horde/miner
 # Use the miner instructions to download the verified Compose file from deploy-config-production.
 umask 077
 curl -fsSL "$RELEASE_URL/refinery/miner.env.example" -o .env
-# Fill in HOST_WALLET_DIR and the three tokens in .env; check SUBMISSION_NAMESPACE.
+# Fill in HOST_WALLET_DIR and the three tokens in .env; set COMMITMENT_MAX_BYTES if the hotkey also runs ComputeHorde.
 docker compose up -d --wait
 docker compose run --rm submit
 ```
