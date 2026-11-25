@@ -395,7 +395,7 @@ latest retained run. The isolated executor is stopped and disabled on completion
 Do not point ordinary admission at the deliberately unresolved fixture root or
 delete its evidence to force a new round.
 
-Commitments may hold up to the chain's 512 bytes; Pylon writes values over 128 bytes as `BigRaw`, so this check needs the Pylon release with `BigRaw` support. The suite publishes a commitment over 128 bytes beside foreign envelopes and requires an identical read-back and a discovered envelope. It tests the production submitter's rejection before network access of a reference over a `--commitment-max-bytes 200` cap and of one that can never fit 512 bytes, the validator's independent 512-byte check and the unchanged chain commitment. Malformed and tag-only values are actually published and excluded by discovery.
+Commitments may hold up to the chain's 512 bytes; Pylon writes values over 128 bytes as `BigRaw`, so this check needs Pylon 2.5.0 or newer. The suite publishes a commitment over 128 bytes beside foreign envelopes and requires an identical read-back and a discovered envelope. It tests the production submitter's rejection before network access of a reference over a `--commitment-max-bytes 200` cap and of one that can never fit 512 bytes, the validator's independent 512-byte check and the unchanged chain commitment. Malformed and tag-only values are actually published and excluded by discovery.
 The completed run and its real Docker observations are summarized in
 [task13-adversarial.json](../spec/evidence/task13-adversarial.json). All ten judge
 profiles passed, alongside the mixed-cohort, cancellation, storage and crash checks.
@@ -454,7 +454,7 @@ Factory dispatch remains disabled, so this update does not execute a workload.
 Evidence is written under `state/`; public task evidence is in
 [task6-submissions.json](../spec/evidence/task6-submissions.json).
 
-Before the immutability check, it seeds miner1 with ComputeHorde-shaped content (`<D:https://example.com/s><M:A3;S2>`) and checks that the submitter inserts only its `<F:…>` envelope, that discovery still finds the image after a ComputeHorde manifest rewrite, and that the next submitter run restores an envelope dropped by a stale ComputeHorde write. Miner1 keeps that foreign content afterwards, so later checks also run beside it; the `coexistence` evidence entry records each chain value. With the baseline factory's full reference this commitment exceeds 128 bytes, so the check needs the Pylon release with `BigRaw` support; an older Pylon does not reject the write but lets it time out.
+Before the immutability check, it seeds miner1 with ComputeHorde-shaped content (`<D:https://example.com/s><M:A3;S2>`) and checks that the submitter inserts only its `<F:…>` envelope, that discovery still finds the image after a ComputeHorde manifest rewrite, and that the next submitter run restores an envelope dropped by a stale ComputeHorde write. Miner1 keeps that foreign content afterwards, so later checks also run beside it; the `coexistence` evidence entry records each chain value. With the baseline factory's full reference this commitment exceeds 128 bytes, so the check needs Pylon 2.5.0 or newer; an older Pylon does not reject the write but lets it time out.
 
 Pylon writes commitments of at most 128 bytes as `RawN` and longer ones, up to 512 bytes, as `BigRaw`; the baseline factory's `<F:ghcr.io/…>` envelope is 100 bytes. The local runtime uses a 3,100-byte
 per-epoch space allowance, with a minimum charge of 100 bytes per commitment.

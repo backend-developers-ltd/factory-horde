@@ -73,7 +73,7 @@ A hotkey has one commitment per subnet, shared by all mechanisms. It is a sequen
 
 FactoryHorde rewrites only `<F:…>` and keeps every other byte, including `<D:…>`, `<M:…>` and unrecognized data; a new envelope goes before the first `<M:…>`, else at the end. ComputeHorde rewrites only `<M:…>` and keeps the other envelopes. If the current commitment cannot be decoded, the submitter refuses to write.
 
-The chain accepts commitments of up to 512 bytes. Pylon writes values of at most 128 bytes as `RawN` and longer ones as `BigRaw`, so a commitment over 128 bytes needs the Pylon release with `BigRaw` support ([bittensor-pylon#107](https://github.com/bittensor-church/bittensor-pylon/pull/107)). The submitter's effective limit is 512 bytes, or `COMMITMENT_MAX_BYTES` (`--commitment-max-bytes`) when set:
+The chain accepts commitments of up to 512 bytes. Pylon writes values of at most 128 bytes as `RawN` and longer ones as `BigRaw`, so a commitment over 128 bytes needs Pylon 2.5.0 or newer. The submitter's effective limit is 512 bytes, or `COMMITMENT_MAX_BYTES` (`--commitment-max-bytes`) when set:
 
 | Part | Bytes |
 |---|---|
@@ -86,7 +86,7 @@ The submitter keeps ComputeHorde's 33-byte reserve within the effective limit: i
 
 Each commitment write is charged its actual size, at least 100 bytes, against the hotkey's quota of 3,100 bytes per tempo (360 blocks on subnet 12, about 72 minutes), shared by every writer of that hotkey's commitment. ComputeHorde writes when its manifest changes (checked every 5 minutes) or every 5,000 blocks, at most about 14 times per tempo; a 200-byte commitment allows 15 writes per tempo, so the cap keeps both writers within the quota.
 
-Current source selects Pylon client and service 2.4.0. The submitter uses the explicit v1 commitment API and writes bytes, not strings interpreted as hexadecimal. Only complete lowercase GHCR SHA-256 manifest references are accepted; tags, unsupported registries and overlong references fail. No value is truncated or replaced with a tag.
+Current source selects Pylon client and service 2.5.0. The submitter uses the explicit v1 commitment API and writes bytes, not strings interpreted as hexadecimal. Only complete lowercase GHCR SHA-256 manifest references are accepted; tags, unsupported registries and overlong references fail. No value is truncated or replaced with a tag.
 
 The submitter reads before writing. An unchanged envelope exits with `unchanged` and writes nothing. Writes have no automatic HTTP retries. After an ambiguous timeout or upstream error, it polls read-back without submitting again; it reports `recovered` only when its own envelope is confirmed for a registered hotkey at the returned block. Read-back compares only the `<F:…>` envelope, so a concurrent ComputeHorde manifest change does not prevent confirmation. Unconfirmed outcomes exit nonzero. A later invocation also reads first. JSON output contains the hotkey, image, commitment/observation blocks and elapsed time; the commitment block is the last write by either mechanism. Tokens never appear in successful output.
 

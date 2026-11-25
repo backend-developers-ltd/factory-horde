@@ -4,8 +4,8 @@
 name: factory-horde-miner
 services:
   pylon:
-    # bittensor-pylon:2.4.0, same digest as envs/deployed/docker-compose.yml
-    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:b0b4f4d532aed7dba6ffc979ce270ac3286b3c98678a87f8d2c3ec8086453184
+    # bittensor-pylon:2.5.0, same digest as envs/deployed/docker-compose.yml
+    image: docker.io/backenddevelopersltd/bittensor-pylon@sha256:5c1996a329ce4361a52dcae2fd04903cc2a9b86547f915e8ce284715c1bb6488
     platform: linux/amd64
     restart: unless-stopped
     ports:

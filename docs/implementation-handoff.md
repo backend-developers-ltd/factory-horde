@@ -176,8 +176,8 @@ Current source selects these versions following the emSign/eMudhra audit:
 | Validator, submitter, judge and executor-fixture Python base | 3.14.9-slim-trixie (previous refresh) |
 | Validator and submitter uv image | 0.13.6 (previous refresh) |
 | Factory Node base | 24.22.1-bookworm-slim |
-| Pylon service | 2.4.0 |
-| Validator and submitter Pylon client | 2.4.0 |
+| Pylon service | 2.5.0 |
+| Validator and submitter Pylon client | 2.5.0 |
 | Prometheus | 3.15.1 |
 | node-exporter | 1.12.1 |
 | Subtensor localnet | v486, under `ghcr.io/raofoundation/subtensor-localnet` |
@@ -199,7 +199,7 @@ unsetting that override applies the validator's stricter eleven-day project poli
 Boto3/botocore 1.43.119 was still inside the one-day cooldown when resolving.
 
 The selected Nexus revision accepts any Pylon 2.x client from 2.3.1; the validator
-selects 2.4.0. There is no newer published `nodejs-wheel-binaries` than the locked
+selects 2.5.0. There is no newer published `nodejs-wheel-binaries` than the locked
 24.19.0. Drand was excluded from this refresh at the user's request.
 
 Version updates alone do not finish the audit: node-exporter 1.12.1 and BuildKit

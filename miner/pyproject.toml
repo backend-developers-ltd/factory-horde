@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "One-shot FactoryHorde GHCR image submission through Pylon."
 requires-python = ">=3.14"
 dependencies = [
-    "bittensor-pylon-client==2.4.0",
+    "bittensor-pylon-client==2.5.0",
     "click>=8.3.2",
     "prometheus-client>=0.25.0",
     "tenacity>=9.1.4",

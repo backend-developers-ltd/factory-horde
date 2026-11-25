@@ -28,7 +28,7 @@ from pylon_client.artanis.v1 import GetCommitmentResponse, GetNeuronsResponse, S
 from tenacity import Retrying, stop_after_attempt
 
 # The chain's BigRaw bound for one commitment. Commitments over 128 bytes need a Pylon that writes BigRaw
-# (bittensor-pylon#107); older Pylon releases write only RawN, up to 128 bytes.
+# (2.5.0 or newer); older Pylon releases write only RawN, up to 128 bytes.
 CHAIN_COMMITMENT_MAX_BYTES = 512
 # ComputeHorde's largest manifest envelope: "<M:" + six "X999" codes joined by ";" + ">".
 COMPUTE_HORDE_MANIFEST_RESERVE = 33
