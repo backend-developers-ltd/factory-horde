@@ -69,7 +69,7 @@ request is authorized at that point.
 JSON keys and non-finite JSON constants are rejected. Records and input text are
 limited to one MiB each. References require an explicit `ghcr.io` owner/repository
 and lowercase `sha256` digest; tag-only references fail. The 1,024-character parser
-bound accommodates operator image references. Miner submission and discovery apply the chain's 512-byte bound to the whole commitment (the submitter optionally a lower `COMMITMENT_MAX_BYTES` cap); its `<F:ghcr.io/OWNER/PACKAGE@base64url-digest>` envelope is rebuilt into the full reference. Legacy `<F:PACKAGE@…>` envelopes are read only under the optional, transitional submission namespace.
+bound accommodates operator image references. Miner submission and discovery apply the chain's 512-byte bound to the whole commitment (the submitter optionally a lower `COMMITMENT_MAX_BYTES` cap); its `<F:ghcr.io/OWNER/PACKAGE@base64url-digest>` envelope is rebuilt into the full reference. Envelopes without `ghcr.io/OWNER` are rejected.
 Selected platform is `linux/amd64`, matching task 2's Pylon image.
 
 ## Fixed execution contracts

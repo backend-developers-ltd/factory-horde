@@ -326,7 +326,7 @@ and `state/task11-coordinator.log`.
 
 For continuous scheduling, set `VALIDATOR_DISPATCH_ENABLED=true`, `VALIDATOR_HOTKEY`
 to the registered validator's public hotkey, `JUDGE_IMAGE` to the published judge
-digest in `localnet/.env`, then recreate the validator. `SUBMISSION_NAMESPACE` is optional and transitional: it only lets discovery read envelopes committed before they carried `ghcr.io/OWNER`. The example environment lists
+digest in `localnet/.env`, then recreate the validator. The example environment lists
 the default two-hour timing. Only one coordinator may write a data root. Keep
 existing files across restart; unresolved old jobs hold future slots. Disabling
 dispatch pauses the coordinator; existing executor requests retain their deadlines.
