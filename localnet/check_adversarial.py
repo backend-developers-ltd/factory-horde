@@ -564,6 +564,21 @@ class Adversarial(Check):
         self.jobs = list(self.repository.requests())
         self.close()
         self.evidence["executor_stopped"] = True
+        # Containers left in Docker's created state would hold running-job slots of later runs.
+        ids = {str(job.job_id) for job in self.jobs}
+        listing = docker(
+            "ps",
+            "-a",
+            "--filter",
+            "label=factory_horde.job_id",
+            "--filter",
+            "status=created",
+            "--format",
+            '{{.ID}} {{.Label "factory_horde.job_id"}}',
+        )
+        for container, _, job_id in (line.partition(" ") for line in listing.splitlines()):
+            if job_id in ids:
+                docker("rm", container)
         self.save()
 
 
