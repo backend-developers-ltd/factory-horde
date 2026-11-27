@@ -99,8 +99,8 @@ paths before making a request visible. The coordinator applies the stage gate be
 publication; the communicator may idempotently republish the same frozen request.
 
 `Schedule` persists the next slot and an optional `RoundSeed` before discovery. A new
-seed takes its specification from `VALIDATOR_SPECIFICATION` (the operator's
-`TASK_SPECIFICATION`; unset or empty keeps the built-in greeting task). The
+seed takes its tasks from `VALIDATOR_TASK_DIRECTORY` (the operator's
+`TASK_DIRECTORY`; unset keeps the built-in greeting task). The
 seed freezes the round ID, sequence, judge image, specification, scoring mode, criteria
 and all deadlines. A retained discovery snapshot freezes the cohort and both job IDs per miner. A partial plan or
 input publication is repaired using those same identities. The schedule advances

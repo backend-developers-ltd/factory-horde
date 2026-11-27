@@ -32,13 +32,13 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from validator.chain_observer import ChainObservation, ChainObserverNode
-from validator.coordinator import SPECIFICATION, RoundCoordinator, RoundTick, RoundTiming
+from validator.coordinator import RoundCoordinator, RoundTick, RoundTiming
 from validator.discovery import freeze_via_pylon
 from validator.health import Readiness
 from validator.logging_config import LoggingSettings, configure_logging
 from validator.monitoring import ChainViewNode, MonitoringNode, read_chain_view
 from validator.otel import OtelSettings, setup_otel
-from validator.records import Criterion, ImageReference, JudgeMode, JudgeModel, MinerHotkey
+from validator.records import ImageReference, JudgeMode, JudgeModel, MinerHotkey
 from validator.response_logger import ErrorLoggerNode, MessageLoggerNode
 from validator.result_repository import ResultRepository
 from validator.round_actor import RoundCoordinatorNode
@@ -64,9 +64,7 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     evaluation_window: timedelta = timedelta(minutes=55)
     judge_stop_reserve: timedelta = timedelta(minutes=5)
     stop_grace_seconds: int = Field(default=60, ge=0, le=60)
-    specification: str = Field(default=SPECIFICATION, min_length=1)
     task_directory: Path | None = None
-    requirements: tuple[Criterion, ...] = ()
     judge_mode: JudgeMode = "review"
     judge_model: JudgeModel | None = None
     weights_enabled: bool = False
@@ -80,12 +78,6 @@ class Settings(PylonClientSettingsMixin, BaseSettings):
     @classmethod
     def _empty_optional(cls, value: object) -> object:
         return None if value == "" else value
-
-    @field_validator("specification", mode="before")
-    @classmethod
-    def _empty_specification(cls, value: object) -> object:
-        # Compose passes an unset operator variable as an empty string.
-        return SPECIFICATION if value == "" else value
 
     @field_validator(
         "generation_window", "confirmation_window", "evaluation_window", "judge_stop_reserve", mode="before"
@@ -185,10 +177,8 @@ class Validator(NexusValidator):
                     settings.round_timing(),
                     settings.judge_image,
                     discovery,
-                    settings.specification,
-                    settings.requirements,
-                    settings.task_directory,
-                    settings.judge_model,
+                    task_directory=settings.task_directory,
+                    judge_model=settings.judge_model,
                 )
             )
             self.connect(self.tasks.poll_clock.source, coordinator.sink)

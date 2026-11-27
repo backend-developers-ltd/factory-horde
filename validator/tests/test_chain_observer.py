@@ -7,7 +7,6 @@ from nexus.v1 import BlockBeat, BlockHash, BlockNumber, ReceiveEvent, SubnetBuil
 from pydantic import ValidationError
 
 from validator.chain_observer import ChainObservation, ChainObserverNode
-from validator.coordinator import SPECIFICATION
 from validator.main import Settings
 
 
@@ -68,19 +67,3 @@ def test_compose_seconds_configuration_is_validated(monkeypatch: pytest.MonkeyPa
         {"NETUID": 2, "pylon_service_address": "http://pylon.test", "pylon_open_access_token": "test"}
     )
     assert settings.round_timing().interval.total_seconds() == 180
-
-
-@pytest.mark.parametrize(
-    ("configured", "expected"),
-    [(None, SPECIFICATION), ("", SPECIFICATION), ("Write a to-do list manager.", "Write a to-do list manager.")],
-)
-def test_specification_defaults_when_unset_or_empty(
-    monkeypatch: pytest.MonkeyPatch, configured: str | None, expected: str
-) -> None:
-    monkeypatch.delenv("VALIDATOR_SPECIFICATION", raising=False)
-    if configured is not None:
-        monkeypatch.setenv("VALIDATOR_SPECIFICATION", configured)
-    settings = Settings.model_validate(
-        {"NETUID": 2, "pylon_service_address": "http://pylon.test", "pylon_open_access_token": "test"}
-    )
-    assert settings.specification == expected

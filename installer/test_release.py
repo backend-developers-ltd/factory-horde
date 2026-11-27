@@ -144,7 +144,7 @@ def test_env_parser_does_not_execute_expansions_and_preserves_literal_values(tmp
 
 def test_refinery_example_survives_installer_encoding_without_a_credential(tmp_path: Path) -> None:
     config = release.read_env(REPO / "refinery/validator.env.example")
-    assert " " in config["TASK_SPECIFICATION"] and config["CLAUDE_CODE_OAUTH_TOKEN"] == ""
+    assert config["CLAUDE_CODE_OAUTH_TOKEN"] == ""
     path = tmp_path / ".env"
     path.write_bytes(release.environment(config))
     assert release.read_env(path) == config
