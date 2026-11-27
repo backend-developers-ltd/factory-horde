@@ -50,7 +50,7 @@ The metrics login comes from the company monitoring stack: see [monitoring](../i
 
 `.env` is the server's only settings file and `envs/deployed/docker-compose.yml` its only Compose file (project `factory-horde`, with the `alloy` and `inference` profiles enabled). Because `.env` names both, plain `docker compose` commands work in `~/factory-horde`. The updater applies `.env` edits and releases promoted to `deploy-config-production` within 15 minutes; `installer/update_compose.sh ~/factory-horde` does so immediately.
 
-Rounds last 60 minutes: 30 minutes generation, 5 minutes stop confirmation and 25 minutes evaluation. Every factory gets the task in `TASK_SPECIFICATION`, a small command-line to-do list manager in Python.
+Rounds last 60 minutes: 30 minutes generation, 5 minutes stop confirmation and 25 minutes evaluation. Every factory gets each task in `TASK_DIRECTORY` ([server task files](../installer/README.md#server-task-files)); the directory must contain at least one task before rounds are admitted.
 
 Factories call Claude through the validator's [inference proxy](../installer/README.md#task-specification-and-inference-proxy). `CLAUDE_CODE_OAUTH_TOKEN` is a Claude subscription token from `claude setup-token`; it stays in `.env` on the validator server and is never given to factories, which reach only the proxy. Each factory and judge gets a separate internal network connected only to the proxy. Application checks have no network. The proxy applies no per-factory quota.
 
