@@ -404,7 +404,7 @@ def configuration(path: Path, directory: Path, *, application: bool, localnet: b
         "VALIDATOR_WEIGHTS_ENABLED": "false",
     }
     config = defaults | config
-    if os.uname().machine != "x86_64" or config.get("EXECUTOR_PLATFORM", "linux/amd64") != "linux/amd64":
+    if os.uname().machine != "x86_64":
         raise ReleaseError("The prototype release requires a Linux amd64 host")
     if (
         config["EXECUTOR_USER"] != user
